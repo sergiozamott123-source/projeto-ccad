@@ -541,3 +541,12 @@ create policy "processos_update" on processos for update to authenticated
 create index if not exists idx_reunioes_atas_pilar on reunioes_atas(pilar_id);
 create index if not exists idx_reunioes_atas_tipo on reunioes_atas(tipo);
 create index if not exists idx_processos_potencial_expositivo on processos(potencial_expositivo) where potencial_expositivo = true;
+
+-- REUNIOES_ATAS: responsavel_pilar may only insert quinzenal_frente atas for their
+-- own pilar; mensal_consolidada (the one forwarded to NRH) stays coordenador-only
+drop policy if exists "reunioes_atas_insert" on reunioes_atas;
+create policy "reunioes_atas_insert" on reunioes_atas for insert to authenticated
+  with check (
+    get_my_papel() in ('coordenador','coordenador_substituto')
+    or (get_my_papel() = 'responsavel_pilar' and tipo = 'quinzenal_frente' and pilar_id = get_my_pilar())
+  );

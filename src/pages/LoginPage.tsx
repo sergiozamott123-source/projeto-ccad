@@ -18,7 +18,7 @@ export function LoginPage() {
     if (error) {
       setServerError('E-mail ou senha incorretos.')
     } else {
-      navigate('/dashboard')
+      navigate('/')
     }
   }
 

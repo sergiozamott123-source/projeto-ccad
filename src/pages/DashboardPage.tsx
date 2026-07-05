@@ -96,7 +96,7 @@ function RiscoRow({ risco }: { risco: Risco }) {
 }
 
 export function DashboardPage() {
-  const { profile } = useAuth()
+  const { profile, isCoord } = useAuth()
   const mesAtual = format(startOfMonth(new Date()), 'yyyy-MM-dd')
 
   const { data: indicadores } = useQuery({
@@ -301,12 +301,14 @@ export function DashboardPage() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-gray-900">Cadência de Reuniões</h2>
-          <button className="btn-primary text-sm" onClick={() => setShowNovaAtaMensal(v => !v)}>
-            <CalendarPlus size={16} /> Nova ata mensal
-          </button>
+          {isCoord && (
+            <button className="btn-primary text-sm" onClick={() => setShowNovaAtaMensal(v => !v)}>
+              <CalendarPlus size={16} /> Nova ata mensal
+            </button>
+          )}
         </div>
 
-        {showNovaAtaMensal && (
+        {isCoord && showNovaAtaMensal && (
           <div className="card p-5 mb-4 space-y-3">
             <p className="text-sm text-gray-500">Ata da Reunião Mensal Consolidada (cobre os 3 pilares).</p>
             <div>

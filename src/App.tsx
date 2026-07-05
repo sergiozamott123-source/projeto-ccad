@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/AppLayout'
+import { RoleHome } from '@/components/RoleHome'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { MinhaParte } from '@/pages/MinhaParte'
@@ -26,7 +27,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route index element={<RoleHome />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/minha-parte" element={<MinhaParte />} />
               <Route path="/demandas" element={<DemandasPage />} />
@@ -43,7 +44,7 @@ export default function App() {
               <Route path="/pilares/memoria" element={<MemoriaPilarPage />} />
             </Route>
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -8,6 +8,7 @@ interface AuthContextValue {
   user: User | null
   profile: Usuario | null
   loading: boolean
+  profileLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   isCoord: boolean
@@ -22,14 +23,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Usuario | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
 
   async function fetchProfile(userId: string) {
+    setProfileLoading(true)
     const { data } = await supabase
       .from('usuarios')
       .select('*')
       .eq('id', userId)
       .single()
     setProfile(data ?? null)
+    setProfileLoading(false)
   }
 
   useEffect(() => {
@@ -65,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      session, user: session?.user ?? null, profile, loading,
+      session, user: session?.user ?? null, profile, loading, profileLoading,
       signIn, signOut,
       isCoord, isResponsavel, isMembro, isApoio,
     }}>
