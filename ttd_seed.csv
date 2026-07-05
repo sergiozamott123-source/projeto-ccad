@@ -1,0 +1,406 @@
+codigo,classe,serie,assunto,especie,fase_corrente,fase_intermediaria,destinacao_final,legislacao,observacao,status
+01.01.01,01 - Atividades-Meio,01.01 AÇÃO FISCAL,Auto de Apreensão,Processo,06 anos,-,Eliminação,-,-,vigente
+01.01.02,01 - Atividades-Meio,01.01 AÇÃO FISCAL,Auto Infração – Geral,Processo ATA,02 anos,10 anos,Eliminação,-,"Antes da eliminação, verificar se tramita ação judicial pertinente ao auto de infração",vigente
+01.01.03,01 - Atividades-Meio,01.01 AÇÃO FISCAL,Impugnação de Auto Infração – Geral,Processo,02 anos,10 anos,Eliminação,"Art. 150,§ 4º da Lei 5172 de 25/10/1966","Antes da eliminação, verificar se tramita ação judicial pertinente ao auto de infração",vigente
+01.01.04,01 - Atividades-Meio,01.01 AÇÃO FISCAL,Mandado de Segurança de Ação Fiscal,Dossiê,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e executória das ações judiciais em andamento,vigente
+01.01.05,01 - Atividades-Meio,01.01 AÇÃO FISCAL,Petição de prazo de Lei,Dossiê,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e executória das ações judiciais em andamento,vigente
+01.02.01,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Abandono de cargo,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.02,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Abono de falta,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.03,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Ajuda de Custo,Processo,05 anos,-,Eliminação,-,-,vigente
+01.02.04,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Autorização de realização cursos / treinamentos / eventos,Processo,05 anos,-,Eliminação,-,-,vigente
+01.02.05,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Autorização para participar de pós-graduação,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.06,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Autorização para prestação de Serviços Extraordinários,Formulário,01 ano,-,Eliminação,-,-,vigente
+01.02.07,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Avaliação de desempenho,Formulário,01 ano,-,Eliminação,-,-,vigente
+01.02.08,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Aviso de férias,Formulário,01 ano,-,Eliminação,Constituição Federal Art. 7º§ XXIX,Pode aparecer como Relação anual de férias de servidores,vigente
+01.02.09,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Comparecimento de servidor perante órgão administrativo/ Judicial/ Policial,Processo,05 anos,-,Eliminação,-,-,vigente
+01.02.10,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Comunicação de reinício de atividades após afastamento,Processo,05 anos,-,Eliminação,-,-,vigente
+01.02.11,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Diárias / Passagens aéreas,Processo,05 anos,-,Eliminação,-,-,vigente
+01.02.12,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Elogio,Processo,01 ano,-,Eliminação,-,-,vigente
+01.02.13,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Extensão de carga horária,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.14,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Férias,Formulário,02 anos,-,Eliminação,-,Após Definição e Registro,vigente
+01.02.15,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Frequência Mensal,Boletim,01 ano,-,Eliminação,-,Após o recebimento pelo Servidor do pagamento do respectivo mês,vigente
+01.02.16,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Indicação de Representante de Conselho/Comissão,Processo,02 anos,-,Eliminação,-,-,vigente
+01.02.17,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Afastamento para campanha eleitoral,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.18,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Casamento,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.19,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Com vencimento,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.20,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Interesse pessoal,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.21,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Interrupção de licença com ou sem vencimento,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.22,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Maternidade,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.23,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Médica,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.24,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Nojo,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.25,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Para desempenho de mandato,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.26,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Paternidade,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.27,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Licença – Sem vencimento,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.28,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Lotação de Servidores,Formulário,01 ano,-,Eliminação,-,-,vigente
+01.02.29,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Nomeação de servidor efetivo,Processo,05 anos,-,Eliminação,-,Aplica-se também ao assunto: Nomeação de servidor comissionado,vigente
+01.02.30,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),"Pasta/Dossiê funcional individual do servidor Celetista, Comissionado, Estatutário, Contratado por tempo determinado, CPO e Municipalizado.",Dossiê,35 anos,65 anos,Eliminação,-,-,vigente
+01.02.31,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Perfil Profissiográfico Previdenciário (PPP),Fichas/Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.32,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Prorrogação de licença com ou sem vencimento,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.33,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Prorrogação de início de atividades – servidor estatutário,Processo,05 anos,52 anos,Eliminação,-,A decisão deve ser incluída na pasta do servidor,vigente
+01.02.34,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Prorrogação de posse – servidor estatutário,Processo,05 anos,52 anos,Eliminação,-,A decisão deve ser incluída na pasta do servidor,vigente
+01.02.35,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Progressão por Antiguidade/ Desempenho/Titulação,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.36,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Recurso avaliação de desempenho de servidores,Processo,01 ano,-,Eliminação,-,-,vigente
+01.02.37,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Redução de carga horária de pessoal,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.38,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Registro de ponto / Lista de frequência,Cartão de ponto,05 anos,52 anos,Eliminação,Constituição Federal Art. 7°§ XXIX,-,vigente
+01.02.39,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Reintegração de servidor exonerado,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.02.40,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Relação mensal / Anual de férias de servidores,Listagem / Processo,01 ano,-,Eliminação,-,-,vigente
+01.02.41,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Transferência de servidor de local de trabalho,Formulário,01 ano,-,Eliminação,-,Após recebimento do primeiro pagamento no novo local,vigente
+01.02.42,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Vale-transporte – Declaração de devolução do cartão,Formulário,05 anos,-,Eliminação,-,-,vigente
+01.02.43,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Vale-transporte – Demonstrativo mensal de compra e distribuição,Relatório,05 anos,05 anos,Eliminação,-,-,vigente
+01.02.44,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Vale-transporte – Relatório,Relatório,05 anos,05 anos,Eliminação,-,-,vigente
+01.02.45,01 - Atividades-Meio,01.02 ADMINISTRAÇÃO DE PESSOAL (Subsérie: Direitos e Vantagens),Vale-transporte – Solicitação de segunda via do cartão,Formulário,01 anos,-,Eliminação,-,-,vigente
+01.03.01,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Demissão/Rescisão/ Exoneração e ou Direitos por cessação de vínculos,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.03.02,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Desconto em folha de pagamento – Pensão alimentícia,Processo,05 anos,-,Eliminação,-,Só poderão ser eliminados a partir do momento em que o ofício/ sentença estiver arquivado no dossiê do servidor,vigente
+01.03.03,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Devolução à CDTIV de pagamento recebido indevido,Processo,05 anos após quitação de débito,-,Eliminação,-,Só poderão ser eliminados a partir do momento em que o comprovante da devolução estiver arquivado no dossiê do servidor,vigente
+01.03.04,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Folha de pagamento,Processo / Relatório,05 anos,52 anos,Eliminação,-,-,vigente
+01.03.05,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Pagamento de auxílio- creche,Processo,05 anos,-,Eliminação,-,-,vigente
+01.03.06,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Pagamento de direitos,Processos,05 anos,52 anos,Eliminação,-,-,vigente
+01.03.07,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Pagamento de FGTS,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.03.08,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Pagamento do INSS / IPAMV,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.03.09,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Pagamento de vantagens/gratificações,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.03.10,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Rescisão contrato com vínculo CLT e direitos trabalhistas,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.03.11,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Suspensão do desconto em folha de pagamento (pensão alimentícia),Processo,05 anos,-,Eliminação,-,-,vigente
+01.03.12,01 - Atividades-Meio,01.03 ADMINISTRAÇÃO DE PESSOAL (Subfunção: Pagamento),Vale-transporte – Compra,Processos,05 anos,05 anos,Eliminação,-,-,vigente
+01.04.01,01 - Atividades-Meio,01.04 CONSIGNAÇÃO EM FOLHA DE PAGAMENTO DE PESSOAL,Bloqueio de consignação em folha de pagamento – Empréstimo,Processo,10 anos,-,Eliminação,-,-,vigente
+01.04.02,01 - Atividades-Meio,01.04 CONSIGNAÇÃO EM FOLHA DE PAGAMENTO DE PESSOAL,Consignação em folha de pagamento de pessoal – Empréstimo,Processo,10 anos,-,Eliminação,-,-,vigente
+01.04.03,01 - Atividades-Meio,01.04 CONSIGNAÇÃO EM FOLHA DE PAGAMENTO DE PESSOAL,Recolhimento de,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.05.01,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Apostilas,Apostilas,05 anos,-,Eliminação,-,Guardar 02 exemplares,vigente
+01.05.02,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Certificados,Certificado,05 anos,-,Eliminação,-,Referem-se aos certificados onde o interessado não compareceu para recebê-lo,vigente
+01.05.03,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Colocação de servidor à disposição,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.05.04,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Concurso Público,Processo/Dossiê,05 anos,05 anos,Eliminação,-,Após homologação do concurso,vigente
+01.05.05,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Concurso Público – Gabarito,Gabarito,05 anos,05 anos,Eliminação,-,Após homologação do concurso,vigente
+01.05.06,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Concurso Público – Inscrição – Inscrição,Formulário,05 anos,05 anos,Eliminação,-,Após homologação do concurso,vigente
+01.05.07,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Concurso Público – Lista de Presença,Listagem,05 anos,05 anos,Eliminação,-,Após homologação do concurso,vigente
+01.05.08,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Concurso Público – Prova,Prova,05 anos,05 anos,Eliminação,-,Após homologação do concurso,vigente
+01.05.09,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Concurso Público – Recursos,Processo,05 anos,05 anos,Eliminação,-,Após homologação do concurso,vigente
+01.05.10,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL","Concurso Público – Testes (físicos, psicológicos,",Teste,05 anos,05 anos,Eliminação,-,Após homologação do concurso,vigente
+01.05.11,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Concurso Público – Títulos,Diversos,05 anos,05 anos,Eliminação,-,Após homologação do concurso,vigente
+01.05.12,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Contratação por tempo determinado – Contratação,Processo,05 anos,05 anos,Eliminação,-,O contrato integra ao dossiê do servidor,vigente
+01.05.13,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Contratação por tempo determinado – Documentação de desistentes,Diversos,30 dias,05 anos,Eliminação,-,O contrato integra ao dossiê do servidor,vigente
+01.05.14,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Contratação por tempo determinado: Ficha de inscrição – Deferidos,Formulário,Após validade do edital,-,Eliminação,-,O contrato integra ao dossiê do servidor,vigente
+01.05.15,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Contratação por tempo determinado: Ficha de inscrição – Indeferidos,Formulário,03 meses após homologação,-,Eliminação,-,O contrato integra ao dossiê do servidor,vigente
+01.05.16,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Contratação por tempo determinado: Ficha de inscrição – Recursos,Processo,03 meses após homologação,05 anos,Eliminação,-,-,vigente
+01.05.17,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL","Contratação por tempo determinado: Ficha de inscrição – Testes (físicos, psicológicos, trânsito)",Teste,03 anos,05 anos,Eliminação,-,-,vigente
+01.05.18,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Contratação por tempo,Processo,05 anos,05 anos,Eliminação,-,O contrato integra ao dossiê,vigente
+01.05.19,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Contratação por tempo determinado – Substituição,Processo,05 anos,05 anos,Eliminação,-,O contrato integra ao dossiê do servidor,vigente
+01.05.20,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Criação de cargos,Processo,05 anos,05 anos,Eliminação,-,-,vigente
+01.05.21,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Declarações,Formulário / Processo,05 anos,-,Eliminação,-,-,vigente
+01.05.22,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Devolução de servidor à disposição,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.05.23,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Editais,Edital,05 anos,05 anos,Eliminação,-,"Aplica-se a editais de concurso público, processo seletivo",vigente
+01.05.24,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Enquadramento,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.05.25,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Estagiários – Contratação,Processo,03 anos,02 anos,Eliminação,-,-,vigente
+01.05.26,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Estagiários – Ficha de cadastro ou currículo,Formulário,02 anos,-,Eliminação,-,-,vigente
+01.05.27,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Estagiários – Folha de Pagamento,Relatório,03 anos,02 anos,Eliminação,-,-,vigente
+01.05.28,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Estagiários – Pagamento de seguro,Processo,03 anos,02 anos,Eliminação,-,-,vigente
+01.05.29,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Estagiários – Pasta funcional individual,Diversos,03 anos,02 anos,Eliminação,-,-,vigente
+01.05.30,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Estagiários – Renovação de contrato,Processo,03 anos,02 anos,Eliminação,-,-,vigente
+01.05.31,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Estudos e projetos de cargos e salários,Estudos/projetos,05 anos,05 anos,Eliminação,-,-,vigente
+01.05.32,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Lista de frequência,Formulário,01 ano,-,Guarda permanente,-,Arquivar permanentemente na própria gerência,vigente
+01.05.33,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Livro de registro de certificados,Livro,10 anos,-,Guarda permanente,-,-,vigente
+01.05.34,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Pesquisa salarial promovida pela CDTIV,Formulário,02 anos,-,Eliminação,-,-,vigente
+01.05.35,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Processo seletivo,Processo,05 anos,05 anos,Eliminação,-,-,vigente
+01.05.36,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Projetos,Diversas,05 anos,-,Guarda permanente,-,-,vigente
+01.05.37,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Prorrogação de validade de processo seletivo,Processo,05 anos,05 anos,Eliminação,-,-,vigente
+01.05.38,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Readaptação em concurso público,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.05.39,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Readmissão,Processo,05 anos,30 anos,Eliminação,-,-,vigente
+01.05.40,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Relatórios – Anual de atividades,Relatório,04 anos,-,Guarda permanente,-,-,vigente
+01.05.41,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Relatórios – Mensal de atividades,Relatório,02 anos,-,Eliminação,-,Após elaboração do relatório anual,vigente
+01.05.42,01 - Atividades-Meio,"01.05 CARREIRA, SELEÇÃO E DESENVOLVIMENTO DE PESSOAL",Títulos para progressão,Formulário/Processo,05 anos,-,Eliminação,-,-,vigente
+01.06.01,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Elaboração de laudo para aposentadoria especial,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.06.02,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Inspeção de segurança,CI,03 anos,02 anos,Eliminação,-,-,vigente
+01.06.03,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Perícia médica,Processo,20 anos (a partir do último registro),40 anos,Eliminação ou devolução ao servidor / representante legal,Art. 6º da Lei Federal n.º 13.787/2018; Art. 8º da Resolução CFM n.º 1.821/2007,-,vigente
+01.06.04,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Prevenção de acidente do trabalho (CIPA): Ata de eleição; ata de posse; ata de reunião; cédula de eleição; comunicação de resultado; edital de eleição; folha de votação em eleição; inscrição de candidatos; mapa de risco ambiental,Dossiê,05 anos,-,Eliminação,Lei Federal 6.514/1977; Portaria n.º 3.214; NR 578; NR 05,-,vigente
+01.06.05,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Programa de controle médico de saúde ocupacional,Diversa,05 anos,20 anos,Eliminação,Lei Federal n.º 6.514/1977; Portaria n.º 3.154/78; NR07,Após desligamento do servidor,vigente
+01.06.06,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Programa de prevenção de riscos ambientais,Diversa,05 anos após desligamento do servidor,20 anos,Eliminação,Lei Federal 6.514/1977; Portaria n.º 3214/1978; NR09,-,vigente
+01.06.07,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Projetos e programas destinados a servidores,Diversa,04 anos,-,Guarda permanente,-,-,vigente
+01.06.08,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Prontuário médico do servidor – Pasta; atestados; laudos e exames,Dossiê,20 anos (a partir do último registro),40 anos,Eliminação ou devolução ao servidor / representante legal,Art. 6º da Lei Federal n.º 13.787/2018; Art. 8º da Resolução CFM n.º 1.821/2007,-,vigente
+01.06.09,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Readaptação profissional de servidor,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.06.10,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Revisão / Reabertura de adicional de insalubridade,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.06.11,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Solicitação de adicional de,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.06.12,01 - Atividades-Meio,01.06 SAÚDE E APOIO SOCIAL AO SERVIDOR,Solicitação de adicional de periculosidade,Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.07.01,01 - Atividades-Meio,01.07 AUDITORIA E MONITORAMENTO,Relativo à Auditoria,Processo,24 anos,4 anos,Eliminação,-,-,vigente
+01.08.01,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,Abaixo Assinado,Processo,01 ano,-,Eliminação,-,-,vigente
+01.08.02,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,Análise Técnica Geral,Processo,05 anos,-,Eliminação,-,-,vigente
+01.08.03,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,Denúncia/Reclamação,Processo,05 anos,-,Eliminação,-,-,vigente
+01.08.04,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,Desarquivamento de processo,Processo,01 ano,-,Eliminação,-,-,vigente
+01.08.05,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,"Fornecimento de serviços públicos essenciais (água, gás, energia, etc)",Processo,05 anos,-,Eliminação,-,-,vigente
+01.08.06,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,Informação Geral,Processo,02 anos,-,Eliminação,-,Aplica-se também aos Requerimentos de Informações; Requerimentos de Informações do Tribunal de Contas; Tribunal de Justiça,vigente
+01.08.07,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,Prestação de contas de vales-transporte de serviço,Formulário,01 ano,-,Eliminação,-,-,vigente
+01.08.08,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,Protocolado geral,Protocolado,02 anos,-,Eliminação,-,"Os documentos devem ser avaliados cuidadosamente antes da Eliminação, ficando a critério do setor mantê-los além do prazo estabelecido.",vigente
+01.08.09,01 - Atividades-Meio,01.08 ASSUNTOS GERAIS,Sindicância geral,Processo,02 anos,-,Eliminação,-,-,vigente
+01.09.01,01 - Atividades-Meio,01.09 COMUNICAÇÃO INSTITUCIONAL,Clipping,Recortes de jornais,02 anos,-,Eliminação,-,Eliminação a critério do setor,vigente
+01.09.02,01 - Atividades-Meio,01.09 COMUNICAÇÃO INSTITUCIONAL,"Material de divulgação – Cartazes, boletins, folders, cadernos, revistas, livros, guias, jornais, manuais, etc",Diversos,05 anos,-,Guarda permanente,-,Arquivar 04 exemplares de cada material.,vigente
+01.09.03,01 - Atividades-Meio,01.09 COMUNICAÇÃO INSTITUCIONAL,Registros fotográficos,Digital/ papel fotográfico,01 ano,-,Guarda permanente,-,Depois de identificadas/selecionadas pelo setor de origem deverão ser encaminhadas ao Arquivo,vigente
+01.10.01,01 - Atividades-Meio,01.10 CAPTAÇÃO DE RECURSOS,Relacionado a Captação de Recursos,Processo / Relatório,20 anos,05 anos,Eliminação,-,-,vigente
+01.10.02,01 - Atividades-Meio,01.10 CAPTAÇÃO DE RECURSOS,Plano de Trabalho,Formulário,05 anos,05 anos,Eliminação,-,-,vigente
+01.10.03,01 - Atividades-Meio,01.10 CAPTAÇÃO DE RECURSOS,Prestação de contas,Processo,20 anos,05 anos,Guarda permanente,-,-,vigente
+01.11.01,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Abertura de conta bancária,Processo,01 ano,-,Eliminação,-,-,vigente
+01.11.02,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Adesão / Anuidade,Processo,05 anos,-,Eliminação,-,-,vigente
+01.11.03,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Aviso bancário,Livro,05 anos,15 anos,Eliminação,-,-,vigente
+01.11.04,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Balanço geral,Livro,10 anos,10 anos,Guarda permanente,-,-,vigente
+01.11.05,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Caução,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.11.06,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Cheques,Livro,05 anos,20 anos,Eliminação,-,-,vigente
+01.11.07,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Conciliação bancária,Livro,05 anos,15 anos,Eliminação,-,-,vigente
+01.11.08,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Demonstração contábil,Processo,05 anos,-,Guarda permanente,-,-,vigente
+01.11.09,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Devolução,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.11.10,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Empenho,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.11.11,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Garantia,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.11.12,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Imposto de Renda – Geral,-,07 anos,-,Eliminação,-,-,vigente
+01.11.13,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Intimação,Processo,03 anos,-,Eliminação,-,-,vigente
+01.11.14,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Notificação de débito,Processo,01 ano,-,Eliminação,-,-,vigente
+01.11.15,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Ordem bancária,Formulário,20 anos,-,Guarda permanente,-,-,vigente
+01.11.16,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Pagamento de tributos – impostos e taxas,Guia / Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.11.17,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Previsão de despesas,Processo,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.11.18,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,"Recolhimento de tributos, impostos e taxas",-,02 anos,03 anos,Eliminação,-,-,vigente
+01.11.19,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Repasse de verba,Processo,02 anos,05 anos,Eliminação,-,-,vigente
+01.11.20,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Reserva,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.11.21,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Ressarcimento de importância,Processo,02 anos,05 anos,Eliminação,-,-,vigente
+01.11.22,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Suplementação de verba,Processo,01 ano,-,Eliminação,-,-,vigente
+01.11.23,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Tarifa bancária,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.11.24,01 - Atividades-Meio,01.11 CONTROLE CONTÁBIL E FINANCEIRO,Transferência de saldo de convênio,Processo,01 ano,-,Eliminação,-,-,vigente
+01.12.01,01 - Atividades-Meio,01.12 CONTROLE DA RECEITA,Cobrança de valores recolhidos a menor,Ofício/Notificação,01 ano,05 anos,Eliminação,-,Após efetivação do recolhimento dos valores,vigente
+01.12.02,01 - Atividades-Meio,01.12 CONTROLE DA RECEITA,"Controle de pagamentos – IPTU, ISS, TAXAS, PREÇO PÚBLICO, DÍVIDA ATIVA",Cadastro,06 anos,-,Eliminação,-,Após processamento dos documentos,vigente
+01.12.03,01 - Atividades-Meio,01.12 CONTROLE DA RECEITA,"Crítica, recepção, débito automático, cobrança bancária e transmissão",Relatório,01 ano,06 anos,Eliminação,-,-,vigente
+01.12.04,01 - Atividades-Meio,01.12 CONTROLE DA RECEITA,Multa contratual,Ofício/Notificação,01 ano,05 anos,Eliminação,-,Após balancete mensal,vigente
+01.12.05,01 - Atividades-Meio,01.12 CONTROLE DA RECEITA,Notificação de valores recolhidos a menor,Ofício/Formulário,01 ano,05 anos,Eliminação,-,-,vigente
+01.12.06,01 - Atividades-Meio,01.12 CONTROLE DA RECEITA,Transferência de pagamentos,CI / Processo / Relatório,01 ano,06 anos,Eliminação,-,Após balancete mensal,vigente
+01.13.01,01 - Atividades-Meio,01.13 CONTROLE DE CADASTRO FISCAL,Cancelamento de débito,CI / Ofício / Processo,02 anos,05 anos,Eliminação,-,-,vigente
+01.13.02,01 - Atividades-Meio,01.13 CONTROLE DE CADASTRO FISCAL,Prescrição de débito,Processo/Requerimento,02 anos,-,Eliminação,-,-,vigente
+01.13.03,01 - Atividades-Meio,01.13 CONTROLE DE CADASTRO FISCAL,Termo de parcelamento de débito,Formulário/Processo,05 anos,-,Eliminação,-,"Verificar se tramita processo judicial, se houver, não eliminar.",vigente
+01.14.01,01 - Atividades-Meio,01.14 CONTROLE DE DOCUMENTOS FISCAIS,Cancelamento de notas fiscais,Requerimento,02 anos,04 anos,Eliminação,-,-,vigente
+01.14.02,01 - Atividades-Meio,01.14 CONTROLE DE DOCUMENTOS FISCAIS,Comunicação de extravio de documentos fiscais,Protocolado,01 ano,-,Eliminação,-,-,vigente
+01.15.01,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,CCAD: Comissão Central de Avaliação de Documentos – Atas de reunião,Formulário,-,-,Guarda permanente,-,Arquivar permanentemente no arquivo corrente,vigente
+01.15.02,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,CCAD: Comissão Central de Avaliação de Documentos – Lista de presença,Formulário,02 anos,-,Eliminação,-,-,vigente
+01.15.03,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,Controle de consultas,Formulário,01 ano,-,Eliminação,-,-,vigente
+01.15.04,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,Estatística anual de consultas,Relatório,05 anos,-,Eliminação,-,-,vigente
+01.15.05,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,Instrumento de pesquisa,"Diversas (Inventário, guias, catálogos, etc)",01 ano,-,Guarda permanente,-,Após edição de novo instrumento de pesquisa atualizado,vigente
+01.15.06,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,Listagem de eliminação de documentos,Listagem,-,-,Guarda permanente,-,-,vigente
+01.15.07,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,Listagem de recolhimento de documentos,Listagem,-,-,Guarda permanente,-,-,vigente
+01.15.08,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,Relação de documentos remetidos ao arquivo intermediário,Formulário,-,-,Guarda permanente,-,Arquivar permanentemente no arquivo corrente,vigente
+01.15.09,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,Tabelas de temporalidades aprovadas,Tabela,-,-,Guarda permanente,-,Arquivar permanentemente no arquivo corrente,vigente
+01.15.10,01 - Atividades-Meio,01.15 GESTÃO DE DOCUMENTOS PÚBLICOS,Termo de guarda provisória de documentos,Formulário,01 ano,-,Eliminação,-,Após devolução do documento emprestado e conferência,vigente
+01.16.01,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Aforamento,Processo,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.16.02,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Avaliação de imóvel,Processo,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.16.03,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Baixa patrimonial de bens imóveis da CDTIV,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.16.04,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Baixa patrimonial de bens móveis,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.16.05,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Compra de imóvel,Processo,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.16.06,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Comunicado de furto/desaparecimento de bens móveis,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.16.07,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Concessão com concorrência pública de imóveis do Município,Processo,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.16.08,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Concessão sem concorrência pública de imóveis do Município,Processo,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.16.09,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Contrato de comodato – imóveis/equipamentos de terceiros,Processo,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.16.10,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Controle de serviço e material,Planilha,01 mês,-,Eliminação,-,Após elaboração do relatório trimestral,vigente
+01.16.11,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Distribuição – De pessoal,Planilha,03 meses,-,Eliminação,-,Após elaboração do relatório trimestral,vigente
+01.16.12,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Extravio,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.16.13,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Leilão de bens patrimoniais,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.16.14,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Pedido de autorização de saída,Formulário,02 anos,-,Eliminação,-,Após retorno do bem,vigente
+01.16.15,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Relatório anual de equipamento e material permanente adquirido,Relatório,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.16.16,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Relatório – Trimestral,Relatório,06 meses,-,Eliminação,-,Após elaboração do relatório anual,vigente
+01.16.17,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Renovação de contrato de comodato de imóveis de terceiros,Processo,02 anos,03 anos,Guarda permanente,-,Após o término do comodato,vigente
+01.16.18,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Solicitação de doação,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.16.19,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Solicitação de vigilantes,Ofício e CI,06 meses,-,Eliminação,-,-,vigente
+01.16.20,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Termo de responsabilidade de bens móveis,Formulário/Processo,02 anos,-,Eliminação,-,-,vigente
+01.16.21,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Transferência de aforamento,Processo,02 anos,03 anos,Guarda permanente,-,-,vigente
+01.16.22,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Transferência de bens móveis – Em definitivo,Formulário/Processo,01 ano,-,Eliminação,-,Após atualização no sistema,vigente
+01.16.23,01 - Atividades-Meio,01.16 ADMINISTRAÇÃO E MANUTENÇÃO PREDIAL,Transferência de bens móveis – para controle,Formulário/Processo,01 ano,-,Eliminação,-,Após atualização no sistema,vigente
+01.17.01,01 - Atividades-Meio,01.17 CONTROLE DE LOCAÇÃO DE BENS IMÓVEIS,Locação de imóveis de terceiros,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.17.02,01 - Atividades-Meio,01.17 CONTROLE DE LOCAÇÃO DE BENS IMÓVEIS,Pagamento locação de bens imóveis de terceiros,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.17.03,01 - Atividades-Meio,01.17 CONTROLE DE LOCAÇÃO DE BENS IMÓVEIS,Relatório – Anual,Relatório,04 anos,-,Guarda permanente,-,-,vigente
+01.17.04,01 - Atividades-Meio,01.17 CONTROLE DE LOCAÇÃO DE BENS IMÓVEIS,Renovação de locação de bens imóveis de terceiros,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.17.05,01 - Atividades-Meio,01.17 CONTROLE DE LOCAÇÃO DE BENS IMÓVEIS,Resumo de contratos publicados,Recortes,01 ano,-,Eliminação,-,-,vigente
+01.18.01,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Adesão à Ata de registro de preços,Processo,05 anos,05 anos,Eliminação,-,-,vigente
+01.18.02,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Adiantamento,Processo,02 anos,03 anos,Eliminação,-,Os documentos referentes ao material não adquirido deverão ser eliminados após 01 ano,vigente
+01.18.03,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Atestado de capacidade técnica,Processo,04 anos,-,Eliminação,-,-,vigente
+01.18.04,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Autorização de fornecimento/Boletim de recebimento/Notas fiscais: Material de consumo,Formulário,05 anos,-,Eliminação,-,-,vigente
+01.18.05,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Autorização de fornecimento/Boletim de recebimento/Notas fiscais: Material permanente,Formulário,05 anos,-,Guarda permanente,-,-,vigente
+01.18.06,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Balancete,Balancete,05 anos,-,Eliminação,-,Após a elaboração do novo,vigente
+01.18.07,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Cadastro de preparação de processos de compras: Fornecedores/Prestadores de serviços,Processo,01 ano,18 anos,Eliminação,-,Processo registrado diretamente no setor de cadastro de fornecedores,vigente
+01.18.08,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Compra – aquisição de material de consumo,Processo,02 anos,08 anos,Eliminação,-,1) Os documentos referentes ao material não adquirido deverão ser eliminados após 01 ano; 2) Equivalente para Registro de Preços; 3) Estão inclusos neste item: Aditamento de registro de preço; Requisições; Solicitações; PRP (Planejamento de Registro de Preços).,vigente
+01.18.09,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Compra – aquisição de material permanente,Processo,05 anos,05 anos,Eliminação,-,1) Os documentos referentes ao material não adquirido,vigente
+01.18.10,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Inventário,Inventário,05 anos,05 anos,Guarda permanente,-,-,vigente
+01.18.11,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Material de estoque – RME (Material de consumo),Formulário,05 anos,-,Eliminação,-,-,vigente
+01.18.12,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Material de estoque – RME (Material permanente),Formulário,05 anos,-,Guarda permanente,-,-,vigente
+01.18.13,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Nota de ajuste e estoque,Formulário,05 anos,-,Eliminação,-,-,vigente
+01.18.14,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Nota fiscal,Nota fiscal,05 anos,-,Eliminação,-,-,vigente
+01.18.15,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Orçamento e mapas de preço,Formulário,01 ano,-,Eliminação,-,-,vigente
+01.18.16,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Ordem de serviço,Ordem de serviço,05 anos,-,Eliminação,-,-,vigente
+01.18.17,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Pagamento de Prestação de serviços – Pessoa Física e Jurídica,Processo,05 anos,05 anos,Eliminação,-,1) Não estão inseridos processos referentes a obras públicas. 2) Aplica-se ao assunto,vigente
+01.18.18,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Patrimoniamento de bens móveis,Processo,02 anos,-,Eliminação,-,-,vigente
+01.18.19,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS","Prospectos diversos (materiais, equipamentos, etc)",Impresso,-,-,Eliminação,-,-,vigente
+01.18.20,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Reajustamento,Processo,02 anos,08 anos,Eliminação,-,Não estão inseridos processos referentes a obras públicas.,vigente
+01.18.21,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Remanejamento de registro de preços,Processo,05 anos,05 anos,Eliminação,-,-,vigente
+01.18.22,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Requisição de Material,Formulário,01 ano,-,Eliminação,-,-,vigente
+01.18.23,01 - Atividades-Meio,"01.18 CONTROLE DE MATERIAIS, EQUIPAMENTOS E SERVIÇOS",Requisição de registro de preços,Processo,05 anos,05 anos,Eliminação,-,1) Aplica-se ao assunto: Licitação – Sistema de Registro de Preços. 2) Não se aplica às obras públicas.,vigente
+01.19.01,01 - Atividades-Meio,01.19 TRANSPORTES,Aluguel,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.19.02,01 - Atividades-Meio,01.19 TRANSPORTES,Cadastro,Planilha,Até alienação,-,Eliminação,-,-,vigente
+01.19.03,01 - Atividades-Meio,01.19 TRANSPORTES,Compra,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.19.04,01 - Atividades-Meio,01.19 TRANSPORTES,Comunicação de ocorrência de acidente de trânsito,CI,02 anos,03 anos,Eliminação,-,-,vigente
+01.19.05,01 - Atividades-Meio,01.19 TRANSPORTES,Concessão,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.19.06,01 - Atividades-Meio,01.19 TRANSPORTES,Controle de combustível,Formulário,02 anos,-,Eliminação,-,-,vigente
+01.19.07,01 - Atividades-Meio,01.19 TRANSPORTES,Controle de chaves,Formulário,02 anos,-,Eliminação,-,-,vigente
+01.19.08,01 - Atividades-Meio,01.19 TRANSPORTES,Controle diário de uso de veículos,Formulário,02 anos,-,Eliminação,-,-,vigente
+01.19.09,01 - Atividades-Meio,01.19 TRANSPORTES,Doação,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.19.10,01 - Atividades-Meio,01.19 TRANSPORTES,Emplacamento,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.19.11,01 - Atividades-Meio,01.19 TRANSPORTES,Leilão,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.19.12,01 - Atividades-Meio,01.19 TRANSPORTES,Licenciamento,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.19.13,01 - Atividades-Meio,01.19 TRANSPORTES,Multas de trânsito,Guia/Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.19.14,01 - Atividades-Meio,01.19 TRANSPORTES,Relação de veículos oficiais,Relação,Até atualização,-,Eliminação,-,-,vigente
+01.20.01,01 - Atividades-Meio,01.20 CORRESPONDÊNCIA GERAL,Boletim de Documentos (BD),Diversos,01 ano,-,Eliminação,-,"Aplica-se também aos documentos do tipo: Livro de protocolo, Controle de entrada e saída de",vigente
+01.20.02,01 - Atividades-Meio,01.20 CORRESPONDÊNCIA GERAL,CI Expedida/Recebida (Assuntos diversos),Formulário,02 anos,-,Eliminação,-,-,vigente
+01.20.03,01 - Atividades-Meio,01.20 CORRESPONDÊNCIA GERAL,Controle de Correspondências Recebidas e Expedidas,Formulário,06 meses,-,Eliminação,-,Aplica-se também aos assuntos: Guia de Postagem; Certificado de Postagem e Lista de Postagem.,vigente
+01.20.04,01 - Atividades-Meio,01.20 CORRESPONDÊNCIA GERAL,Correspondência expedida relacionada a pessoal,"CI, Memorando e Ofício",05 anos,30 anos,Eliminação,-,-,vigente
+01.20.05,01 - Atividades-Meio,01.20 CORRESPONDÊNCIA GERAL,Entrega de correspondência simples e registrada,Formulário,01 ano,-,Eliminação,-,-,vigente
+01.20.06,01 - Atividades-Meio,01.20 CORRESPONDÊNCIA GERAL,Fax recebido,Fax,01 ano,-,Eliminação,-,-,vigente
+01.20.07,01 - Atividades-Meio,01.20 CORRESPONDÊNCIA GERAL,Ofícios Expedidos (Assuntos Diversos),Ofício,05 anos,-,Eliminação,-,Para as atividades-fim: guardar permanentemente no setor,vigente
+01.20.08,01 - Atividades-Meio,01.20 CORRESPONDÊNCIA GERAL,"Ofícios Recebidos (Assuntos diversos, inclusive circulares)","Ofício, C.I., Circular e Email",05 anos,-,Eliminação,-,-,vigente
+01.21.01,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Apoio financeiro,Processo,02,03 anos,Eliminação,-,-,vigente
+01.21.02,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Apoio logístico para,Processo,02 anos,-,Eliminação,-,-,vigente
+01.21.03,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Atrações para festa,Processo,02 anos,-,Eliminação,-,Recolher por amostragem (5 a 10%) para efeitos históricos,vigente
+01.21.04,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Autorização de evento,Processo,03 anos,-,Eliminação,-,"Caso o evento receba recurso federal, o processo poderá ter seu prazo de guarda estendido.",vigente
+01.21.05,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Co Patrocínio,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.21.06,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Cessão de uso de espaço (praças),Processo,02 anos,-,Eliminação,-,Recolher por amostragem (5 a 10%) para efeitos históricos,vigente
+01.21.07,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Doação de materiais,Processo,05 anos,05 anos,Eliminação,-,-,vigente
+01.21.08,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Doação de premiação,Processo,01 ano,01 ano,Eliminação,-,-,vigente
+01.21.09,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Inscrição (Editais da Cultura),Processo,02 anos,08 anos,Guarda permanente,-,-,vigente
+01.21.10,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Indicação de Representante de Conselho/Comissão,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.21.11,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Instalação (equipamento; palanque; sonorização; toldo),Processo,02 anos,-,Eliminação,-,Recolher por amostragem (5 a 10%) para efeitos históricos,vigente
+01.21.12,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Interdição de vias públicas (comunidade),Processo,02 anos,-,Eliminação,-,Recolher por amostragem (5 a 10%) para efeitos históricos,vigente
+01.21.13,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Parecer Técnico (MPU),Processo,04 anos,08 anos,Guarda permanente,-,-,vigente
+01.21.14,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Patrocínio,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.21.15,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Planejamento e Programação,Diversos,05 anos,05 anos,Guarda permanente,-,-,vigente
+01.21.16,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Projeto Cultural,Processo,02 anos,-,Guarda permanente,-,1) Relacionado a pagamento de cachê artístico. 2) Pode vir como pagamento de pessoa física.,vigente
+01.21.17,01 - Atividades-Meio,"01.21 GESTÃO, PLANEJAMENTO E DESENVOLVIMENTO CULTURAL DO MUNICÍPIO - EVENTOS",Solicitação de uso de espaço,Processo,01 ano,-,Eliminação,-,-,vigente
+01.22.01,01 - Atividades-Meio,01.22 ADMINISTRAÇÃO DE CURSOS; OFICINAS; PALESTRAS; REUNIÕES E PROJETOS SOCIAIS,Certificados,Certificado,05 anos,-,Eliminação,-,Referente aos certificados onde o interessado não compareceu para recebê-los,vigente
+01.22.02,01 - Atividades-Meio,01.22 ADMINISTRAÇÃO DE CURSOS; OFICINAS; PALESTRAS; REUNIÕES E PROJETOS SOCIAIS,Controle de entrega de certificados,Livro,02 anos,-,Guarda permanente,-,Guarda permanente no setor,vigente
+01.22.03,01 - Atividades-Meio,01.22 ADMINISTRAÇÃO DE CURSOS; OFICINAS; PALESTRAS; REUNIÕES E PROJETOS SOCIAIS,Lista de presença,Lista,05 anos,-,Eliminação,-,Somente eliminar após a digitalização,vigente
+01.22.04,01 - Atividades-Meio,01.22 ADMINISTRAÇÃO DE CURSOS; OFICINAS; PALESTRAS; REUNIÕES E PROJETOS SOCIAIS,Projetos sociais,Projeto,05 anos,-,Eliminação,-,Somente eliminar após a digitalização,vigente
+01.22.05,01 - Atividades-Meio,01.22 ADMINISTRAÇÃO DE CURSOS; OFICINAS; PALESTRAS; REUNIÕES E PROJETOS SOCIAIS,Relatório de atividades,Relatório,05 anos,-,Eliminação,-,Somente eliminar após a digitalização,vigente
+01.23.01,01 - Atividades-Meio,01.23 FEIRAS,Constituição e criação de feiras comunitárias,Processo,-,-,Guarda permanente,-,-,vigente
+01.23.02,01 - Atividades-Meio,01.23 FEIRAS,Feirante: Inscrição,Processo,Enquanto vigora,-,Eliminação,-,-,vigente
+01.23.03,01 - Atividades-Meio,01.23 FEIRAS,Feirante: Baixa,Processo,01 ano,-,Eliminação,-,-,vigente
+01.24.01,01 - Atividades-Meio,01.24 EXECUTIVO/LEGISLATIVO,Autógrafo de Lei,Processo,04 anos,05 anos,Guarda permanente,-,-,vigente
+01.24.02,01 - Atividades-Meio,01.24 EXECUTIVO/LEGISLATIVO,Indicação da Câmara,Processo,02 anos,-,Eliminação,-,Após resposta do ofício,vigente
+01.25.01,01 - Atividades-Meio,01.25 ÁREA TRIBUTÁRIA,Ação de consignação de pagamentos,Dossiê,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e executória das ações judiciais em andamento.,vigente
+01.25.02,01 - Atividades-Meio,01.25 ÁREA TRIBUTÁRIA,Ação de contribuição tributária,Dossiê,Enquanto tramita,05 anos,Eliminação,-,O documento apresenta interesse técnico científico.,vigente
+01.25.03,01 - Atividades-Meio,01.25 ÁREA TRIBUTÁRIA,Ação de exibição de documentos fiscais,Dossiê,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e executória das ações judiciais em andamento.,vigente
+01.25.04,01 - Atividades-Meio,01.25 ÁREA TRIBUTÁRIA,"Ações Cautelares, Execução Fiscal, Ordinária, Anulatória, Declaratória",Dossiê,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e executória das ações judiciais em andamento.,vigente
+01.25.05,01 - Atividades-Meio,01.25 ÁREA TRIBUTÁRIA,Auto de infração,Dossiê,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e executória das ações judiciais em andamento.,vigente
+01.25.06,01 - Atividades-Meio,01.25 ÁREA TRIBUTÁRIA,Mandado de Segurança,Dossiê,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e executória das ações judiciais em andamento.,vigente
+01.25.07,01 - Atividades-Meio,01.25 ÁREA TRIBUTÁRIA,Notificação de débito,Dossiê,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e executória das ações judiciais em andamento.,vigente
+01.26.01,01 - Atividades-Meio,01.26 ÁREA TRABALHISTA,Relativo à área trabalhista,Dossiê/Processo,Enquanto tramita,05 anos,Eliminação,-,A vigência esgota-se com o término das fases recursal e,vigente
+01.27.01,01 - Atividades-Meio,01.27 JURÍDICO,Acórdãos,Acórdão,10 anos,-,Guarda permanente,-,"Arquivo eletrônico (após digitalizado, o suporte papel, poderá ser eliminado)",vigente
+01.27.02,01 - Atividades-Meio,01.27 JURÍDICO,Estudos e informações jurídicas,Dossiê,Enquanto tramita,05 anos,Guarda permanente,-,-,vigente
+01.27.03,01 - Atividades-Meio,01.27 JURÍDICO,Pagamento de custas processuais e honorários periciais,Processo,05 anos,-,Eliminação,-,Apenso ao dossiê.,vigente
+01.27.04,01 - Atividades-Meio,01.27 JURÍDICO,Pagamento de honorários advocatícios,Processo,05 anos,-,Eliminação,-,Apenso ao dossiê.,vigente
+01.27.05,01 - Atividades-Meio,01.27 JURÍDICO,Pagamento de precatórios,Processo,05 anos,-,Eliminação,-,Apenso ao dossiê.,vigente
+01.27.06,01 - Atividades-Meio,01.27 JURÍDICO,Pagamento de requisição de pequeno valor,Processo,05 anos,-,Eliminação,-,Apenso ao dossiê.,vigente
+01.27.07,01 - Atividades-Meio,01.27 JURÍDICO,Solicitação de informações,Processo,05 anos,-,Eliminação,-,Apenso ao dossiê.,vigente
+01.28.01,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Acordos,Processo,02 anos,08 anos,Guarda permanente,-,Aplica-se também a Acordo Coletivo,vigente
+01.28.02,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Aditamento,Processo,04 anos,08 anos,Eliminação,Art. 24 & 2 da Lei 8.666/1993,"Esse prazo de guarda NÃO se aplica nos casos de contratações de obras públicas de médio/grande porte. Nestes casos, o processo ficará arquivado permanentemente no setor.",vigente
+01.28.03,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Atas de reuniões,Atas,10 anos,-,Guarda permanente,-,-,vigente
+01.28.04,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Contratação de prestação de serviços,Processo,04 anos,08 anos,Eliminação,Art. 24 & 2 da Lei 8.666/1993,"Esse prazo de guarda NÃO se aplica nos casos de contratações de obras públicas de médio/grande porte. Nestes casos, o processo ficará arquivado permanentemente no setor. Eliminar, após 2 anos, os documentos referentes às contratações não efetivadas.",vigente
+01.28.05,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Contratação Direta,Processo,04 anos,08 anos,Eliminação,Art. 24 & 2 da Lei 8.666/1993,"Esse prazo de guarda NÃO se aplica nos casos de contratações de obras públicas de médio/grande porte. Nestes casos, o",vigente
+01.28.06,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Contratação Licitatória e Emergencial,Processo,04 anos,08 anos,Eliminação,Art. 24 & 2 da Lei 8.666/1993,"Esse prazo de guarda NÃO se aplica nos casos de contratações de obras públicas de médio/grande porte. Nestes casos, o processo ficará arquivado permanentemente no setor.",vigente
+01.28.07,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Convênios,Processo,02 anos,08 anos,Guarda permanente,-,-,vigente
+01.28.08,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Estatutos,Estatuto,Enquanto vigora,05 anos,Guarda permanente,-,-,vigente
+01.28.09,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Impugnação de Edital de Licitação,Processo,04 anos,08 anos,Eliminação,-,"Esse prazo de guarda NÃO se aplica nos casos de contratações de obras públicas de médio/grande porte. Nestes casos, o processo ficará arquivado permanentemente no setor.",vigente
+01.28.10,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Instruções normativas,Instrução,Até atualização,-,Guarda permanente,-,-,vigente
+01.28.11,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Instrução técnica,Norma,Até atualização,8 anos,Eliminação,-,-,vigente
+01.28.12,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Lista de presença,Listagem,02 anos,-,Eliminação,-,-,vigente
+01.28.13,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Mandado judicial,Processo,Enquanto tramita,05 anos,Eliminação,-,-,vigente
+01.28.14,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Normas de procedimentos,Norma,Até atualização,6 anos,Eliminação,-,-,vigente
+01.28.15,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Notificação (Tribunal de Contas; Tribunal de Justiça e Ministério Público),Processo,Enquanto tramita,02 anos,Eliminação,-,-,vigente
+01.28.16,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Organogramas,Organograma,Enquanto vigora,05 anos,Guarda permanente,-,-,vigente
+01.28.17,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Orientação técnica,Norma,Até atualização,6 anos,Eliminação,-,-,vigente
+01.28.18,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,PAD (Processo Administrativo Disciplinar),Processo,05 anos,52 anos,Eliminação,-,-,vigente
+01.28.19,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Parecer Técnico/Jurídico,Parecer,02 anos,-,Eliminação,-,-,vigente
+01.28.20,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Pauta de reuniões,Pauta,02 anos,-,Eliminação,-,-,vigente
+01.28.21,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Planejamento estratégico,Plano,04 anos,-,Guarda permanente,-,-,vigente
+01.28.22,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Planos,Plano,05 anos,09 anos,Guarda permanente,-,-,vigente
+01.28.23,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Portaria CDTIV,Portaria,Até atualização,6 anos,Eliminação,-,-,vigente
+01.28.24,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Programas de trabalho,Diversos,05 anos,09 anos,Guarda,-,-,vigente
+01.28.25,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Projetos / Projetos de Pesquisa,Projeto,02 anos,-,Guarda permanente,-,Aplica-se também aos Projetos do FACITEC; Pode vir como pagamento de pessoa física e jurídica.,vigente
+01.28.26,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Prorrogação de prazo deferido (Tribunal de Contas; Tribunal de Justiça e Ministério Público),Processo,02 anos,-,Eliminação,-,-,vigente
+01.28.27,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Regimentos,Regimentos,Enquanto vigora,05 anos,Guarda permanente,-,-,vigente
+01.28.28,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Regulamentos,Regulamentos,Enquanto vigora,05 anos,Guarda permanente,-,-,vigente
+01.28.29,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Relatórios de atividades,Relatório,05 anos,09 anos,Guarda permanente,-,São passíveis de Eliminação os relatórios cujas informações encontram-se recapituladas em outros,vigente
+01.28.30,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Relatório de atividades mensal,Relatório,5 anos,-,Eliminação,-,-,vigente
+01.28.31,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Relatório de controle,Relatório,6 anos,-,Eliminação,-,-,vigente
+01.28.32,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Revisão de ato administrativo,Processo,02 anos,08 anos,Eliminação,-,-,vigente
+01.28.33,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Subvenções,Processo,02 anos,03 anos,Eliminação,-,-,vigente
+01.28.34,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Termo de citação e notificação do TCEES,Termo,5 anos,-,Guarda permanente,-,-,vigente
+01.28.35,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Termo de colaboração,Processo,02 anos,08 anos,Guarda permanente,-,-,vigente
+01.28.36,01 - Atividades-Meio,01.28 GESTÃO ADMINISTRATIVA,Termo de fomento,Processo,02 anos,08 anos,Guarda permanente,-,-,vigente
+01.29.01,01 - Atividades-Meio,01.29 ATOS OFICIAIS,Decretos,Processo,04 anos,04 anos,Guarda permanente,-,-,vigente
+01.29.02,01 - Atividades-Meio,01.29 ATOS OFICIAIS,Leis,Processo,04 anos,05 anos,Guarda permanente,-,-,vigente
+01.29.03,01 - Atividades-Meio,01.29 ATOS OFICIAIS,Mensagens/Projetos de Leis,Diversas,04 anos,05 anos,Guarda permanente,-,-,vigente
+01.29.04,01 - Atividades-Meio,01.29 ATOS OFICIAIS,Portaria,Portaria,04 anos,05 anos,Guarda permanente,-,-,vigente
+01.29.05,01 - Atividades-Meio,01.29 ATOS OFICIAIS,Publicação em Diário Oficial,Processo / Jornal,-,-,Guarda permanente,-,-,vigente
+01.29.06,01 - Atividades-Meio,01.29 ATOS OFICIAIS,Resolução,Resolução,04 anos,05 anos,Guarda permanente,-,-,vigente
+01.29.07,01 - Atividades-Meio,01.29 ATOS OFICIAIS,Resumo de Atos,Diversas,05 anos,-,Guarda permanente,-,-,vigente
+01.30.01,01 - Atividades-Meio,01.30 ASSESSORIA DE PLANEJAMENTO ORGANIZACIONAL,Aprovação de modelo de formulário,Formulário,Até atualização,-,Eliminação,-,-,vigente
+01.30.02,01 - Atividades-Meio,01.30 ASSESSORIA DE PLANEJAMENTO ORGANIZACIONAL,Atos normativos (minuta),Ato normativo,01 ano,-,Eliminação,-,Após decisão do ato proposto,vigente
+01.30.03,01 - Atividades-Meio,01.30 ASSESSORIA DE PLANEJAMENTO ORGANIZACIONAL,Estudos Organizacionais,Relatórios,04 anos,08 anos,Guarda permanente,-,-,vigente
+01.30.04,01 - Atividades-Meio,01.30 ASSESSORIA DE PLANEJAMENTO ORGANIZACIONAL,Orga nogramas e fluxogramas,Organograma e fluxograma,02 anos,06 anos,Guarda permanente,-,-,vigente
+01.30.05,01 - Atividades-Meio,01.30 ASSESSORIA DE PLANEJAMENTO ORGANIZACIONAL,Pesquisas organizacionais,Relatórios,02 anos,08 anos,Guarda permanente,-,-,vigente
+01.30.06,01 - Atividades-Meio,01.30 ASSESSORIA DE PLANEJAMENTO ORGANIZACIONAL,Relatório anual de atividades,Relatório,04 anos,-,Eliminação,-,Após a elaboração do relatório da instituição.,vigente
+01.31.01,01 - Atividades-Meio,01.31 LICITAÇÕES E CONTRATOS,Contratos,Contratos,05 anos,-,Eliminação,-,2ª Via,vigente
+01.31.02,01 - Atividades-Meio,01.31 LICITAÇÕES E CONTRATOS,Licitação de Obras Públicas,Processo,20 anos,-,Guarda permanente,-,-,vigente
+01.31.03,01 - Atividades-Meio,01.31 LICITAÇÕES E CONTRATOS,Penalidade,Processo,02 anos,08 anos,Eliminação,-,Após cessar os efeitos das sanções,vigente
+01.31.04,01 - Atividades-Meio,01.31 LICITAÇÕES E CONTRATOS,Recurso – Licitações de compras e serviços,Processo,06 anos,-,Eliminação,-,-,vigente
+01.31.05,01 - Atividades-Meio,01.31 LICITAÇÕES E CONTRATOS,Recurso – Licitações de Obras – Comissão Permanente Licitação,Processo,10 anos,-,Eliminação,-,-,vigente
+01.31.06,01 - Atividades-Meio,01.31 LICITAÇÕES E CONTRATOS,Reequilíbrio econômico- financeiro,Processo,10 anos,-,Eliminação,-,-,vigente
+01.32.01,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Alteração de informações na legenda de projetos aprovados,Processo,02 anos,-,Guarda permanente,-,"Correspondente: Inclusão de nome de proprietário; retirada de nome de proprietário; nomeação de Edifício, substituição de nome de Edifício; correção de endereço, etc.",vigente
+01.32.02,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Atestado de capacidade técnica,Processo,05 anos,-,Eliminação,-,Após a conclusão da obra a qual se refere.,vigente
+01.32.03,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Atos normativos,Legislação,03 anos após revogação,-,Eliminação,-,Para os processos indeferidos: eliminar após 05 anos,vigente
+01.32.04,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Caução/Garantia (Devolução),Processo,01 ano,-,Eliminação,-,-,vigente
+01.32.05,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Caução/Garantia (Execução),Processo,20 anos,-,Eliminação,-,Após a conclusão da obra.,vigente
+01.32.06,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Caução/Garantia,Processo,01 ano,-,Eliminação,-,-,vigente
+01.32.07,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,"Comunicação para substituição, afastamento definitivo e assunção de responsável técnico",Processo,06 anos,-,Eliminação,-,-,vigente
+01.32.08,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Construção de Obras Públicas,Processo,20 anos,-,Guarda permanente,-,Construção de Prédio Público.,vigente
+01.32.09,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Diário de Obras,Bloco,10 anos,-,Eliminação,-,-,vigente
+01.32.10,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Diretrizes de projeto,Processo,01 ano após decisão e conhecimento pelo solicitante,-,Eliminação,-,Pode ser encontrado como “análise prévia” do projeto.,vigente
+01.32.11,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Estudos e Projetos Arquitetônicos Aprovados,Projeto,20 anos,-,Guarda permanente,-,-,vigente
+01.32.12,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Informações Relativo a Necessidades/Ocorrências,Processo,10 anos,-,Eliminação,-,-,vigente
+01.32.13,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Laudo Geológico e Geotécnico de Área,Processo,20 anos,-,Guarda permanente,-,-,vigente
+01.32.14,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Laudo Técnico,Processo,20 anos,-,Guarda permanente,-,Pode aparecer como indicação da câmara,vigente
+01.32.15,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Levantamentos topográficos,Formulário,01 ano,-,Eliminação,-,"Plantas, croquis e cadernetas de campo.",vigente
+01.32.16,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Livro de registro de projetos arquitetônicos,Livro,-,-,Guarda permanente,-,"Caso seja informatizado esse procedimento, poderá ser eliminado.",vigente
+01.32.17,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Medição de Serviço/Obra Contratada,Processo,20 anos,-,Guarda permanente,-,-,vigente
+01.32.18,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Obra de Contenção,Processo,20 anos,-,Guarda permanente,-,-,vigente
+01.32.19,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Parecer,Processo,10 anos,10 anos,Eliminação,-,-,vigente
+01.32.20,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Plantas,Plantas,10 anos,-,Guarda permanente,-,-,vigente
+01.32.21,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Reajustamento de Contrato,Processo,20 anos,-,Guarda permanente,-,Aplica-se também a Reequilíbrio Econômico- Financeiro,vigente
+01.32.22,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Reforma,Processo,20 anos,-,Guarda permanente,-,-,vigente
+01.32.23,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Requerimento de Licença Ambiental,Processo,20 anos,-,Eliminação,-,-,vigente
+01.32.24,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Termo de Vistoria,Termo,05 anos,-,Eliminação,-,-,vigente
+01.32.25,01 - Atividades-Meio,01.32 CONCESSÕES / OBRAS PÚBLICAS,Vistoria Técnica,Processo,20 anos,-,Guarda permanente,-,-,vigente
+02.01.01,02 - Atividades-Fim,02.01 GESTÃO DE RESÍDUOS SÓLIDOS E COMPOSTAGEM,Licenciamento ambiental da Usina,Processo,Enquanto vigente,-,Guarda permanente,-,-,proposta
+02.01.02,02 - Atividades-Fim,02.01 GESTÃO DE RESÍDUOS SÓLIDOS E COMPOSTAGEM,Operação e controle da Usina de Compostagem,Relatório/Processo,05 anos,15 anos,Guarda permanente,-,-,proposta
+02.01.03,02 - Atividades-Fim,02.01 GESTÃO DE RESÍDUOS SÓLIDOS E COMPOSTAGEM,Contratos de coleta/destinação de resíduos,Processo,05 anos,05 anos,Eliminação,-,-,proposta
+02.01.04,02 - Atividades-Fim,02.01 GESTÃO DE RESÍDUOS SÓLIDOS E COMPOSTAGEM,Estudos e laudos ambientais da área,Processo,Enquanto vigente,-,Guarda permanente,-,-,proposta
+02.01.05,02 - Atividades-Fim,02.01 GESTÃO DE RESÍDUOS SÓLIDOS E COMPOSTAGEM,Encerramento/desativação da Usina,Dossiê,-,-,Guarda permanente,-,-,proposta
+02.02.01,02 - Atividades-Fim,02.02 PLANEJAMENTO ESTRATÉGICO URBANO,Planos estratégicos e diretores da cidade,Processo/Dossiê,05 anos,10 anos,Guarda permanente,-,-,proposta
+02.02.02,02 - Atividades-Fim,02.02 PLANEJAMENTO ESTRATÉGICO URBANO,Estudos técnicos e diagnósticos urbanos,Relatório,05 anos,-,Guarda permanente,-,-,proposta
+02.02.03,02 - Atividades-Fim,02.02 PLANEJAMENTO ESTRATÉGICO URBANO,Atas e deliberações de comitês de planejamento,Ata,05 anos,-,Guarda permanente,-,-,proposta
+02.02.04,02 - Atividades-Fim,02.02 PLANEJAMENTO ESTRATÉGICO URBANO,Convênios de cooperação técnica,Processo,05 anos,05 anos,Eliminação (cópia) / Permanente (original),-,-,proposta
+02.03.01,02 - Atividades-Fim,02.03 SANEAMENTO,Projetos de infraestrutura de saneamento,Processo,05 anos,15 anos,Guarda permanente,-,-,proposta
+02.03.02,02 - Atividades-Fim,02.03 SANEAMENTO,Licenças e outorgas ambientais de saneamento,Processo,Enquanto vigente,-,Guarda permanente,-,-,proposta
+02.03.03,02 - Atividades-Fim,02.03 SANEAMENTO,Fiscalização e monitoramento de obras,Relatório,05 anos,05 anos,Eliminação,-,-,proposta
+02.03.04,02 - Atividades-Fim,02.03 SANEAMENTO,Convênios/parcerias com concessionárias,Processo,05 anos,05 anos,Guarda permanente (original),-,-,proposta
+02.04.01,02 - Atividades-Fim,02.04 DESENVOLVIMENTO ECONÔMICO,Concessão de uso de quiosques,Processo,05 anos,05 anos,Guarda permanente (original),-,-,proposta
+02.04.05,02 - Atividades-Fim,02.04 DESENVOLVIMENTO ECONÔMICO,Concessão de uso de restaurantes/espaços gastronômicos,Processo,05 anos,05 anos,Guarda permanente (original),-,-,proposta
+02.04.10,02 - Atividades-Fim,02.04 DESENVOLVIMENTO ECONÔMICO,Concessão de uso de outros imóveis/espaços públicos,Processo,05 anos,05 anos,Guarda permanente (original),-,-,proposta
+02.04.15,02 - Atividades-Fim,02.04 DESENVOLVIMENTO ECONÔMICO,Fiscalização de contratos de concessão,Relatório,05 anos,-,Eliminação,-,-,proposta
+02.04.20,02 - Atividades-Fim,02.04 DESENVOLVIMENTO ECONÔMICO,Editais de chamamento para concessão,Processo,05 anos,-,Eliminação (amostragem),-,-,proposta
+02.05.01,02 - Atividades-Fim,02.05 TURISMO,Carnaval de Vitória,Processo/Dossiê,05 anos,-,Guarda permanente (amostragem),-,-,proposta
+02.05.05,02 - Atividades-Fim,02.05 TURISMO,Páscoa (programação e organização),Processo,05 anos,-,Eliminação (amostragem),-,-,proposta
+02.05.10,02 - Atividades-Fim,02.05 TURISMO,Vila do Papai Noel,Processo,05 anos,-,Eliminação (amostragem),-,-,proposta
+02.05.15,02 - Atividades-Fim,02.05 TURISMO,Outros eventos festivos/institucionais,Processo,05 anos,-,Eliminação (amostragem),-,-,proposta
+02.05.20,02 - Atividades-Fim,02.05 TURISMO,Contratos com fornecedores de eventos,Processo,05 anos,05 anos,Eliminação,-,-,proposta
+02.06.01,02 - Atividades-Fim,02.06 INOVAÇÃO,PibicJr,Processo,05 anos,10 anos,Guarda permanente (amostragem),-,-,proposta
+02.06.05,02 - Atividades-Fim,02.06 INOVAÇÃO,ProficJr,Processo,05 anos,10 anos,Guarda permanente (amostragem),-,-,proposta
+02.06.10,02 - Atividades-Fim,02.06 INOVAÇÃO,Profic Jovem,Processo,05 anos,10 anos,Guarda permanente (amostragem),-,-,proposta
+02.06.15,02 - Atividades-Fim,02.06 INOVAÇÃO,Profic Universitário,Processo,05 anos,10 anos,Guarda permanente (amostragem),-,-,proposta
+02.06.20,02 - Atividades-Fim,02.06 INOVAÇÃO,Profic Pós-Graduação,Processo,05 anos,10 anos,Guarda permanente (amostragem),-,-,proposta
+02.06.25,02 - Atividades-Fim,02.06 INOVAÇÃO,Convênios com instituições de ensino/pesquisa,Processo,05 anos,05 anos,Guarda permanente (original),-,-,proposta
+02.06.30,02 - Atividades-Fim,02.06 INOVAÇÃO,Outros programas de fomento científico,Processo,05 anos,10 anos,Guarda permanente (amostragem),-,-,proposta
