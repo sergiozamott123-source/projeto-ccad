@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/AppLayout'
-import { RoleHome } from '@/components/RoleHome'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { MinhaParte } from '@/pages/MinhaParte'
@@ -18,6 +17,8 @@ import { TtdPage } from '@/pages/TtdPage'
 import { RevisaoManualPage } from '@/pages/RevisaoManualPage'
 import { BoasPraticasPilarPage } from '@/pages/BoasPraticasPilarPage'
 import { MemoriaPilarPage } from '@/pages/MemoriaPilarPage'
+import { DigitalizacaoPilarPage } from '@/pages/DigitalizacaoPilarPage'
+import { WelcomePage } from '@/pages/WelcomePage'
 
 export default function App() {
   return (
@@ -26,8 +27,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute />}>
+            <Route index element={<WelcomePage />} />
             <Route element={<AppLayout />}>
-              <Route index element={<RoleHome />} />
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/minha-parte" element={<MinhaParte />} />
               <Route path="/demandas" element={<DemandasPage />} />
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="/acervo/revisao" element={<RevisaoManualPage />} />
               <Route path="/pilares/boas-praticas" element={<BoasPraticasPilarPage />} />
               <Route path="/pilares/memoria" element={<MemoriaPilarPage />} />
+              <Route path="/pilares/digitalizacao" element={<DigitalizacaoPilarPage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

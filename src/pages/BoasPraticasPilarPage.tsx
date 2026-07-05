@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, CheckSquare, Square, FileText, History, CalendarPlus, Flag, Calendar } from 'lucide-react'
+import { ArrowLeft, CheckSquare, Square, FileText, History, CalendarPlus, Flag, Calendar, CheckCircle, Circle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import clsx from 'clsx'
-import type { Pilar, Fase, Demanda, DepartamentoMapeado, ProtocoloBoasPraticas, ReuniaoAta, Usuario } from '@/lib/database.types'
+import type { Pilar, Fase, Demanda, DepartamentoMapeado, ProtocoloBoasPraticas, ReuniaoAta, Usuario, AtividadeFase } from '@/lib/database.types'
 import { PILAR_NOMES, pilarColor } from '@/lib/pilarColors'
 import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressChart'
 import { DonutChart } from '@/components/charts/DonutChart'
@@ -29,6 +29,7 @@ export function BoasPraticasPilarPage() {
   const [conteudoEdicao, setConteudoEdicao] = useState('')
   const [showNovaAta, setShowNovaAta] = useState(false)
   const [novaAta, setNovaAta] = useState({ data_reuniao: format(new Date(), 'yyyy-MM-dd'), resumo: '' })
+  const [novaAtividade, setNovaAtividade] = useState<Record<string, string>>({})
 
   const { data: pilar } = useQuery({
     queryKey: ['pilar-boas-praticas'],
@@ -89,6 +90,48 @@ export function BoasPraticasPilarPage() {
       return (data ?? []) as ReuniaoAta[]
     },
     enabled: !!pilar?.id,
+  })
+
+  const { data: atividades } = useQuery({
+    queryKey: ['atividades-fase-boas-praticas', pilar?.id],
+    queryFn: async () => {
+      const faseIds = (pilar?.fases ?? []).map(f => f.id)
+      if (faseIds.length === 0) return []
+      const { data } = await supabase
+        .from('atividades_fase')
+        .select('*, concluida_por_usuario:concluida_por(id,nome)')
+        .in('fase_id', faseIds)
+        .order('created_at')
+      return (data ?? []) as AtividadeFase[]
+    },
+    enabled: !!pilar?.id,
+  })
+
+  const concluirAtividade = useMutation({
+    mutationFn: async (a: AtividadeFase) => {
+      const { error } = await supabase
+        .from('atividades_fase')
+        .update({ concluida: true, concluida_por: profile!.id, concluida_em: format(new Date(), 'yyyy-MM-dd') })
+        .eq('id', a.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['atividades-fase-boas-praticas', pilar?.id] })
+      qc.invalidateQueries({ queryKey: ['pilar-boas-praticas'] })
+    },
+  })
+
+  const criarAtividade = useMutation({
+    mutationFn: async (faseId: string) => {
+      const titulo = (novaAtividade[faseId] ?? '').trim()
+      if (!titulo) return
+      const { error } = await supabase.from('atividades_fase').insert({ fase_id: faseId, titulo, criado_por: profile!.id })
+      if (error) throw error
+    },
+    onSuccess: (_data, faseId) => {
+      qc.invalidateQueries({ queryKey: ['atividades-fase-boas-praticas', pilar?.id] })
+      setNovaAtividade(v => ({ ...v, [faseId]: '' }))
+    },
   })
 
   const toggleDepartamento = useMutation({
@@ -166,6 +209,69 @@ export function BoasPraticasPilarPage() {
           ariaLabel="Percentual de conclusão de cada uma das 5 fases do Protocolo de Boas Práticas"
           data={fasesOrdenadas.map(f => ({ label: f.nome, value: f.percentual_conclusao, color }))}
         />
+      </div>
+
+      {/* Atividades por Fase */}
+      <div className="card p-5">
+        <h2 className="font-semibold text-gray-900 mb-4">Atividades por Fase</h2>
+        <div className="space-y-5">
+          {fasesOrdenadas.map(fase => {
+            const atividadesFase = (atividades ?? []).filter(a => a.fase_id === fase.id)
+            return (
+              <div key={fase.id} className="border-b last:border-0 pb-5 last:pb-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-gray-800">{fase.nome}</h3>
+                  <span className="text-sm font-bold text-gray-900">{fase.percentual_conclusao}%</span>
+                </div>
+                {atividadesFase.length === 0 ? (
+                  <p className="text-xs text-gray-400 mb-2">Nenhuma atividade cadastrada nesta fase.</p>
+                ) : (
+                  <div className="space-y-1.5 mb-2">
+                    {atividadesFase.map(a => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        disabled={a.concluida || concluirAtividade.isPending}
+                        onClick={() => concluirAtividade.mutate(a)}
+                        className="flex items-start gap-2 w-full text-left disabled:cursor-default"
+                      >
+                        {a.concluida ? (
+                          <CheckCircle size={16} className="text-teal-600 mt-0.5 shrink-0" />
+                        ) : (
+                          <Circle size={16} className="text-gray-300 mt-0.5 shrink-0" />
+                        )}
+                        <span>
+                          <span className={a.concluida ? 'text-sm text-gray-500 line-through' : 'text-sm text-gray-800'}>{a.titulo}</span>
+                          {a.concluida && (
+                            <span className="block text-xs text-gray-400">
+                              {a.concluida_por_usuario?.nome ?? '—'} · {a.concluida_em ? format(new Date(a.concluida_em), 'dd/MM/yy') : ''}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    className="input text-sm flex-1"
+                    placeholder="Nova atividade..."
+                    value={novaAtividade[fase.id] ?? ''}
+                    onChange={e => setNovaAtividade(v => ({ ...v, [fase.id]: e.target.value }))}
+                    onKeyDown={e => { if (e.key === 'Enter') criarAtividade.mutate(fase.id) }}
+                  />
+                  <button
+                    className="btn-secondary text-xs shrink-0"
+                    disabled={criarAtividade.isPending || !(novaAtividade[fase.id] ?? '').trim()}
+                    onClick={() => criarAtividade.mutate(fase.id)}
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {/* Departamentos mapeados */}

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight } from 'lucide-react'
+import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { format, startOfMonth, subMonths } from 'date-fns'
+import { format, formatDistanceToNow, startOfMonth, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { Pilar, Risco, ReuniaoAta } from '@/lib/database.types'
+import type { Pilar, Risco, ReuniaoAta, MuralEvento, TipoMuralEvento } from '@/lib/database.types'
 import clsx from 'clsx'
 import { PILAR_NOMES, pilarColor } from '@/lib/pilarColors'
 import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressChart'
@@ -15,12 +15,45 @@ import { GroupedVerticalBarChart } from '@/components/charts/GroupedVerticalBarC
 const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
   [PILAR_NOMES.MEMORIA]: '/pilares/memoria',
+  [PILAR_NOMES.DIGITALIZACAO]: '/pilares/digitalizacao',
 }
 
 const REUNIAO_TIPO_LABEL: Record<string, string> = {
   mensal_consolidada: 'Mensal Consolidada',
   quinzenal_frente: 'Quinzenal por Frente',
   checkpoint_trimestral: 'Checkpoint Trimestral',
+}
+
+const MURAL_ICON: Record<TipoMuralEvento, React.ReactNode> = {
+  atividade_concluida: <CheckCircle size={16} className="text-teal-600" />,
+  ata_registrada: <Calendar size={16} className="text-blue-600" />,
+  indicador_lancado: <TrendingUp size={16} className="text-accent-600" />,
+  demanda_concluida: <Flag size={16} className="text-purple-600" />,
+  fase_concluida: <Trophy size={16} className="text-yellow-600" />,
+}
+
+function muralTexto(e: MuralEvento) {
+  switch (e.tipo) {
+    case 'atividade_concluida': return `${e.usuario?.nome ?? '—'} concluiu "${e.descricao}"`
+    case 'ata_registrada': return `${e.usuario?.nome ?? '—'} registrou uma ata`
+    case 'indicador_lancado': return `${e.usuario?.nome ?? '—'} lançou os indicadores do mês`
+    case 'demanda_concluida': return `${e.usuario?.nome ?? '—'} concluiu a demanda "${e.descricao}"`
+    case 'fase_concluida': return `Fase "${e.descricao}" concluída pela equipe`
+  }
+}
+
+function MuralEventoRow({ evento }: { evento: MuralEvento }) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b last:border-0">
+      <div className="mt-0.5 shrink-0">{MURAL_ICON[evento.tipo]}</div>
+      <div>
+        <p className="text-sm text-gray-800">{muralTexto(evento)}</p>
+        <p className="text-xs text-gray-400">
+          {evento.pilar?.nome ?? 'CCAD'} · {formatDistanceToNow(new Date(evento.ocorrido_em), { locale: ptBR, addSuffix: true })}
+        </p>
+      </div>
+    </div>
+  )
 }
 
 function MetricCard({ icon, label, value, sub, color }: {
@@ -128,6 +161,18 @@ export function DashboardPage() {
         .from('pilares')
         .select('*, responsavel:responsavel_id(id,nome), fases(percentual_conclusao)')
       return (data ?? []) as (Pilar & { fases: { percentual_conclusao: number }[] })[]
+    },
+  })
+
+  const { data: muralEventos } = useQuery({
+    queryKey: ['mural-eventos'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('mural_eventos')
+        .select('*, pilar:pilar_id(nome), usuario:usuario_id(nome)')
+        .order('ocorrido_em', { ascending: false })
+        .limit(15)
+      return (data ?? []) as MuralEvento[]
     },
   })
 
@@ -287,6 +332,19 @@ export function DashboardPage() {
           sub={relatorioStats?.atrasados ? `${relatorioStats.atrasados} atrasado(s)` : undefined}
           color="bg-green-50"
         />
+      </div>
+
+      {/* Mural de Conquistas */}
+      <div className="card p-5">
+        <h2 className="font-semibold text-gray-900 mb-1">Mural de Conquistas da CCAD</h2>
+        <p className="text-xs text-gray-400 mb-3">Ações concluídas pela equipe nos três pilares.</p>
+        {(muralEventos ?? []).length === 0 ? (
+          <p className="text-sm text-gray-400">Nenhuma atividade registrada ainda.</p>
+        ) : (
+          <div>
+            {(muralEventos ?? []).map(e => <MuralEventoRow key={e.id} evento={e} />)}
+          </div>
+        )}
       </div>
 
       {/* Pilares progress */}

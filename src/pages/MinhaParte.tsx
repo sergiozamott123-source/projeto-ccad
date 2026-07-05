@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Upload, TrendingUp } from 'lucide-react'
+import { Upload, TrendingUp, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Demanda, Pilar } from '@/lib/database.types'
@@ -58,6 +58,20 @@ export function MinhaParte() {
     enabled: !!profile?.id,
   })
 
+  const { data: contribuicoes } = useQuery({
+    queryKey: ['minhas-contribuicoes', profile?.id, mesAtual],
+    queryFn: async () => {
+      const [atividades, indicadores] = await Promise.all([
+        supabase.from('atividades_fase').select('*', { count: 'exact', head: true })
+          .eq('concluida_por', profile!.id).gte('concluida_em', mesAtual),
+        supabase.from('indicadores_mensais').select('*', { count: 'exact', head: true })
+          .eq('usuario_id', profile!.id).eq('mes_referencia', mesAtual),
+      ])
+      return { atividades: atividades.count ?? 0, indicadores: indicadores.count ?? 0 }
+    },
+    enabled: !!profile?.id,
+  })
+
   const salvarIndicador = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('indicadores_mensais').insert({
@@ -108,6 +122,34 @@ export function MinhaParte() {
           </div>
         </div>
       )}
+
+      {/* Suas contribuições */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="card p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Suas atividades concluídas</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{contribuicoes?.atividades ?? 0}</p>
+              <p className="text-xs text-gray-400 mt-0.5">este mês</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-teal-50">
+              <CheckCircle size={20} className="text-teal-600" />
+            </div>
+          </div>
+        </div>
+        <div className="card p-5">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Seus indicadores lançados</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{contribuicoes?.indicadores ?? 0}</p>
+              <p className="text-xs text-gray-400 mt-0.5">este mês</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-orange-50">
+              <TrendingUp size={20} className="text-accent-600" />
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Lançar indicador */}
       <div className="card p-5">

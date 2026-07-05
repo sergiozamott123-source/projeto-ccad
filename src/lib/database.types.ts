@@ -9,6 +9,10 @@ export type ProbabilidadeRisco = 'alta' | 'media' | 'baixa'
 export type StatusProposta = 'em_analise' | 'aprovada' | 'rejeitada'
 export type TipoReuniaoAta = 'mensal_consolidada' | 'quinzenal_frente' | 'checkpoint_trimestral'
 export type StatusConsultoriaMemorial = 'a_contratar' | 'contratado' | 'concluido'
+export type StatusLicitacaoDigitalizacao =
+  | 'a_iniciar' | 'tr_em_validacao' | 'licitacao_aberta' | 'contratado' | 'em_execucao'
+export type TipoMuralEvento =
+  | 'atividade_concluida' | 'ata_registrada' | 'indicador_lancado' | 'demanda_concluida' | 'fase_concluida'
 
 export interface Usuario {
   id: string
@@ -47,6 +51,7 @@ export interface Demanda {
   relevancia: Relevancia
   status: StatusDemanda
   created_at: string
+  concluida_em: string | null
   pilar?: Pilar
   responsavel_pilar?: Usuario
   membros?: Usuario[]
@@ -60,6 +65,7 @@ export interface IndicadorMensal {
   caixas_organizadas: number
   paginas_digitalizadas: number
   documentos_indexados: number
+  certificacoes_digitais: number
   evidencia_url: string | null
   created_at: string
 }
@@ -205,6 +211,54 @@ export interface ProjetoMemorial {
   atualizado_em: string
 }
 
+export interface LicitacaoDigitalizacao {
+  id: string
+  status: StatusLicitacaoDigitalizacao
+  tr_validado: boolean
+  dotacao_confirmada: boolean
+  empresa_contratada: string | null
+  data_assinatura: string | null
+  data_inicio_execucao: string | null
+  atualizado_por: string | null
+  atualizado_em: string
+}
+
+export interface AtividadeFase {
+  id: string
+  fase_id: string
+  titulo: string
+  concluida: boolean
+  concluida_por: string | null
+  concluida_em: string | null
+  criado_por: string | null
+  created_at: string
+  concluida_por_usuario?: Usuario
+}
+
+export interface MuralEvento {
+  id: string
+  tipo: TipoMuralEvento
+  pilar_id: string | null
+  usuario_id: string | null
+  descricao: string
+  ocorrido_em: string
+  pilar?: Pilar
+  usuario?: Usuario
+}
+
+export interface DigitalizacaoMetaAnual {
+  id: string
+  ano_execucao: number
+  caixas_meta: number
+  paginas_meta: number
+  documentos_meta: number
+  certificacoes_meta: number
+  investimento_meta: number
+  investimento_realizado: number | null
+  atualizado_por: string | null
+  atualizado_em: string
+}
+
 // Supabase DB type wrapper (for createClient generic)
 export interface Database {
   public: {
@@ -227,6 +281,10 @@ export interface Database {
       benchmarking_registros: { Row: BenchmarkingRegistro; Insert: Partial<BenchmarkingRegistro>; Update: Partial<BenchmarkingRegistro> }
       consultoria_memorial: { Row: ConsultoriaMemorial; Insert: Partial<ConsultoriaMemorial>; Update: Partial<ConsultoriaMemorial> }
       projeto_memorial: { Row: ProjetoMemorial; Insert: Partial<ProjetoMemorial>; Update: Partial<ProjetoMemorial> }
+      licitacao_digitalizacao: { Row: LicitacaoDigitalizacao; Insert: Partial<LicitacaoDigitalizacao>; Update: Partial<LicitacaoDigitalizacao> }
+      digitalizacao_metas_anuais: { Row: DigitalizacaoMetaAnual; Insert: Partial<DigitalizacaoMetaAnual>; Update: Partial<DigitalizacaoMetaAnual> }
+      atividades_fase: { Row: AtividadeFase; Insert: Partial<AtividadeFase>; Update: Partial<AtividadeFase> }
+      mural_eventos: { Row: MuralEvento; Insert: Partial<MuralEvento>; Update: Partial<MuralEvento> }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
