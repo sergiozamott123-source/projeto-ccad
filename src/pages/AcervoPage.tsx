@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import type { Processo } from '@/lib/database.types'
 import clsx from 'clsx'
 
-export function AcervoPage() {
+export function AcervoPage({ titulo = 'Acervo' }: { titulo?: string }) {
   const { isCoord, isResponsavel } = useAuth()
   const qc = useQueryClient()
   const [busca, setBusca] = useState('')
@@ -57,7 +57,7 @@ export function AcervoPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Acervo Documental</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{titulo}</h1>
         <p className="text-gray-500 text-sm mt-0.5">Catalogação e gestão do acervo com base na TTD.</p>
       </div>
 
@@ -84,7 +84,7 @@ export function AcervoPage() {
       {/* Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {(isCoord || isResponsavel) && (
-          <Link to="/acervo/catalogar" className="card p-5 hover:shadow-md transition-shadow group">
+          <Link to="catalogar" className="card p-5 hover:shadow-md transition-shadow group">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-teal-50 group-hover:bg-teal-100 transition-colors">
                 <Plus size={20} className="text-teal-600" />
@@ -97,7 +97,7 @@ export function AcervoPage() {
           </Link>
         )}
 
-        <Link to="/acervo/ttd" className="card p-5 hover:shadow-md transition-shadow group">
+        <Link to="ttd" className="card p-5 hover:shadow-md transition-shadow group">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-purple-50 group-hover:bg-purple-100 transition-colors">
               <BookOpen size={20} className="text-purple-600" />
@@ -110,7 +110,7 @@ export function AcervoPage() {
         </Link>
 
         {(isCoord || isResponsavel) && (
-          <Link to="/acervo/revisao" className="card p-5 hover:shadow-md transition-shadow group">
+          <Link to="revisao" className="card p-5 hover:shadow-md transition-shadow group">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-orange-50 group-hover:bg-orange-100 transition-colors">
                 <AlertCircle size={20} className="text-orange-600" />

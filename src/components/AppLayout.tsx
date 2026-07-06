@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import type { Usuario } from '@/lib/database.types'
 import clsx from 'clsx'
 
 interface NavItem {
@@ -12,6 +13,7 @@ interface NavItem {
   label: string
   icon: React.ReactNode
   roles?: string[]
+  flag?: keyof Usuario
   children?: { to: string; label: string }[]
 }
 
@@ -25,11 +27,22 @@ const NAV: NavItem[] = [
   { to: '/equipe',      label: 'Equipe',       icon: <Users size={18} /> },
   {
     to: '/acervo', label: 'Acervo', icon: <Archive size={18} />,
+    roles: ['coordenador', 'coordenador_substituto'],
     children: [
       { to: '/acervo',           label: 'Visão Geral' },
       { to: '/acervo/catalogar', label: 'Catalogar Processo' },
       { to: '/acervo/ttd',       label: 'Tabela TTD' },
       { to: '/acervo/revisao',   label: 'Fila de Revisão' },
+    ],
+  },
+  {
+    to: '/protocolo-geral', label: 'Protocolo Geral', icon: <FolderLock size={18} />,
+    flag: 'acesso_protocolo_geral',
+    children: [
+      { to: '/protocolo-geral',           label: 'Visão Geral' },
+      { to: '/protocolo-geral/catalogar', label: 'Catalogar Processo' },
+      { to: '/protocolo-geral/ttd',       label: 'Tabela TTD' },
+      { to: '/protocolo-geral/revisao',   label: 'Fila de Revisão' },
     ],
   },
 ]
@@ -38,11 +51,12 @@ export function AppLayout() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [acervoExpanded, setAcervoExpanded] = useState(false)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   const papel = profile?.papel ?? ''
 
   function isVisible(item: NavItem) {
+    if (item.flag) return profile?.[item.flag] === true
     if (!item.roles) return true
     return item.roles.includes(papel)
   }
@@ -84,7 +98,7 @@ export function AppLayout() {
           item.children ? (
             <div key={item.to}>
               <button
-                onClick={() => setAcervoExpanded(v => !v)}
+                onClick={() => setExpanded(v => ({ ...v, [item.to]: !v[item.to] }))}
                 className={clsx(
                   'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                   'text-white/70 hover:text-white hover:bg-white/10',
@@ -92,9 +106,9 @@ export function AppLayout() {
               >
                 {item.icon}
                 <span className="flex-1 text-left">{item.label}</span>
-                <ChevronDown size={14} className={clsx('transition-transform', acervoExpanded && 'rotate-180')} />
+                <ChevronDown size={14} className={clsx('transition-transform', expanded[item.to] && 'rotate-180')} />
               </button>
-              {acervoExpanded && (
+              {expanded[item.to] && (
                 <div className="ml-6 mt-0.5 space-y-0.5">
                   {item.children.map(child => (
                     <NavLink

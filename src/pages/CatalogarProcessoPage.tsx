@@ -95,7 +95,7 @@ export function CatalogarProcessoPage() {
       })
       if (error) throw error
     },
-    onSuccess: () => navigate('/acervo'),
+    onSuccess: () => navigate('..'),
   })
 
   return (

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { RequireAcesso } from '@/components/RequireAcesso'
 import { AppLayout } from '@/components/AppLayout'
 import { LoginPage } from '@/pages/LoginPage'
 import { DashboardPage } from '@/pages/DashboardPage'
@@ -19,6 +20,7 @@ import { BoasPraticasPilarPage } from '@/pages/BoasPraticasPilarPage'
 import { MemoriaPilarPage } from '@/pages/MemoriaPilarPage'
 import { DigitalizacaoPilarPage } from '@/pages/DigitalizacaoPilarPage'
 import { WelcomePage } from '@/pages/WelcomePage'
+import { ProtocoloGeralPage } from '@/pages/ProtocoloGeralPage'
 
 export default function App() {
   return (
@@ -37,10 +39,18 @@ export default function App() {
               <Route path="/conformidade" element={<ConformidadePage />} />
               <Route path="/riscos" element={<RiscosPage />} />
               <Route path="/equipe" element={<EquipePage />} />
-              <Route path="/acervo" element={<AcervoPage />} />
-              <Route path="/acervo/catalogar" element={<CatalogarProcessoPage />} />
-              <Route path="/acervo/ttd" element={<TtdPage />} />
-              <Route path="/acervo/revisao" element={<RevisaoManualPage />} />
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
+                <Route path="/acervo" element={<AcervoPage />} />
+                <Route path="/acervo/catalogar" element={<CatalogarProcessoPage />} />
+                <Route path="/acervo/ttd" element={<TtdPage />} />
+                <Route path="/acervo/revisao" element={<RevisaoManualPage />} />
+              </Route>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.acesso_protocolo_geral === true} />}>
+                <Route path="/protocolo-geral" element={<ProtocoloGeralPage />} />
+                <Route path="/protocolo-geral/catalogar" element={<CatalogarProcessoPage />} />
+                <Route path="/protocolo-geral/ttd" element={<TtdPage />} />
+                <Route path="/protocolo-geral/revisao" element={<RevisaoManualPage />} />
+              </Route>
               <Route path="/pilares/boas-praticas" element={<BoasPraticasPilarPage />} />
               <Route path="/pilares/memoria" element={<MemoriaPilarPage />} />
               <Route path="/pilares/digitalizacao" element={<DigitalizacaoPilarPage />} />

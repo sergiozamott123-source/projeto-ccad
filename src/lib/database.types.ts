@@ -21,6 +21,7 @@ export interface Usuario {
   papel: Papel
   pilar_id: string | null
   status: StatusUsuario
+  acesso_protocolo_geral: boolean
 }
 
 export interface Pilar {
