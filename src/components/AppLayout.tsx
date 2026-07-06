@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import type { Usuario } from '@/lib/database.types'
 import clsx from 'clsx'
 
@@ -24,7 +26,8 @@ const NAV: NavItem[] = [
   { to: '/relatorios',  label: 'Relatórios',   icon: <FileText size={18} /> },
   { to: '/conformidade',label: 'Conformidade', icon: <ShieldAlert size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/riscos',      label: 'Riscos',       icon: <AlertCircle size={18} /> },
-  { to: '/equipe',      label: 'Equipe',       icon: <Users size={18} /> },
+  { to: '/equipe',      label: 'Equipe',       icon: <Users size={18} />, roles: ['coordenador','coordenador_substituto'] },
+  { to: '/central-relatorios', label: 'Central de Relatórios', icon: <FileBarChart size={18} />, roles: ['coordenador','coordenador_substituto'] },
   {
     to: '/acervo', label: 'Acervo', icon: <Archive size={18} />,
     roles: ['coordenador', 'coordenador_substituto'],
@@ -54,6 +57,19 @@ export function AppLayout() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   const papel = profile?.papel ?? ''
+
+  const { data: demandasPendentesCount } = useQuery({
+    queryKey: ['demandas-pendentes-count', profile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('demandas')
+        .select('*', { count: 'exact', head: true })
+        .eq('responsavel_pilar_id', profile!.id)
+        .in('status', ['pendente', 'em_andamento'])
+      return count ?? 0
+    },
+    enabled: !!profile?.id,
+  })
 
   function isVisible(item: NavItem) {
     if (item.flag) return profile?.[item.flag] === true
@@ -138,7 +154,12 @@ export function AppLayout() {
               )}
             >
               {item.icon}
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.to === '/demandas' && (demandasPendentesCount ?? 0) > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {demandasPendentesCount}
+                </span>
+              )}
             </NavLink>
           )
         ))}

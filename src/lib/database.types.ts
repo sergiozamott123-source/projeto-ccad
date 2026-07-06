@@ -45,7 +45,7 @@ export interface Demanda {
   id: string
   titulo: string
   descricao: string
-  pilar_id: string
+  pilar_id: string | null
   responsavel_pilar_id: string
   criado_por: string
   prazo: string
@@ -260,6 +260,15 @@ export interface DigitalizacaoMetaAnual {
   atualizado_em: string
 }
 
+export interface RelatorioSalvo {
+  id: string
+  nome: string
+  filtros: Record<string, any>
+  colunas: string[]
+  criado_por: string | null
+  created_at: string
+}
+
 // Supabase DB type wrapper (for createClient generic)
 export interface Database {
   public: {
@@ -286,6 +295,7 @@ export interface Database {
       digitalizacao_metas_anuais: { Row: DigitalizacaoMetaAnual; Insert: Partial<DigitalizacaoMetaAnual>; Update: Partial<DigitalizacaoMetaAnual> }
       atividades_fase: { Row: AtividadeFase; Insert: Partial<AtividadeFase>; Update: Partial<AtividadeFase> }
       mural_eventos: { Row: MuralEvento; Insert: Partial<MuralEvento>; Update: Partial<MuralEvento> }
+      relatorios_salvos: { Row: RelatorioSalvo; Insert: Partial<RelatorioSalvo>; Update: Partial<RelatorioSalvo> }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

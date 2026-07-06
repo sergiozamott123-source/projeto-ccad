@@ -72,7 +72,7 @@ create table if not exists demandas (
   id uuid primary key default uuid_generate_v4(),
   titulo text not null,
   descricao text,
-  pilar_id uuid not null references pilares(id),
+  pilar_id uuid references pilares(id), -- null quando não vinculada a um pilar (ex.: Acervo/Protocolo Geral)
   responsavel_pilar_id uuid not null references usuarios(id),
   criado_por uuid not null references usuarios(id),
   prazo date,
@@ -251,11 +251,12 @@ create policy "fases_select" on fases for select to authenticated using (true);
 create policy "fases_update" on fases for update to authenticated
   using (get_my_papel() in ('coordenador','coordenador_substituto'));
 
--- DEMANDAS: coord sees all; others see only their pilar
+-- DEMANDAS: coord sees all; others see their pilar's or ones they're responsible for
 create policy "demandas_select" on demandas for select to authenticated
   using (
     get_my_papel() in ('coordenador','coordenador_substituto','apoio_tecnico')
     or pilar_id = get_my_pilar()
+    or responsavel_pilar_id = auth.uid()
   );
 create policy "demandas_insert" on demandas for insert to authenticated
   with check (get_my_papel() in ('coordenador','coordenador_substituto'));
@@ -550,3 +551,24 @@ create policy "reunioes_atas_insert" on reunioes_atas for insert to authenticate
     get_my_papel() in ('coordenador','coordenador_substituto')
     or (get_my_papel() = 'responsavel_pilar' and tipo = 'quinzenal_frente' and pilar_id = get_my_pilar())
   );
+
+-- ============================================================
+-- RELATORIOS_SALVOS (Central de Relatórios — Coordenador)
+-- ============================================================
+create table if not exists relatorios_salvos (
+  id uuid primary key default uuid_generate_v4(),
+  nome text not null,
+  filtros jsonb not null default '{}',
+  colunas jsonb not null default '[]',
+  criado_por uuid references usuarios(id),
+  created_at timestamptz default now()
+);
+
+alter table relatorios_salvos enable row level security;
+
+create policy "relatorios_salvos_select" on relatorios_salvos for select to authenticated
+  using (get_my_papel() in ('coordenador','coordenador_substituto'));
+create policy "relatorios_salvos_insert" on relatorios_salvos for insert to authenticated
+  with check (get_my_papel() in ('coordenador','coordenador_substituto'));
+create policy "relatorios_salvos_delete" on relatorios_salvos for delete to authenticated
+  using (get_my_papel() in ('coordenador','coordenador_substituto'));

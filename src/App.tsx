@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { RequireAcesso } from '@/components/RequireAcesso'
 import { AppLayout } from '@/components/AppLayout'
 import { LoginPage } from '@/pages/LoginPage'
+import { RedefinirSenhaPage } from '@/pages/RedefinirSenhaPage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { MinhaParte } from '@/pages/MinhaParte'
 import { DemandasPage } from '@/pages/DemandasPage'
@@ -21,6 +22,7 @@ import { MemoriaPilarPage } from '@/pages/MemoriaPilarPage'
 import { DigitalizacaoPilarPage } from '@/pages/DigitalizacaoPilarPage'
 import { WelcomePage } from '@/pages/WelcomePage'
 import { ProtocoloGeralPage } from '@/pages/ProtocoloGeralPage'
+import { CentralRelatoriosPage } from '@/pages/CentralRelatoriosPage'
 
 export default function App() {
   return (
@@ -28,6 +30,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/redefinir-senha" element={<RedefinirSenhaPage />} />
           <Route element={<ProtectedRoute />}>
             <Route index element={<WelcomePage />} />
             <Route element={<AppLayout />}>
@@ -38,7 +41,9 @@ export default function App() {
               <Route path="/relatorios" element={<RelatoriosPage />} />
               <Route path="/conformidade" element={<ConformidadePage />} />
               <Route path="/riscos" element={<RiscosPage />} />
-              <Route path="/equipe" element={<EquipePage />} />
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
+                <Route path="/equipe" element={<EquipePage />} />
+              </Route>
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
                 <Route path="/acervo" element={<AcervoPage />} />
                 <Route path="/acervo/catalogar" element={<CatalogarProcessoPage />} />
@@ -54,6 +59,9 @@ export default function App() {
               <Route path="/pilares/boas-praticas" element={<BoasPraticasPilarPage />} />
               <Route path="/pilares/memoria" element={<MemoriaPilarPage />} />
               <Route path="/pilares/digitalizacao" element={<DigitalizacaoPilarPage />} />
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
+                <Route path="/central-relatorios" element={<CentralRelatoriosPage />} />
+              </Route>
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

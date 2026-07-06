@@ -299,40 +299,44 @@ export function DashboardPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Superpainel · Coordenação</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {isCoord ? 'Superpainel · Coordenação' : 'Superpainel'}
+        </h1>
         <p className="text-gray-500 text-sm mt-0.5">
           Olá, {profile?.nome?.split(' ')[0]}. {mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1)}.
         </p>
       </div>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          icon={<Archive size={20} className="text-teal-600" />}
-          label="Caixas catalogadas"
-          value={totalCaixas.toLocaleString('pt-BR')}
-          color="bg-teal-50"
-        />
-        <MetricCard
-          icon={<TrendingUp size={20} className="text-accent-600" />}
-          label="Páginas digitalizadas"
-          value={totalPaginas.toLocaleString('pt-BR')}
-          color="bg-orange-50"
-        />
-        <MetricCard
-          icon={<MapPin size={20} className="text-blue-600" />}
-          label="Documentos indexados"
-          value={totalIndexados.toLocaleString('pt-BR')}
-          color="bg-blue-50"
-        />
-        <MetricCard
-          icon={<CheckCircle size={20} className="text-green-600" />}
-          label="Relatórios em dia"
-          value={relatorioStats ? `${relatorioStats.enviados}/${relatorioStats.total}` : '—'}
-          sub={relatorioStats?.atrasados ? `${relatorioStats.atrasados} atrasado(s)` : undefined}
-          color="bg-green-50"
-        />
-      </div>
+      {isCoord && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <MetricCard
+            icon={<Archive size={20} className="text-teal-600" />}
+            label="Caixas catalogadas"
+            value={totalCaixas.toLocaleString('pt-BR')}
+            color="bg-teal-50"
+          />
+          <MetricCard
+            icon={<TrendingUp size={20} className="text-accent-600" />}
+            label="Páginas digitalizadas"
+            value={totalPaginas.toLocaleString('pt-BR')}
+            color="bg-orange-50"
+          />
+          <MetricCard
+            icon={<MapPin size={20} className="text-blue-600" />}
+            label="Documentos indexados"
+            value={totalIndexados.toLocaleString('pt-BR')}
+            color="bg-blue-50"
+          />
+          <MetricCard
+            icon={<CheckCircle size={20} className="text-green-600" />}
+            label="Relatórios em dia"
+            value={relatorioStats ? `${relatorioStats.enviados}/${relatorioStats.total}` : '—'}
+            sub={relatorioStats?.atrasados ? `${relatorioStats.atrasados} atrasado(s)` : undefined}
+            color="bg-green-50"
+          />
+        </div>
+      )}
 
       {/* Mural de Conquistas */}
       <div className="card p-5">
@@ -356,126 +360,130 @@ export function DashboardPage() {
       </div>
 
       {/* Cadência de reuniões */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-900">Cadência de Reuniões</h2>
-          {isCoord && (
+      {isCoord && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-gray-900">Cadência de Reuniões</h2>
             <button className="btn-primary text-sm" onClick={() => setShowNovaAtaMensal(v => !v)}>
               <CalendarPlus size={16} /> Nova ata mensal
             </button>
+          </div>
+
+          {showNovaAtaMensal && (
+            <div className="card p-5 mb-4 space-y-3">
+              <p className="text-sm text-gray-500">Ata da Reunião Mensal Consolidada (cobre os 3 pilares).</p>
+              <div>
+                <label className="label">Data da reunião</label>
+                <input type="date" className="input" value={ataMensal.data_reuniao} onChange={e => setAtaMensal(v => ({ ...v, data_reuniao: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Resumo</label>
+                <textarea className="input min-h-[80px] resize-y" value={ataMensal.resumo} onChange={e => setAtaMensal(v => ({ ...v, resumo: e.target.value }))} />
+              </div>
+              <label className="flex items-center gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={ataMensal.encaminhado_nrh}
+                  onChange={e => setAtaMensal(v => ({ ...v, encaminhado_nrh: e.target.checked }))}
+                />
+                <span className="text-sm text-yellow-800 font-medium">
+                  Encaminhado ao NRH (obrigatório — Art. 3º Portaria 026/2026)
+                </span>
+              </label>
+              <div className="flex gap-2">
+                <button className="btn-primary text-sm" disabled={registrarAtaMensal.isPending} onClick={() => registrarAtaMensal.mutate()}>Salvar ata</button>
+                <button className="btn-secondary text-sm" onClick={() => setShowNovaAtaMensal(false)}>Cancelar</button>
+              </div>
+            </div>
           )}
-        </div>
 
-        {isCoord && showNovaAtaMensal && (
-          <div className="card p-5 mb-4 space-y-3">
-            <p className="text-sm text-gray-500">Ata da Reunião Mensal Consolidada (cobre os 3 pilares).</p>
-            <div>
-              <label className="label">Data da reunião</label>
-              <input type="date" className="input" value={ataMensal.data_reuniao} onChange={e => setAtaMensal(v => ({ ...v, data_reuniao: e.target.value }))} />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="card p-4">
+              <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.mensal_consolidada}</p>
+              <p className="text-sm font-semibold text-gray-900 mt-1">
+                {ultimaMensal ? format(new Date(ultimaMensal.data_reuniao), 'dd/MM/yyyy') : 'Nenhuma registrada'}
+              </p>
+              {ultimaMensal && (
+                <span className={clsx(
+                  'inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                  ultimaMensal.encaminhado_nrh ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
+                )}>
+                  {ultimaMensal.encaminhado_nrh ? 'Encaminhado ao NRH' : 'Não encaminhado ao NRH'}
+                </span>
+              )}
             </div>
-            <div>
-              <label className="label">Resumo</label>
-              <textarea className="input min-h-[80px] resize-y" value={ataMensal.resumo} onChange={e => setAtaMensal(v => ({ ...v, resumo: e.target.value }))} />
+            <div className="card p-4">
+              <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.quinzenal_frente}</p>
+              <p className="text-sm font-semibold text-gray-900 mt-1">{quinzenaisEsteMes} este mês</p>
             </div>
-            <label className="flex items-center gap-2 rounded-lg bg-yellow-50 border border-yellow-200 px-3 py-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ataMensal.encaminhado_nrh}
-                onChange={e => setAtaMensal(v => ({ ...v, encaminhado_nrh: e.target.checked }))}
-              />
-              <span className="text-sm text-yellow-800 font-medium">
-                Encaminhado ao NRH (obrigatório — Art. 3º Portaria 026/2026)
-              </span>
-            </label>
-            <div className="flex gap-2">
-              <button className="btn-primary text-sm" disabled={registrarAtaMensal.isPending} onClick={() => registrarAtaMensal.mutate()}>Salvar ata</button>
-              <button className="btn-secondary text-sm" onClick={() => setShowNovaAtaMensal(false)}>Cancelar</button>
+            <div className="card p-4">
+              <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.checkpoint_trimestral}</p>
+              <p className="text-sm font-semibold text-gray-900 mt-1">
+                {ultimoCheckpoint ? format(new Date(ultimoCheckpoint.data_reuniao), 'dd/MM/yyyy') : 'Nenhum registrado'}
+              </p>
             </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="card p-4">
-            <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.mensal_consolidada}</p>
-            <p className="text-sm font-semibold text-gray-900 mt-1">
-              {ultimaMensal ? format(new Date(ultimaMensal.data_reuniao), 'dd/MM/yyyy') : 'Nenhuma registrada'}
-            </p>
-            {ultimaMensal && (
-              <span className={clsx(
-                'inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium',
-                ultimaMensal.encaminhado_nrh ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
-              )}>
-                {ultimaMensal.encaminhado_nrh ? 'Encaminhado ao NRH' : 'Não encaminhado ao NRH'}
-              </span>
-            )}
-          </div>
-          <div className="card p-4">
-            <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.quinzenal_frente}</p>
-            <p className="text-sm font-semibold text-gray-900 mt-1">{quinzenaisEsteMes} este mês</p>
-          </div>
-          <div className="card p-4">
-            <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.checkpoint_trimestral}</p>
-            <p className="text-sm font-semibold text-gray-900 mt-1">
-              {ultimoCheckpoint ? format(new Date(ultimoCheckpoint.data_reuniao), 'dd/MM/yyyy') : 'Nenhum registrado'}
-            </p>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Gráficos gerenciais */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card p-5 lg:col-span-2">
-          <h2 className="font-semibold text-gray-900 mb-4">% Concluído por Pilar</h2>
-          <HorizontalProgressChart
-            ariaLabel={`Percentual concluído por pilar: ${pilaresChartData.map(p => `${p.label} ${p.value}%`).join(', ')}`}
-            data={pilaresChartData}
-          />
-        </div>
-        <div className="card p-5 lg:col-span-2">
-          <h2 className="font-semibold text-gray-900 mb-4">Relatórios Enviados em Dia (últimos 4 meses)</h2>
-          <GroupedVerticalBarChart
-            ariaLabel={`Relatórios enviados em dia nos últimos 4 meses frente ao total de membros: ${relatoriosChartData.map(r => `${r.label} ${r.enviados} de ${r.total}`).join(', ')}`}
-            data={relatoriosChartData}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Demandas resumo */}
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Demandas Ativas</h2>
-            <span className="text-2xl font-bold text-accent-500">{demandasPendentes}</span>
+      {isCoord && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="card p-5 lg:col-span-2">
+            <h2 className="font-semibold text-gray-900 mb-4">% Concluído por Pilar</h2>
+            <HorizontalProgressChart
+              ariaLabel={`Percentual concluído por pilar: ${pilaresChartData.map(p => `${p.label} ${p.value}%`).join(', ')}`}
+              data={pilaresChartData}
+            />
           </div>
-          <p className="text-sm text-gray-500">
-            Demandas pendentes ou em andamento aguardando execução.
-          </p>
-          <a href="/demandas" className="inline-block mt-3 text-sm text-teal-600 font-medium hover:underline">
-            Ver todas →
-          </a>
-        </div>
-
-        {/* Riscos */}
-        <div className="card p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle size={16} className="text-accent-500" />
-            <h2 className="font-semibold text-gray-900">Riscos em Destaque</h2>
+          <div className="card p-5 lg:col-span-2">
+            <h2 className="font-semibold text-gray-900 mb-4">Relatórios Enviados em Dia (últimos 4 meses)</h2>
+            <GroupedVerticalBarChart
+              ariaLabel={`Relatórios enviados em dia nos últimos 4 meses frente ao total de membros: ${relatoriosChartData.map(r => `${r.label} ${r.enviados} de ${r.total}`).join(', ')}`}
+              data={relatoriosChartData}
+            />
           </div>
-          {(riscosAtivos ?? []).length === 0 ? (
-            <p className="text-sm text-gray-400">Nenhum risco ativo de alto/médio impacto.</p>
-          ) : (
-            <div>
-              {(riscosAtivos ?? []).map(r => <RiscoRow key={r.id} risco={r} />)}
+        </div>
+      )}
+
+      {isCoord && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Demandas resumo */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900">Demandas Ativas</h2>
+              <span className="text-2xl font-bold text-accent-500">{demandasPendentes}</span>
             </div>
-          )}
-          <a href="/riscos" className="inline-block mt-2 text-sm text-teal-600 font-medium hover:underline">
-            Ver matriz de riscos →
-          </a>
+            <p className="text-sm text-gray-500">
+              Demandas pendentes ou em andamento aguardando execução.
+            </p>
+            <a href="/demandas" className="inline-block mt-3 text-sm text-teal-600 font-medium hover:underline">
+              Ver todas →
+            </a>
+          </div>
+
+          {/* Riscos */}
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={16} className="text-accent-500" />
+              <h2 className="font-semibold text-gray-900">Riscos em Destaque</h2>
+            </div>
+            {(riscosAtivos ?? []).length === 0 ? (
+              <p className="text-sm text-gray-400">Nenhum risco ativo de alto/médio impacto.</p>
+            ) : (
+              <div>
+                {(riscosAtivos ?? []).map(r => <RiscoRow key={r.id} risco={r} />)}
+              </div>
+            )}
+            <a href="/riscos" className="inline-block mt-2 text-sm text-teal-600 font-medium hover:underline">
+              Ver matriz de riscos →
+            </a>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Relatórios conformidade strip */}
-      {(relatorioStats?.atrasados ?? 0) > 0 && (
+      {isCoord && (relatorioStats?.atrasados ?? 0) > 0 && (
         <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex items-center gap-3">
           <AlertTriangle size={18} className="text-red-500 shrink-0" />
           <div>

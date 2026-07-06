@@ -18,11 +18,9 @@ interface DemandaForm {
 export function NovaDemandaPage() {
   const navigate = useNavigate()
   const { profile, isCoord } = useAuth()
-  const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm<DemandaForm>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<DemandaForm>({
     defaultValues: { relevancia: 'media' },
   })
-
-  const pilarId = watch('pilar_id')
 
   const { data: pilares } = useQuery({
     queryKey: ['pilares'],
@@ -33,22 +31,18 @@ export function NovaDemandaPage() {
   })
 
   const { data: responsaveis } = useQuery({
-    queryKey: ['responsaveis-pilar', pilarId],
+    queryKey: ['todos-usuarios'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('usuarios')
-        .select('*')
-        .in('papel', ['responsavel_pilar', 'coordenador', 'coordenador_substituto'])
-        .eq('pilar_id', pilarId)
+      const { data } = await supabase.from('usuarios').select('*').order('nome')
       return (data ?? []) as Usuario[]
     },
-    enabled: !!pilarId,
   })
 
   const create = useMutation({
     mutationFn: async (form: DemandaForm) => {
       const { error } = await supabase.from('demandas').insert({
         ...form,
+        pilar_id: form.pilar_id || null,
         criado_por: profile!.id,
         status: 'pendente',
       })
@@ -84,16 +78,15 @@ export function NovaDemandaPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="label">Pilar *</label>
-            <select className="input" {...register('pilar_id', { required: 'Pilar obrigatório' })}>
-              <option value="">— Selecione —</option>
+            <label className="label">Pilar</label>
+            <select className="input" {...register('pilar_id')}>
+              <option value="">— Nenhum (Acervo/Protocolo Geral, ou outro assunto geral) —</option>
               {(pilares ?? []).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
             </select>
-            {errors.pilar_id && <p className="text-xs text-red-600 mt-1">{errors.pilar_id.message}</p>}
           </div>
 
           <div>
-            <label className="label">Responsável do Pilar *</label>
+            <label className="label">Responsável *</label>
             <select className="input" {...register('responsavel_pilar_id', { required: 'Responsável obrigatório' })}>
               <option value="">— Selecione —</option>
               {(responsaveis ?? []).map(u => <option key={u.id} value={u.id}>{u.nome}</option>)}

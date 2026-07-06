@@ -30,9 +30,11 @@ export function DemandasPage() {
         .select('*, pilar:pilar_id(id,nome), responsavel_pilar:responsavel_pilar_id(id,nome)')
         .order('created_at', { ascending: false })
 
-      // Filter by pilar for non-coordinators
+      // Non-coordinators see demandas from their own pilar or ones they're responsible for
       if (profile?.papel === 'responsavel_pilar' || profile?.papel === 'membro') {
-        if (profile.pilar_id) q = q.eq('pilar_id', profile.pilar_id)
+        const clauses = [`responsavel_pilar_id.eq.${profile.id}`]
+        if (profile.pilar_id) clauses.push(`pilar_id.eq.${profile.pilar_id}`)
+        q = q.or(clauses.join(','))
       }
 
       const { data } = await q
