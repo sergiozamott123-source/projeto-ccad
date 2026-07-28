@@ -24,8 +24,7 @@ export function RelatoriosPage() {
   const [form, setForm] = useState({
     atividades_realizadas: '',
     dificuldades: '',
-    horas_dedicadas: 0,
-  })
+ })
 
   const { data: relatorios } = useQuery({
     queryKey: ['meus-relatorios', profile?.id],
@@ -149,16 +148,6 @@ export function RelatoriosPage() {
               onChange={e => setForm(v => ({ ...v, dificuldades: e.target.value }))}
             />
           </div>
-
-          <div>
-            <label className="label">Horas dedicadas no mês</label>
-            <input
-              type="number" min={0} step={0.5} className="input w-32"
-              value={form.horas_dedicadas}
-              onChange={e => setForm(v => ({ ...v, horas_dedicadas: +e.target.value }))}
-            />
-          </div>
-
           {(demandasMes ?? []).length > 0 && (
             <div>
               <label className="label">Demandas concluídas este mês</label>
