@@ -155,7 +155,7 @@ function exportarRelatorioMembroPdf(usuario: Usuario, relatorio: RelatorioMensal
   doc.save(nomeArquivo)
 }
 
-function exportarTermoEnvioPdf(nomeCoordenador: string, mesSelecionado: string, textoAtividades: string) {
+function exportarTermoEnvioPdf(nomeCoordenador: string, mesSelecionado: string, referencia: string, textoAtividades: string) {
   const doc = new jsPDF()
   const larguraPagina = doc.internal.pageSize.getWidth()
   const alturaPagina = doc.internal.pageSize.getHeight()
@@ -163,7 +163,7 @@ function exportarTermoEnvioPdf(nomeCoordenador: string, mesSelecionado: string, 
   const margemDireita = 20
   const larguraUtil = larguraPagina - margemEsquerda - margemDireita
   const margemInferior = 22
-  const competencia = competenciaTexto(mesSelecionado)
+  const competencia = referencia.trim() || competenciaTexto(mesSelecionado)
   const codigoDocumento = gerarCodigoDocumento()
   const agora = new Date()
 
@@ -300,6 +300,7 @@ export function RelatoriosEquipePage() {
   const { profile } = useAuth()
   const meses = useMemo(() => gerarMeses(12), [])
   const [mesSelecionado, setMesSelecionado] = useState(meses[0])
+  const [referenciaTermo, setReferenciaTermo] = useState(competenciaTexto(meses[0]))
   const [textoTermo, setTextoTermo] = useState('')
   const [termoGerado, setTermoGerado] = useState(false)
 
@@ -333,7 +334,7 @@ export function RelatoriosEquipePage() {
 
   function handleGerarTermo() {
     if (!profile || !textoTermo.trim()) return
-    exportarTermoEnvioPdf(profile.nome, mesSelecionado, textoTermo.trim())
+    exportarTermoEnvioPdf(profile.nome, mesSelecionado, referenciaTermo, textoTermo.trim())
     setTermoGerado(true)
   }
 
@@ -351,6 +352,7 @@ export function RelatoriosEquipePage() {
           value={mesSelecionado}
           onChange={e => {
             setMesSelecionado(e.target.value)
+            setReferenciaTermo(competenciaTexto(e.target.value))
             setTermoGerado(false)
           }}
         >
@@ -377,10 +379,26 @@ export function RelatoriosEquipePage() {
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-900">Termo de Envio de Relatório Mensal</h2>
             <p className="text-gray-500 text-sm mt-0.5">
-              Documento oficial para encaminhar ao NRH junto com os relatórios da equipe. Competência:{' '}
-              <strong>{competenciaTexto(mesSelecionado)}</strong> (mês selecionado acima).
+              Documento oficial para encaminhar ao NRH junto com os relatórios da equipe.
             </p>
           </div>
+        </div>
+
+        <div>
+          <label className="label">Referência</label>
+          <input
+            type="text"
+            className="input sm:w-64"
+            value={referenciaTermo}
+            onChange={e => {
+              setReferenciaTermo(e.target.value)
+              setTermoGerado(false)
+            }}
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Sugerida automaticamente a partir do mês selecionado acima — ajuste aqui se o termo cobrir mais de um mês
+            (ex.: "Junho-Julho/2026").
+          </p>
         </div>
 
         <div>
