@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
   { to: '/minha-parte', label: 'Minha Parte',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar'] },
   { to: '/demandas',    label: 'Demandas',     icon: <ClipboardList size={18} /> },
   { to: '/relatorios',  label: 'Relatórios',   icon: <FileText size={18} /> },
+  { to: '/relatorios-equipe', label: 'Relatórios da Equipe', icon: <FileSearch size={18} />, roles: ['coordenador'] },
   { to: '/conformidade',label: 'Conformidade', icon: <ShieldAlert size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/riscos',      label: 'Riscos',       icon: <AlertCircle size={18} /> },
   { to: '/equipe',      label: 'Equipe',       icon: <Users size={18} />, roles: ['coordenador','coordenador_substituto'] },

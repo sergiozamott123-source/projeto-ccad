@@ -10,6 +10,7 @@ import { MinhaParte } from '@/pages/MinhaParte'
 import { DemandasPage } from '@/pages/DemandasPage'
 import { NovaDemandaPage } from '@/pages/NovaDemandaPage'
 import { RelatoriosPage } from '@/pages/RelatoriosPage'
+import { RelatoriosEquipePage } from '@/pages/RelatoriosEquipePage'
 import { ConformidadePage } from '@/pages/ConformidadePage'
 import { RiscosPage } from '@/pages/RiscosPage'
 import { EquipePage } from '@/pages/EquipePage'
@@ -39,6 +40,9 @@ export default function App() {
               <Route path="/demandas" element={<DemandasPage />} />
               <Route path="/demandas/nova" element={<NovaDemandaPage />} />
               <Route path="/relatorios" element={<RelatoriosPage />} />
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador'} />}>
+                <Route path="/relatorios-equipe" element={<RelatoriosEquipePage />} />
+              </Route>
               <Route path="/conformidade" element={<ConformidadePage />} />
               <Route path="/riscos" element={<RiscosPage />} />
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
