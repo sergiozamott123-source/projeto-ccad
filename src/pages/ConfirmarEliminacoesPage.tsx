@@ -1,13 +1,22 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, Undo2 } from 'lucide-react'
+import { CheckCircle, Undo2, ChevronDown, ChevronUp } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
-import type { Avaliacao } from '@/lib/database.types'
+import type { Avaliacao, TtdCodigo } from '@/lib/database.types'
 
 type AvaliacaoFila = Avaliacao & {
-  processo: { numero_documento: string; ano_producao: number | null; assunto_processo: string | null; caixa: { numero: string } | null }
+  processo: {
+    numero_documento: string
+    ano_producao: number | null
+    assunto_processo: string | null
+    interessado: string | null
+    data_ultima_movimentacao: string | null
+    sem_data_ultima_movimentacao: boolean
+    caixa: { numero: string } | null
+    ttd: TtdCodigo | null
+  }
   avaliador: { nome: string } | null
 }
 
@@ -16,6 +25,7 @@ export function ConfirmarEliminacoesPage() {
   const qc = useQueryClient()
   const [devolvendoId, setDevolvendoId] = useState<string | null>(null)
   const [motivo, setMotivo] = useState('')
+  const [expandidoId, setExpandidoId] = useState<string | null>(null)
 
   const hoje = startOfDay(new Date()).toISOString()
 
@@ -24,7 +34,7 @@ export function ConfirmarEliminacoesPage() {
     queryFn: async () => {
       let query = supabase
         .from('avaliacoes')
-        .select('*, processo:processo_id(numero_documento, ano_producao, assunto_processo, caixa:caixa_id(numero)), avaliador:avaliado_por(nome)')
+        .select('*, processo:processo_id(numero_documento, ano_producao, assunto_processo, interessado, data_ultima_movimentacao, sem_data_ultima_movimentacao, caixa:caixa_id(numero), ttd:ttd_codigo_id(*)), avaliador:avaliado_por(nome)')
         .eq('status', 'aguardando_confirmacao')
         .order('created_at', { ascending: true })
 
@@ -148,6 +158,59 @@ export function ConfirmarEliminacoesPage() {
                       <Undo2 size={13} /> Devolver
                     </button>
                   </div>
+                </div>
+
+                {/* Detalhamento da avaliação — qual código TTD o avaliador
+                    usou e por quê, para o Coordenador poder de fato
+                    conferir a decisão antes de confirmar. */}
+                <div className="mt-2.5 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <span className="text-gray-400">Código usado:</span>
+                      <span className="font-mono font-semibold text-gray-800">{p.processo?.ttd?.codigo ?? '—'}</span>
+                      {p.processo?.ttd?.assunto && (
+                        <span className="text-gray-600 truncate">{p.processo.ttd.assunto}</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className="text-teal-600 hover:text-teal-700 font-medium inline-flex items-center gap-1 shrink-0"
+                      onClick={() => setExpandidoId(expandidoId === p.id ? null : p.id)}
+                    >
+                      {expandidoId === p.id ? <>Ver menos <ChevronUp size={12} /></> : <>Ver detalhes <ChevronDown size={12} /></>}
+                    </button>
+                  </div>
+
+                  {expandidoId === p.id && (
+                    <div className="mt-2.5 pt-2.5 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                      <div>
+                        <span className="text-gray-400">Classe/Série TTD: </span>
+                        <span className="text-gray-700">{[p.processo?.ttd?.classe, p.processo?.ttd?.serie].filter(Boolean).join(' / ') || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Destinação final na TTD: </span>
+                        <span className="text-red-600 font-medium">{p.processo?.ttd?.destinacao_final || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Fase corrente/intermediária: </span>
+                        <span className="text-gray-700">{[p.processo?.ttd?.fase_corrente, p.processo?.ttd?.fase_intermediaria].filter(Boolean).join(' / ') || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Interessado: </span>
+                        <span className="text-gray-700">{p.processo?.interessado || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Última movimentação: </span>
+                        <span className="text-gray-700">
+                          {p.processo?.sem_data_ultima_movimentacao
+                            ? 'Não há data de último despacho'
+                            : p.processo?.data_ultima_movimentacao
+                            ? format(new Date(p.processo.data_ultima_movimentacao), 'dd/MM/yyyy')
+                            : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {devolvendoId === p.id && (
