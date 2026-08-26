@@ -13,10 +13,19 @@ type RequisicaoLista = RequisicaoAvaliacao & {
   criador: { nome: string } | null
 }
 
+type InteressadoOpcao = '' | 'CDTIV' | 'PMV'
+
 interface LinhaProcesso {
   numero: string
   ano: string
   assunto: string
+  interessado: InteressadoOpcao
+  dataUltimaMovimentacao: string
+  semDataUltimaMovimentacao: boolean
+}
+
+function linhaVazia(): LinhaProcesso {
+  return { numero: '', ano: '', assunto: '', interessado: '', dataUltimaMovimentacao: '', semDataUltimaMovimentacao: false }
 }
 
 function hoje() {
@@ -26,8 +35,9 @@ function hoje() {
 // Aceita colar direto da planilha (colunas separadas por tab) ou
 // digitado à mão (separado por espaço): número do processo, ano
 // (pode vir com letra junto, ex. "1993A") e o assunto que está na
-// etiqueta do processo. Os três são obrigatórios — sem o assunto o
-// avaliador não tem como saber qual código da TTD usar.
+// etiqueta do processo. Interessado e a data da última movimentação
+// não costumam vir prontos de uma lista colada — ficam para
+// preencher linha a linha na tabela abaixo, junto com os demais.
 function parseLinhasColadas(texto: string): LinhaProcesso[] {
   return texto
     .split('\n')
@@ -36,7 +46,7 @@ function parseLinhasColadas(texto: string): LinhaProcesso[] {
     .map(l => {
       const partes = l.includes('\t') ? l.split('\t') : l.split(/\s+/)
       const [numero, ano, ...resto] = partes
-      return { numero: (numero ?? '').trim(), ano: (ano ?? '').trim(), assunto: resto.join(' ').trim() }
+      return { ...linhaVazia(), numero: (numero ?? '').trim(), ano: (ano ?? '').trim(), assunto: resto.join(' ').trim() }
     })
     .filter(l => l.numero)
 }
@@ -90,7 +100,7 @@ export function RequisicoesAvaliacaoPage() {
     setTextoColado('')
   }
 
-  function atualizarLinha(i: number, campo: keyof LinhaProcesso, valor: string) {
+  function atualizarLinha<K extends keyof LinhaProcesso>(i: number, campo: K, valor: LinhaProcesso[K]) {
     setLinhas(prev => prev.map((l, idx) => (idx === i ? { ...l, [campo]: valor } : l)))
   }
 
@@ -98,11 +108,23 @@ export function RequisicoesAvaliacaoPage() {
     setLinhas(prev => prev.filter((_, idx) => idx !== i))
   }
 
-  // Uma linha só entra na requisição se tiver os três campos: sem
-  // isso o avaliador chega numa tela sem informação para classificar.
+  // Uma linha só entra na requisição se tiver todos os campos abaixo
+  // preenchidos: sem eles, o avaliador chega numa tela sem informação
+  // suficiente para classificar, ou o cadastro fica incompleto no
+  // Arquivo Geral (número, ano, assunto, interessado e a informação
+  // da última movimentação — mesmo que seja "não há").
+  function linhaCompleta(l: LinhaProcesso) {
+    return !!(
+      l.ano.trim() &&
+      l.assunto.trim() &&
+      l.interessado &&
+      (l.semDataUltimaMovimentacao || l.dataUltimaMovimentacao.trim())
+    )
+  }
+
   const linhasPreenchidas = linhas.filter(l => l.numero.trim())
-  const linhasValidas = linhasPreenchidas.filter(l => l.ano.trim() && l.assunto.trim())
-  const linhasIncompletas = linhasPreenchidas.filter(l => !l.ano.trim() || !l.assunto.trim())
+  const linhasValidas = linhasPreenchidas.filter(linhaCompleta)
+  const linhasIncompletas = linhasPreenchidas.filter(l => !linhaCompleta(l))
 
   const enviar = useMutation({
     mutationFn: async () => {
@@ -136,6 +158,9 @@ export function RequisicoesAvaliacaoPage() {
           ano_producao: anoMatch ? Number(anoMatch[1]) : null,
           ano_producao_complemento: anoMatch && anoMatch[2].trim() ? anoMatch[2].trim() : null,
           assunto_processo: l.assunto.trim(),
+          interessado: l.interessado || null,
+          data_ultima_movimentacao: l.semDataUltimaMovimentacao ? null : l.dataUltimaMovimentacao.trim() || null,
+          sem_data_ultima_movimentacao: l.semDataUltimaMovimentacao,
         })
         if (eProc) throw eProc
       }
@@ -230,7 +255,7 @@ export function RequisicoesAvaliacaoPage() {
         <div className="mt-5 pt-4 border-t border-gray-100">
           <label className="label">Processos da caixa</label>
           <p className="text-xs text-gray-400 mb-2">
-            Cole aqui a lista de processos — um por linha, igual na planilha: número do processo, ano de produção e o assunto que está na etiqueta do processo. Os três são obrigatórios: sem o assunto, quem for avaliar não vai saber do que se trata.
+            Cole aqui a lista de processos — um por linha, igual na planilha: número do processo, ano de produção e o assunto que está na etiqueta do processo. Depois de colar, complete na tabela abaixo o Interessado (CDTIV ou PMV) e a última movimentação de cada processo — se não houver despacho registrado, marque a caixinha "Não há data de último despacho" em vez de deixar em branco. Todos esses campos são obrigatórios para enviar a requisição.
           </p>
           <div className="flex gap-2">
             <textarea
@@ -252,31 +277,75 @@ export function RequisicoesAvaliacaoPage() {
                     <th className="font-medium pb-1 pr-2">Nº Processo *</th>
                     <th className="font-medium pb-1 pr-2">Ano *</th>
                     <th className="font-medium pb-1 pr-2">Assunto (da etiqueta) *</th>
+                    <th className="font-medium pb-1 pr-2">Interessado *</th>
+                    <th className="font-medium pb-1 pr-2">Última movimentação *</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {linhas.map((l, i) => {
-                    const incompleta = l.numero.trim() && (!l.ano.trim() || !l.assunto.trim())
+                    const preenchida = l.numero.trim()
+                    const incompleta = !!preenchida && !linhaCompleta(l)
                     return (
-                      <tr key={i} className={clsx('border-t', incompleta ? 'border-red-100 bg-red-50/50' : 'border-gray-100')}>
+                      <tr key={i} className={clsx('border-t align-top', incompleta ? 'border-red-100 bg-red-50/50' : 'border-gray-100')}>
                         <td className="py-1 pr-2">
                           <input className="input py-1 text-xs" value={l.numero} onChange={e => atualizarLinha(i, 'numero', e.target.value)} />
                         </td>
                         <td className="py-1 pr-2">
                           <input
-                            className={clsx('input py-1 text-xs w-24', l.numero.trim() && !l.ano.trim() && 'border-red-300')}
+                            className={clsx('input py-1 text-xs w-24', !!preenchida && !l.ano.trim() && 'border-red-300')}
                             value={l.ano}
                             onChange={e => atualizarLinha(i, 'ano', e.target.value)}
                           />
                         </td>
                         <td className="py-1 pr-2">
                           <input
-                            className={clsx('input py-1 text-xs', l.numero.trim() && !l.assunto.trim() && 'border-red-300')}
+                            className={clsx('input py-1 text-xs', !!preenchida && !l.assunto.trim() && 'border-red-300')}
                             placeholder="Assunto obrigatório…"
                             value={l.assunto}
                             onChange={e => atualizarLinha(i, 'assunto', e.target.value)}
                           />
+                        </td>
+                        <td className="py-1 pr-2">
+                          <select
+                            className={clsx('input py-1 text-xs w-24', !!preenchida && !l.interessado && 'border-red-300')}
+                            value={l.interessado}
+                            onChange={e => atualizarLinha(i, 'interessado', e.target.value as InteressadoOpcao)}
+                          >
+                            <option value="">Selecione…</option>
+                            <option value="CDTIV">CDTIV</option>
+                            <option value="PMV">PMV</option>
+                          </select>
+                        </td>
+                        <td className="py-1 pr-2">
+                          <div className="flex flex-col gap-1 w-40">
+                            <input
+                              type="date"
+                              className={clsx(
+                                'input py-1 text-xs',
+                                !!preenchida && !l.semDataUltimaMovimentacao && !l.dataUltimaMovimentacao.trim() && 'border-red-300',
+                              )}
+                              value={l.dataUltimaMovimentacao}
+                              disabled={l.semDataUltimaMovimentacao}
+                              onChange={e => atualizarLinha(i, 'dataUltimaMovimentacao', e.target.value)}
+                            />
+                            <label className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                              <input
+                                type="checkbox"
+                                checked={l.semDataUltimaMovimentacao}
+                                onChange={e =>
+                                  setLinhas(prev =>
+                                    prev.map((row, idx) =>
+                                      idx === i
+                                        ? { ...row, semDataUltimaMovimentacao: e.target.checked, dataUltimaMovimentacao: '' }
+                                        : row,
+                                    ),
+                                  )
+                                }
+                              />
+                              Não há data de último despacho
+                            </label>
+                          </div>
                         </td>
                         <td className="py-1">
                           <button onClick={() => removerLinha(i)} className="text-gray-400 hover:text-red-600">
@@ -293,13 +362,13 @@ export function RequisicoesAvaliacaoPage() {
 
           {linhasIncompletas.length > 0 && (
             <p className="text-xs text-red-600 mt-2">
-              {linhasIncompletas.length} processo{linhasIncompletas.length === 1 ? '' : 's'} com o ano ou o assunto em branco (destacado{linhasIncompletas.length === 1 ? '' : 's'} acima). Preencha ou remova antes de enviar.
+              {linhasIncompletas.length} processo{linhasIncompletas.length === 1 ? '' : 's'} com algum campo obrigatório em branco (destacado{linhasIncompletas.length === 1 ? '' : 's'} acima: ano, assunto, interessado ou última movimentação). Preencha ou remova antes de enviar.
             </p>
           )}
 
           <button
             className="btn-secondary text-xs mt-3"
-            onClick={() => setLinhas(prev => [...prev, { numero: '', ano: '', assunto: '' }])}
+            onClick={() => setLinhas(prev => [...prev, linhaVazia()])}
           >
             <Plus size={13} /> Adicionar linha em branco
           </button>

@@ -125,6 +125,8 @@ export interface Caixa {
   status: string
 }
 
+export type Interessado = 'CDTIV' | 'PMV'
+
 export interface Processo {
   id: string
   caixa_id: string
@@ -135,6 +137,8 @@ export interface Processo {
   ano_producao: number
   ano_producao_complemento: string | null
   observacao_intake: string | null
+  data_ultima_movimentacao: string | null
+  sem_data_ultima_movimentacao: boolean
   requer_revisao_manual: boolean
   potencial_expositivo: boolean
   created_at: string
