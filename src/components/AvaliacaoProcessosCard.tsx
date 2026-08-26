@@ -54,7 +54,7 @@ export function AvaliacaoProcessosCard() {
       const { data } = await supabase
         .from('ttd_codigos')
         .select('*')
-        .in('status', ['vigente', 'proposta'])
+        .eq('status', 'vigente') // só código já em vigor pode classificar processo — "proposta" ainda não foi aprovado
         .order('classe', { ascending: true })
         .order('codigo', { ascending: true })
       return (data ?? []) as TtdCodigo[]
@@ -168,7 +168,7 @@ export function AvaliacaoProcessosCard() {
         .from('ttd_codigos')
         .select('*')
         .or(`codigo.ilike.%${ttdSearch}%,assunto.ilike.%${ttdSearch}%`)
-        .in('status', ['vigente', 'proposta'])
+        .eq('status', 'vigente') // só código já em vigor pode classificar processo — "proposta" ainda não foi aprovado
         .limit(10)
       return (data ?? []) as TtdCodigo[]
     },

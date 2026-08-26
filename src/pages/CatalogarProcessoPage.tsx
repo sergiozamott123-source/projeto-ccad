@@ -37,7 +37,7 @@ export function CatalogarProcessoPage() {
         .from('ttd_codigos')
         .select('*')
         .or(`codigo.ilike.%${ttdSearch}%,assunto.ilike.%${ttdSearch}%,serie.ilike.%${ttdSearch}%`)
-        .in('status', ['vigente', 'proposta'])
+        .eq('status', 'vigente') // só código já em vigor pode classificar processo — "proposta" ainda não foi aprovado
         .limit(12)
       return (data ?? []) as TtdCodigo[]
     },
