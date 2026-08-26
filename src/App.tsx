@@ -37,7 +37,9 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route index element={<WelcomePage />} />
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.papel === 'apoio_tecnico'} />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+              </Route>
               <Route path="/minha-parte" element={<MinhaParte />} />
               <Route path="/demandas" element={<DemandasPage />} />
               <Route path="/demandas/nova" element={<NovaDemandaPage />} />
