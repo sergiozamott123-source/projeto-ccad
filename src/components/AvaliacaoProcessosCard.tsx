@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, ArrowRight, Clock, List, X } from 'lucide-react'
+import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
@@ -21,6 +21,7 @@ export function AvaliacaoProcessosCard() {
   const qc = useQueryClient()
   const [caixaNumero, setCaixaNumero] = useState('')
   const [caixaBusca, setCaixaBusca] = useState('') // valor efetivamente pesquisado
+  const [toast, setToast] = useState<string | null>(null)
 
   // Quem não é Coordenação só pode avaliar caixas que constam numa
   // requisição pendente enviada a ele — não busca mais livremente.
@@ -98,11 +99,18 @@ export function AvaliacaoProcessosCard() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  // Some sozinho depois de alguns segundos — não precisa de botão de fechar.
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(t)
+  }, [toast])
+
   const { data: caixaInfo, isFetching: buscandoCaixa } = useQuery({
     queryKey: ['avaliacao-caixa', caixaBusca],
     queryFn: async () => {
       const { data: caixa } = await supabase.from('caixas').select('id, numero, setor').eq('numero', caixaBusca).maybeSingle()
-      if (!caixa) return { caixa: null, processos: [] as Processo[] }
+      if (!caixa) return { caixa: null, processos: [] as Processo[], decisoes: new Map<string, string | null>() }
 
       const { data: processos } = await supabase
         .from('processos')
@@ -111,27 +119,41 @@ export function AvaliacaoProcessosCard() {
         .order('created_at', { ascending: true })
 
       const ids = (processos ?? []).map(p => p.id)
-      let resolvidos = new Set<string>()
+      // Para cada processo já resolvido, guardamos também a decisão (Eliminação/
+      // Guarda Permanente) — usada na lista de acompanhamento da caixa.
+      const decisoes = new Map<string, string | null>()
       if (ids.length > 0) {
         const { data: avals } = await supabase
           .from('avaliacoes')
-          .select('processo_id, status')
+          .select('processo_id, status, decisao')
           .in('processo_id', ids)
           .in('status', STATUS_RESOLVE)
-        resolvidos = new Set((avals ?? []).map(a => a.processo_id))
+        for (const a of avals ?? []) decisoes.set(a.processo_id, a.decisao)
       }
 
-      return { caixa, processos: (processos ?? []) as Processo[], resolvidos }
+      return { caixa, processos: (processos ?? []) as Processo[], decisoes }
     },
     enabled: caixaBusca.length > 0,
   })
 
   const processos = caixaInfo?.processos ?? []
-  const resolvidos = caixaInfo?.resolvidos ?? new Set<string>()
-  const pendentes = processos.filter(p => !resolvidos.has(p.id))
+  const decisoes = caixaInfo?.decisoes ?? new Map<string, string | null>()
+  const pendentes = processos.filter(p => !decisoes.has(p.id))
   const atual = pendentes[0] ?? null
   const totalNaCaixa = processos.length
-  const posicaoAtual = totalNaCaixa - pendentes.length + 1
+  const concluidosNaCaixa = totalNaCaixa - pendentes.length
+  const posicaoAtual = concluidosNaCaixa + 1
+  const progressoPct = totalNaCaixa > 0 ? Math.round((concluidosNaCaixa / totalNaCaixa) * 100) : 0
+
+  const resumoCaixa = useMemo(() => {
+    let elim = 0
+    let perm = 0
+    for (const d of decisoes.values()) {
+      if (isEliminacao(d)) elim++
+      else perm++
+    }
+    return { elim, perm }
+  }, [decisoes])
 
   // Última devolução (se houver) do processo atual, para mostrar o motivo ao avaliador
   const { data: devolucao } = useQuery({
@@ -205,7 +227,7 @@ export function AvaliacaoProcessosCard() {
 
   const salvar = useMutation({
     mutationFn: async () => {
-      if (!atual || !selectedTtd || !profile) return
+      if (!atual || !selectedTtd || !profile) return null
       if (atual.ttd_codigo_id !== selectedTtd.id) {
         const { error: e1 } = await supabase
           .from('processos')
@@ -220,14 +242,18 @@ export function AvaliacaoProcessosCard() {
         pilar_id: profile.pilar_id,
       })
       if (e2) throw e2
+      return { numero: atual.numero_documento, decisao: selectedTtd.destinacao_final }
     },
-    onSuccess: () => {
+    onSuccess: (resultado) => {
       qc.invalidateQueries({ queryKey: ['avaliacao-caixa', caixaBusca] })
       qc.invalidateQueries({ queryKey: ['minhas-avaliacoes-hoje'] })
       qc.invalidateQueries({ queryKey: ['minhas-avaliacoes-hoje-count'] })
       qc.invalidateQueries({ queryKey: ['minhas-requisicoes-pendentes'] })
       setSelectedTtd(null)
       setTtdSearch('')
+      if (resultado) {
+        setToast(`Avaliação salva — processo ${resultado.numero} classificado como ${resultado.decisao || '—'}.`)
+      }
     },
   })
 
@@ -242,16 +268,16 @@ export function AvaliacaoProcessosCard() {
   }
 
   return (
-    <div className="card p-5">
+    <div className="card p-5 relative">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h2 className="font-semibold text-gray-900">Avaliação de Processos</h2>
         <div className="flex items-center gap-2">
-          {caixaInfo?.caixa && (
-            <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 font-medium">
-              Caixa {caixaInfo.caixa.numero} · {totalNaCaixa > 0 ? `${Math.min(posicaoAtual, totalNaCaixa)} de ${totalNaCaixa}` : '0'}
+          {caixaInfo?.caixa && totalNaCaixa > 0 && (
+            <span className="text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-semibold">
+              Processo {Math.min(posicaoAtual, totalNaCaixa)} de {totalNaCaixa}
             </span>
           )}
-          <span className="text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-600 font-medium">
+          <span className="text-xs px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-medium">
             {totalHojeCount ?? 0} hoje
           </span>
         </div>
@@ -315,10 +341,43 @@ export function AvaliacaoProcessosCard() {
         <p className="text-sm text-gray-400 py-4">Essa caixa ainda não tem processos catalogados.</p>
       )}
 
+      {/* Barra de progresso da caixa — sempre visível enquanto há uma
+          caixa carregada, para o avaliador nunca se sentir perdido no
+          meio da tarefa. */}
+      {caixaInfo?.caixa && totalNaCaixa > 0 && (
+        <div className="mb-4">
+          <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-teal-500 transition-all duration-500"
+              style={{ width: `${atual ? progressoPct : 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Tela de conclusão da caixa */}
       {caixaInfo?.caixa && totalNaCaixa > 0 && !atual && (
-        <p className="text-sm text-teal-700 bg-teal-50 rounded-lg px-3 py-2.5">
-          Todos os {totalNaCaixa} processos da Caixa {caixaInfo.caixa.numero} já foram avaliados. 🎉
-        </p>
+        <div className="text-center py-6 mb-2">
+          <div className="w-14 h-14 rounded-full bg-teal-50 border border-teal-200 text-teal-600 flex items-center justify-center mx-auto mb-3">
+            <CheckCircle2 size={26} />
+          </div>
+          <p className="font-semibold text-gray-900 mb-1">Caixa {caixaInfo.caixa.numero} concluída!</p>
+          <p className="text-sm text-gray-500 mb-4">Você avaliou todos os {totalNaCaixa} processos desta caixa.</p>
+          <div className="flex justify-center gap-3 flex-wrap">
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 min-w-[6.5rem]">
+              <p className="text-lg font-bold text-gray-900">{totalNaCaixa}</p>
+              <p className="text-[11px] text-gray-400 uppercase tracking-wide">Avaliados</p>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 min-w-[6.5rem]">
+              <p className="text-lg font-bold text-red-600">{resumoCaixa.elim}</p>
+              <p className="text-[11px] text-gray-400 uppercase tracking-wide">Eliminação</p>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 min-w-[6.5rem]">
+              <p className="text-lg font-bold text-teal-600">{resumoCaixa.perm}</p>
+              <p className="text-[11px] text-gray-400 uppercase tracking-wide">Guarda Perm.</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {atual && (
@@ -330,7 +389,7 @@ export function AvaliacaoProcessosCard() {
           )}
           {/* O que é o processo: número, ano, interessado e — o mais
               importante para escolher a classificação — o assunto. */}
-          <div className="bg-gray-50 rounded-lg p-3 mb-3">
+          <div className="bg-gray-50 rounded-lg p-3 mb-4">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mb-1.5">
               <span>
                 Processo <strong className="font-mono text-gray-800">{atual.numero_documento}</strong>
@@ -345,88 +404,175 @@ export function AvaliacaoProcessosCard() {
             </p>
           </div>
 
-          <div ref={dropdownRef} className="relative mb-1">
-            <label className="label">Classificação (Tabela de Temporalidade de Documentos — TTD)</label>
-            <p className="text-xs text-gray-400 mb-1.5">
-              Leia o assunto acima e busque, abaixo, o código correspondente: digite parte do código (ex.: 020.1) ou uma palavra do assunto (ex.: convênio).
-            </p>
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                className="input pl-8 text-sm"
-                placeholder="Buscar código ou assunto na TTD…"
-                value={ttdSearch}
-                onChange={e => { setTtdSearch(e.target.value); setShowDropdown(true); if (!e.target.value) setSelectedTtd(null) }}
-                onFocus={() => setShowDropdown(true)}
-              />
-            </div>
-            {ttdSearch.length > 0 && ttdSearch.length < 2 && (
-              <p className="text-xs text-gray-400 mt-1">Digite ao menos 2 letras para buscar.</p>
-            )}
-            {showDropdown && ttdSearch.length >= 2 && ttdSearch !== `${selectedTtd?.codigo} — ${selectedTtd?.assunto}` && (
-              <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                {(ttdResults ?? []).length > 0 ? (
-                  (ttdResults ?? []).map(ttd => (
-                    <button
-                      key={ttd.id}
-                      type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b last:border-0 text-xs"
-                      onClick={() => escolherTtd(ttd)}
-                    >
-                      <span className="font-mono font-semibold text-teal-600">{ttd.codigo}</span> — {ttd.assunto}
-                    </button>
-                  ))
-                ) : (
-                  <p className="px-3 py-3 text-xs text-gray-400">
-                    Nenhum código encontrado para "{ttdSearch}".
-                  </p>
+          {/* Passo 1 — encontrar o código */}
+          <div className="flex items-start gap-3">
+            <span
+              className={clsx(
+                'shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border mt-0.5 transition-colors',
+                selectedTtd ? 'bg-teal-50 border-teal-200 text-teal-600' : 'bg-teal-500 border-teal-500 text-white',
+              )}
+            >
+              {selectedTtd ? <Check size={14} /> : 1}
+            </span>
+            <div className="flex-1 min-w-0" ref={dropdownRef}>
+              <p className="font-semibold text-gray-900 text-sm mb-0.5">Encontre o código na Tabela de Temporalidade (TTD)</p>
+              <p className="text-xs text-gray-400 mb-2">
+                Digite parte do código (ex.: 020.1) ou uma palavra do assunto acima (ex.: convênio).
+              </p>
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  className="input pl-8 text-sm"
+                  placeholder="Buscar código ou assunto na TTD…"
+                  value={ttdSearch}
+                  onChange={e => { setTtdSearch(e.target.value); setShowDropdown(true); if (!e.target.value) setSelectedTtd(null) }}
+                  onFocus={() => setShowDropdown(true)}
+                />
+                {ttdSearch.length > 0 && ttdSearch.length < 2 && (
+                  <p className="text-xs text-gray-400 mt-1">Digite ao menos 2 letras para buscar.</p>
+                )}
+                {showDropdown && ttdSearch.length >= 2 && ttdSearch !== `${selectedTtd?.codigo} — ${selectedTtd?.assunto}` && (
+                  <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                    {(ttdResults ?? []).length > 0 ? (
+                      (ttdResults ?? []).map(ttd => (
+                        <button
+                          key={ttd.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b last:border-0 text-xs"
+                          onClick={() => escolherTtd(ttd)}
+                        >
+                          <span className="font-mono font-semibold text-teal-600">{ttd.codigo}</span> — {ttd.assunto}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="px-3 py-3 text-xs text-gray-400">
+                        Nenhum código encontrado para "{ttdSearch}".
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-            <button
-              type="button"
-              onClick={() => { setFiltroTabela(''); setMostrarTabela(true) }}
-              className="text-xs text-teal-600 hover:text-teal-700 font-medium inline-flex items-center gap-1 mt-1.5"
-            >
-              <List size={12} /> Não achou? Navegue pela tabela completa da TTD
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => { setFiltroTabela(''); setMostrarTabela(true) }}
+                className="text-xs text-teal-600 hover:text-teal-700 font-medium inline-flex items-center gap-1 mt-1.5"
+              >
+                <List size={12} /> Não achou? Navegue pela tabela completa da TTD
+              </button>
 
-          {selectedTtd && (
-            <div className="mt-3 bg-teal-50 border border-teal-100 rounded-lg px-3 py-2.5 text-xs space-y-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-gray-500">Destinação final:</span>
-                <span className={clsx('font-semibold', isEliminacao(selectedTtd.destinacao_final) ? 'text-red-600' : 'text-teal-700')}>
-                  {selectedTtd.destinacao_final || '—'}
-                </span>
-              </div>
-              {(selectedTtd.classe || selectedTtd.serie) && (
-                <div className="text-gray-500">
-                  Classe/Série: <span className="text-gray-700">{[selectedTtd.classe, selectedTtd.serie].filter(Boolean).join(' / ')}</span>
+              {selectedTtd && (
+                <div className="mt-3 bg-teal-50 border border-teal-100 rounded-lg px-3 py-2.5 text-xs space-y-1">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-gray-500">Código escolhido</span>
+                    <span className="font-mono font-semibold text-gray-800">{selectedTtd.codigo}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-gray-500">Destinação final</span>
+                    <span className={clsx('font-semibold', isEliminacao(selectedTtd.destinacao_final) ? 'text-red-600' : 'text-teal-700')}>
+                      {selectedTtd.destinacao_final || '—'}
+                    </span>
+                  </div>
+                  {(selectedTtd.classe || selectedTtd.serie) && (
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-gray-500">Classe/Série</span>
+                      <span className="text-gray-700 text-right">{[selectedTtd.classe, selectedTtd.serie].filter(Boolean).join(' / ')}</span>
+                    </div>
+                  )}
+                  {selectedTtd.fase_corrente && (
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <span className="text-gray-500">Fase corrente</span>
+                      <span className="text-gray-700">{selectedTtd.fase_corrente}</span>
+                    </div>
+                  )}
                 </div>
               )}
-              {selectedTtd.fase_corrente && (
-                <div className="text-gray-500">Fase corrente: <span className="text-gray-700">{selectedTtd.fase_corrente}</span></div>
+              {selectedTtd && isEliminacao(selectedTtd.destinacao_final) && (
+                <p className="mt-2 text-xs text-amber-700 flex items-center gap-1.5">
+                  <Clock size={12} />
+                  Como é Eliminação, esta avaliação vai para conferência do Responsável do Eixo antes de valer.
+                </p>
               )}
             </div>
-          )}
-          {selectedTtd && isEliminacao(selectedTtd.destinacao_final) && (
-            <p className="mt-2 text-xs text-amber-700 flex items-center gap-1.5">
-              <Clock size={12} />
-              Como é Eliminação, esta avaliação vai para conferência do Responsável do Eixo antes de valer.
-            </p>
-          )}
-          {salvar.isError && (
-            <p className="mt-2 text-xs text-red-600">Erro ao salvar a avaliação. Tente novamente.</p>
-          )}
+          </div>
 
-          <button
-            className="btn-primary text-sm mt-3 w-full sm:w-auto"
-            disabled={!selectedTtd || salvar.isPending}
-            onClick={() => salvar.mutate()}
-          >
-            {salvar.isPending ? 'Salvando…' : 'Salvar e avaliar próximo'} <ArrowRight size={14} />
-          </button>
+          {/* Passo 2 — confirmar e avançar */}
+          <div className="flex items-start gap-3 mt-4 pt-4 border-t border-gray-100">
+            <span
+              className={clsx(
+                'shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border mt-0.5 transition-colors',
+                selectedTtd ? 'bg-teal-500 border-teal-500 text-white' : 'bg-gray-100 border-gray-200 text-gray-400',
+              )}
+            >
+              2
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-gray-900 text-sm mb-0.5">Confirme e avance</p>
+              <p className="text-xs text-gray-400 mb-3">
+                {selectedTtd
+                  ? 'Confira o código acima e confirme para salvar esta avaliação.'
+                  : 'Escolha um código no passo 1 para liberar a confirmação.'}
+              </p>
+              {salvar.isError && (
+                <p className="mb-2 text-xs text-red-600">Erro ao salvar a avaliação. Tente novamente.</p>
+              )}
+              <button
+                className="btn-primary text-sm w-full justify-center py-2.5"
+                disabled={!selectedTtd || salvar.isPending}
+                onClick={() => salvar.mutate()}
+              >
+                {salvar.isPending ? 'Salvando…' : 'Confirmar avaliação e ir para o próximo'} <ArrowRight size={14} />
+              </button>
+              <p className="text-[11px] text-gray-400 text-center mt-1.5">
+                Isso salva a decisão deste processo e já abre o próximo da caixa.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Acompanhamento de todos os processos desta caixa — para o
+          avaliador sempre saber quanto já fez e quanto falta. */}
+      {caixaInfo?.caixa && totalNaCaixa > 0 && (
+        <div className="border-t border-gray-100 pt-3 mt-2">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Nesta caixa · {totalNaCaixa} processo{totalNaCaixa === 1 ? '' : 's'}
+          </p>
+          <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+            {processos.map((p, i) => {
+              const decisao = decisoes.get(p.id)
+              const isDone = decisoes.has(p.id)
+              const isCurrent = atual?.id === p.id
+              return (
+                <div
+                  key={p.id}
+                  className={clsx(
+                    'flex items-center gap-3 py-2 text-xs',
+                    isCurrent && 'bg-teal-50/70 -mx-2 px-2 rounded-lg',
+                  )}
+                >
+                  <span
+                    className={clsx(
+                      'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border',
+                      isDone
+                        ? 'bg-teal-500 border-teal-500 text-white'
+                        : isCurrent
+                        ? 'bg-teal-50 border-teal-400 text-teal-700'
+                        : 'bg-gray-50 border-gray-200 text-gray-400',
+                    )}
+                  >
+                    {isDone ? <Check size={11} /> : i + 1}
+                  </span>
+                  <span className="font-mono text-gray-600 shrink-0">{p.numero_documento}</span>
+                  <span className="text-gray-500 truncate flex-1">{p.assunto_processo || '—'}</span>
+                  {isDone && (
+                    <span className={clsx('font-semibold shrink-0', isEliminacao(decisao) ? 'text-red-600' : 'text-teal-600')}>
+                      {isEliminacao(decisao) ? 'Eliminação' : 'Guarda Perm.'}
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -515,6 +661,18 @@ export function AvaliacaoProcessosCard() {
                 ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Aviso de confirmação — some sozinho depois de alguns segundos */}
+      {toast && (
+        <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50 max-w-[calc(100vw-2rem)]">
+          <div className="flex items-center gap-2.5 bg-gray-900 text-white text-sm font-medium px-4 py-3 rounded-xl shadow-2xl">
+            <span className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
+              <Check size={12} />
+            </span>
+            <span>{toast}</span>
           </div>
         </div>
       )}
