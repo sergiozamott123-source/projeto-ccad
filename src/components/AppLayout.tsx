@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import type { Usuario } from '@/lib/database.types'
+import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
 import clsx from 'clsx'
 
 interface NavItem {
@@ -121,12 +122,12 @@ export function AppLayout() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-        <BookOpen size={24} className="text-teal-400 shrink-0" />
-        <div>
+      <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-white/10">
+        <div className="flex items-center gap-3 min-w-0">
+          <BookOpen size={24} className="text-teal-400 shrink-0" />
           <p className="font-bold text-white leading-tight">CCAD</p>
-          <p className="text-xs text-white/50 leading-tight">CDTIV</p>
         </div>
+        <img src={CDTIV_LOGO_DARKBG} alt="CDTIV" className="h-7 w-auto shrink-0" />
       </div>
 
       {/* Nav */}

@@ -7,6 +7,7 @@ import { Download, FileSpreadsheet, Save, Trash2, ChevronLeft, ChevronRight, Fol
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Processo, RelatorioSalvo } from '@/lib/database.types'
+import { CDTIV_LOGO_LIGHTBG } from '@/assets/cdtivLogo'
 import clsx from 'clsx'
 
 interface FiltrosState {
@@ -291,6 +292,10 @@ export function CentralRelatoriosPage() {
       const linhas = ((data ?? []) as Processo[]).map(p => colunas.map(c => String(getValor(p, c.key))))
 
       const doc = new jsPDF({ orientation: 'landscape' })
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const logoW = 30
+      const logoH = logoW / (256 / 124) // proporção original do arquivo da logo
+      doc.addImage(CDTIV_LOGO_LIGHTBG, 'JPEG', pageWidth - 14 - logoW, 8, logoW, logoH)
       doc.setFontSize(14)
       doc.text('Relatório do Acervo — CCAD/CDTIV', 14, 15)
       doc.setFontSize(9)
