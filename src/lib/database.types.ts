@@ -22,6 +22,8 @@ export interface Usuario {
   pilar_id: string | null
   status: StatusUsuario
   acesso_protocolo_geral: boolean
+  pode_avaliar_processos: boolean
+  pode_criar_requisicoes: boolean
 }
 
 export interface Pilar {
@@ -131,6 +133,8 @@ export interface Processo {
   interessado: string
   assunto_processo: string
   ano_producao: number
+  ano_producao_complemento: string | null
+  observacao_intake: string | null
   requer_revisao_manual: boolean
   potencial_expositivo: boolean
   created_at: string
@@ -138,13 +142,39 @@ export interface Processo {
   ttd?: TtdCodigo
 }
 
+export type StatusAvaliacao = 'aguardando_confirmacao' | 'confirmada' | 'devolvida'
+
 export interface Avaliacao {
   id: string
   processo_id: string
   avaliado_por: string
   decisao: string
-  ata_referencia: string
+  ata_referencia: string | null
+  status: StatusAvaliacao
+  motivo_devolucao: string | null
+  confirmado_por: string | null
+  confirmado_em: string | null
+  pilar_id: string | null
   created_at: string
+  processo?: Processo
+  avaliador?: Usuario
+  confirmador?: Usuario
+}
+
+export type StatusRequisicaoAvaliacao = 'pendente' | 'concluida' | 'cancelada'
+
+export interface RequisicaoAvaliacao {
+  id: string
+  caixa_id: string
+  avaliador_id: string
+  criado_por: string
+  status: StatusRequisicaoAvaliacao
+  data_entrega: string
+  created_at: string
+  concluida_em: string | null
+  caixa?: Caixa
+  avaliador?: Usuario
+  criador?: Usuario
 }
 
 export interface PropostaRevisaoTtd {
@@ -284,6 +314,7 @@ export interface Database {
       caixas: { Row: Caixa; Insert: Partial<Caixa>; Update: Partial<Caixa> }
       processos: { Row: Processo; Insert: Partial<Processo>; Update: Partial<Processo> }
       avaliacoes: { Row: Avaliacao; Insert: Partial<Avaliacao>; Update: Partial<Avaliacao> }
+      requisicoes_avaliacao: { Row: RequisicaoAvaliacao; Insert: Partial<RequisicaoAvaliacao>; Update: Partial<RequisicaoAvaliacao> }
       propostas_revisao_ttd: { Row: PropostaRevisaoTtd; Insert: Partial<PropostaRevisaoTtd>; Update: Partial<PropostaRevisaoTtd> }
       reunioes_atas: { Row: ReuniaoAta; Insert: Partial<ReuniaoAta>; Update: Partial<ReuniaoAta> }
       departamentos_mapeados: { Row: DepartamentoMapeado; Insert: Partial<DepartamentoMapeado>; Update: Partial<DepartamentoMapeado> }

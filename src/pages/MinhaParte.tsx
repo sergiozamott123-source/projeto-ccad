@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Upload, TrendingUp, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -7,9 +8,17 @@ import type { Demanda, Pilar } from '@/lib/database.types'
 import { format, startOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import clsx from 'clsx'
+import { PILAR_NOMES } from '@/lib/pilarColors'
+import { AvaliacaoProcessosCard } from '@/components/AvaliacaoProcessosCard'
+
+const ROTA_EIXO: Record<string, string> = {
+  [PILAR_NOMES.DIGITALIZACAO]: '/pilares/digitalizacao',
+  [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
+  [PILAR_NOMES.MEMORIA]: '/pilares/memoria',
+}
 
 export function MinhaParte() {
-  const { profile } = useAuth()
+  const { profile, isCoord } = useAuth()
   const qc = useQueryClient()
   const [indicador, setIndicador] = useState({
     caixas_organizadas: 0,
@@ -92,18 +101,30 @@ export function MinhaParte() {
   if (!profile) return null
 
   const mesLabel = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })
+  const podeAvaliar = isCoord || profile.pode_avaliar_processos
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Minha Parte</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Minhas Atribuições</h1>
         <p className="text-gray-500 text-sm mt-0.5">{mesLabel.charAt(0).toUpperCase() + mesLabel.slice(1)}</p>
       </div>
+
+      {/* Avaliação de Processos — liberado para a Coordenação e para quem está
+          marcado como avaliador autorizado, independente do pilar da pessoa */}
+      {podeAvaliar && <AvaliacaoProcessosCard />}
 
       {/* Pilar card */}
       {pilar && (
         <div className="card p-5">
-          <h2 className="font-semibold text-gray-900 mb-3">{pilar.nome}</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-gray-900">{pilar.nome}</h2>
+            {ROTA_EIXO[pilar.nome] && (
+              <Link to={ROTA_EIXO[pilar.nome]} className="text-xs font-medium text-teal-600 hover:text-teal-700">
+                Ver o eixo completo →
+              </Link>
+            )}
+          </div>
           <div className="space-y-2">
             {pilar.fases?.sort((a, b) => a.ordem - b.ordem).map(fase => (
               <div key={fase.id}>

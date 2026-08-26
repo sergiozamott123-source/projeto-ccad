@@ -21,6 +21,8 @@ import { RevisaoManualPage } from '@/pages/RevisaoManualPage'
 import { BoasPraticasPilarPage } from '@/pages/BoasPraticasPilarPage'
 import { MemoriaPilarPage } from '@/pages/MemoriaPilarPage'
 import { DigitalizacaoPilarPage } from '@/pages/DigitalizacaoPilarPage'
+import { ConfirmarEliminacoesPage } from '@/pages/ConfirmarEliminacoesPage'
+import { RequisicoesAvaliacaoPage } from '@/pages/RequisicoesAvaliacaoPage'
 import { WelcomePage } from '@/pages/WelcomePage'
 import { ProtocoloGeralPage } from '@/pages/ProtocoloGeralPage'
 import { CentralRelatoriosPage } from '@/pages/CentralRelatoriosPage'
@@ -59,6 +61,12 @@ export default function App() {
                 <Route path="/protocolo-geral/catalogar" element={<CatalogarProcessoPage />} />
                 <Route path="/protocolo-geral/ttd" element={<TtdPage />} />
                 <Route path="/protocolo-geral/revisao" element={<RevisaoManualPage />} />
+              </Route>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.papel === 'responsavel_pilar'} />}>
+                <Route path="/confirmar-eliminacoes" element={<ConfirmarEliminacoesPage />} />
+              </Route>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_criar_requisicoes === true} />}>
+                <Route path="/requisicoes-avaliacao" element={<RequisicoesAvaliacaoPage />} />
               </Route>
               <Route path="/pilares/boas-praticas" element={<BoasPraticasPilarPage />} />
               <Route path="/pilares/memoria" element={<MemoriaPilarPage />} />

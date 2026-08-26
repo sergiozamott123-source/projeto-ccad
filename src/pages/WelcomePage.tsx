@@ -4,7 +4,6 @@ import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown } from 'lu
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PILAR_NOMES } from '@/lib/pilarColors'
-import portalHero from '@/assets/portal-hero.jpg'
 
 const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
@@ -36,12 +35,17 @@ export function WelcomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="relative w-full h-[42vh] md:h-[55vh]" style={{ minHeight: 240, maxHeight: 520 }}>
-        <img
-          src={portalHero}
-          alt="Portal da CDTIV"
-          className="w-full h-full object-cover object-[center_top]"
-        />
+      <div
+        className="relative w-full h-[42vh] md:h-[55vh] flex items-center justify-center"
+        style={{
+          minHeight: 240,
+          maxHeight: 520,
+          background: 'linear-gradient(135deg, #0E7C86 0%, #20283B 100%)',
+        }}
+      >
+        <span className="text-white/90 text-xl md:text-2xl font-semibold tracking-wide text-center px-6">
+          Portal da CDTIV
+        </span>
         <div
           className="absolute bottom-0 left-0 right-0 h-12"
           style={{ background: 'linear-gradient(to bottom, transparent, #f9fafb)' }}
@@ -135,10 +139,10 @@ export function WelcomePage() {
             {isMembro && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <p className="font-semibold text-gray-900 mb-4">
-                  {pilarNome ? `Minha Parte — ${pilarNome}` : 'Minha Parte'}
+                  {pilarNome ? `Minhas Atribuições — ${pilarNome}` : 'Minhas Atribuições'}
                 </p>
                 <button onClick={() => navigate('/minha-parte')} className="btn-primary">
-                  Ir para Minha Parte
+                  Ir para Minhas Atribuições
                 </button>
               </div>
             )}

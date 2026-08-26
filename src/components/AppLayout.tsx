@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -21,7 +21,9 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/dashboard',   label: 'Dashboard',   icon: <LayoutDashboard size={18} /> },
-  { to: '/minha-parte', label: 'Minha Parte',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar'] },
+  { to: '/minha-parte', label: 'Minhas Atribuições',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar','coordenador','coordenador_substituto'] },
+  { to: '/confirmar-eliminacoes', label: 'Confirmar Eliminações', icon: <CheckSquare size={18} />, roles: ['responsavel_pilar','coordenador','coordenador_substituto'] },
+  { to: '/requisicoes-avaliacao', label: 'Requisições de Avaliação', icon: <Send size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes' },
   { to: '/demandas',    label: 'Demandas',     icon: <ClipboardList size={18} /> },
   { to: '/relatorios',  label: 'Relatórios',   icon: <FileText size={18} /> },
   { to: '/relatorios-equipe', label: 'Relatórios da Equipe', icon: <FileSearch size={18} />, roles: ['coordenador'] },
@@ -58,6 +60,7 @@ export function AppLayout() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   const papel = profile?.papel ?? ''
+  const isCoord = papel === 'coordenador' || papel === 'coordenador_substituto'
 
   const { data: demandasPendentesCount } = useQuery({
     queryKey: ['demandas-pendentes-count', profile?.id],
@@ -72,10 +75,27 @@ export function AppLayout() {
     enabled: !!profile?.id,
   })
 
+  const { data: eliminacoesPendentesCount } = useQuery({
+    queryKey: ['eliminacoes-pendentes-count', profile?.id, profile?.pilar_id, isCoord],
+    queryFn: async () => {
+      let query = supabase
+        .from('avaliacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'aguardando_confirmacao')
+      if (!isCoord) query = query.eq('pilar_id', profile!.pilar_id)
+      const { count } = await query
+      return count ?? 0
+    },
+    enabled: !!profile?.id && (papel === 'responsavel_pilar' || isCoord),
+  })
+
   function isVisible(item: NavItem) {
-    if (item.flag) return profile?.[item.flag] === true
-    if (!item.roles) return true
-    return item.roles.includes(papel)
+    const roleOk = item.roles ? item.roles.includes(papel) : false
+    const flagOk = item.flag ? profile?.[item.flag] === true : false
+    if (item.roles && item.flag) return roleOk || flagOk
+    if (item.flag) return flagOk
+    if (item.roles) return roleOk
+    return true
   }
 
   async function handleSignOut() {
@@ -159,6 +179,11 @@ export function AppLayout() {
               {item.to === '/demandas' && (demandasPendentesCount ?? 0) > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                   {demandasPendentesCount}
+                </span>
+              )}
+              {item.to === '/confirmar-eliminacoes' && (eliminacoesPendentesCount ?? 0) > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {eliminacoesPendentesCount}
                 </span>
               )}
             </NavLink>
