@@ -17,10 +17,21 @@ interface FiltrosState {
   anoAte: string
   requerRevisao: 'qualquer' | 'sim' | 'nao'
   busca: string
+  avaliadorId: string
+  statusAvaliacao: 'qualquer' | 'sem_avaliacao' | 'aguardando_confirmacao' | 'confirmada' | 'devolvida'
+  avaliacaoDe: string
+  avaliacaoAte: string
 }
 
 const FILTROS_INICIAIS: FiltrosState = {
   setor: '', classe: '', destinacaoFinal: '', anoDe: '', anoAte: '', requerRevisao: 'qualquer', busca: '',
+  avaliadorId: '', statusAvaliacao: 'qualquer', avaliacaoDe: '', avaliacaoAte: '',
+}
+
+const STATUS_AVALIACAO_LABEL: Record<string, string> = {
+  aguardando_confirmacao: 'Aguardando confirmação',
+  confirmada: 'Confirmada',
+  devolvida: 'Devolvida',
 }
 
 const COLUNAS: { key: string; label: string }[] = [
@@ -35,13 +46,29 @@ const COLUNAS: { key: string; label: string }[] = [
   { key: 'ttd.serie', label: 'Série' },
   { key: 'ttd.destinacao_final', label: 'Destinação Final' },
   { key: 'requer_revisao_manual', label: 'Requer Revisão' },
+  { key: 'avaliacao.avaliador', label: 'Avaliador' },
+  { key: 'avaliacao.data', label: 'Data da Avaliação' },
+  { key: 'avaliacao.status', label: 'Status da Avaliação' },
+  { key: 'avaliacao.confirmado_por', label: 'Confirmado por' },
+  { key: 'avaliacao.confirmado_em', label: 'Confirmado em' },
 ]
 
-const COLUNAS_PADRAO = ['numero_documento', 'interessado', 'assunto_processo', 'caixa.setor', 'ttd.classe']
+const COLUNAS_PADRAO = [
+  'numero_documento', 'interessado', 'assunto_processo', 'caixa.setor', 'ttd.classe',
+  'avaliacao.avaliador', 'avaliacao.status',
+]
 
 const PAGE_SIZE = 50
 
+// A consulta traz todas as avaliações do processo (pode ter mais de uma se
+// alguma foi devolvida e reavaliada depois), ordenadas da mais recente para
+// a mais antiga — a mais recente é a que representa a situação atual dele.
+function avaliacaoAtual(p: Processo) {
+  return p.avaliacoes && p.avaliacoes.length > 0 ? p.avaliacoes[0] : null
+}
+
 function getValor(p: Processo, key: string): string | number {
+  const aval = avaliacaoAtual(p)
   switch (key) {
     case 'numero_documento': return p.numero_documento ?? ''
     case 'interessado': return p.interessado ?? ''
@@ -54,6 +81,11 @@ function getValor(p: Processo, key: string): string | number {
     case 'ttd.serie': return p.ttd?.serie ?? ''
     case 'ttd.destinacao_final': return p.ttd?.destinacao_final ?? ''
     case 'requer_revisao_manual': return p.requer_revisao_manual ? 'Sim' : 'Não'
+    case 'avaliacao.avaliador': return aval?.avaliador?.nome ?? 'Não avaliado'
+    case 'avaliacao.data': return aval ? new Date(aval.created_at).toLocaleDateString('pt-BR') : '—'
+    case 'avaliacao.status': return aval ? (STATUS_AVALIACAO_LABEL[aval.status] ?? aval.status) : 'Não avaliado'
+    case 'avaliacao.confirmado_por': return aval?.confirmador?.nome ?? '—'
+    case 'avaliacao.confirmado_em': return aval?.confirmado_em ? new Date(aval.confirmado_em).toLocaleDateString('pt-BR') : '—'
     default: return ''
   }
 }
@@ -66,11 +98,17 @@ function descreverFiltros(f: FiltrosState): string {
   if (f.anoDe || f.anoAte) partes.push(`Ano: ${f.anoDe || '—'}–${f.anoAte || '—'}`)
   if (f.requerRevisao !== 'qualquer') partes.push(`Requer revisão: ${f.requerRevisao === 'sim' ? 'Sim' : 'Não'}`)
   if (f.busca) partes.push(`Busca: "${f.busca}"`)
+  if (f.statusAvaliacao === 'sem_avaliacao') partes.push('Status da avaliação: Não avaliado')
+  else if (f.statusAvaliacao !== 'qualquer') partes.push(`Status da avaliação: ${STATUS_AVALIACAO_LABEL[f.statusAvaliacao]}`)
+  if (f.avaliacaoDe || f.avaliacaoAte) partes.push(`Data da avaliação: ${f.avaliacaoDe || '—'}–${f.avaliacaoAte || '—'}`)
   return partes.length ? partes.join(' · ') : 'Sem filtros aplicados'
 }
 
+const AVALIACAO_CAMPOS = 'status,decisao,created_at,confirmado_em,avaliado_por,confirmado_por,avaliador:avaliado_por(nome),confirmador:confirmado_por(nome)'
+
 // !inner nos joins somente quando há filtro na tabela relacionada, senão
-// processos sem TTD/caixa correspondente ficariam excluídos de toda consulta
+// processos sem TTD/caixa/avaliação correspondente ficariam excluídos de
+// toda consulta
 function buildQuery(filtros: FiltrosState) {
   const caixaJoin = filtros.setor
     ? 'caixa:caixa_id!inner(numero,setor,status)'
@@ -79,9 +117,19 @@ function buildQuery(filtros: FiltrosState) {
     ? 'ttd:ttd_codigo_id!inner(codigo,classe,serie,assunto,destinacao_final,legislacao)'
     : 'ttd:ttd_codigo_id(codigo,classe,serie,assunto,destinacao_final,legislacao)'
 
+  const semAvaliacao = filtros.statusAvaliacao === 'sem_avaliacao'
+  const temFiltroAvaliacao = !!filtros.avaliadorId
+    || (filtros.statusAvaliacao !== 'qualquer' && !semAvaliacao)
+    || !!filtros.avaliacaoDe || !!filtros.avaliacaoAte
+  const avaliacaoJoin = semAvaliacao
+    ? 'avaliacoes(id)'
+    : temFiltroAvaliacao
+    ? `avaliacoes!inner(${AVALIACAO_CAMPOS})`
+    : `avaliacoes(${AVALIACAO_CAMPOS})`
+
   let query = supabase
     .from('processos')
-    .select(`*, ${caixaJoin}, ${ttdJoin}`, { count: 'exact' })
+    .select(`*, ${caixaJoin}, ${ttdJoin}, ${avaliacaoJoin}`, { count: 'exact' })
 
   if (filtros.setor) query = query.eq('caixa.setor', filtros.setor)
   if (filtros.classe) query = query.eq('ttd.classe', filtros.classe)
@@ -93,6 +141,13 @@ function buildQuery(filtros: FiltrosState) {
   if (filtros.busca) {
     query = query.or(`numero_documento.ilike.%${filtros.busca}%,interessado.ilike.%${filtros.busca}%,assunto_processo.ilike.%${filtros.busca}%`)
   }
+  if (semAvaliacao) query = query.is('avaliacoes.id', null)
+  else if (filtros.statusAvaliacao !== 'qualquer') query = query.eq('avaliacoes.status', filtros.statusAvaliacao)
+  if (filtros.avaliadorId) query = query.eq('avaliacoes.avaliado_por', filtros.avaliadorId)
+  if (filtros.avaliacaoDe) query = query.gte('avaliacoes.created_at', filtros.avaliacaoDe)
+  if (filtros.avaliacaoAte) query = query.lte('avaliacoes.created_at', `${filtros.avaliacaoAte}T23:59:59`)
+
+  if (!semAvaliacao) query = query.order('created_at', { ascending: false, foreignTable: 'avaliacoes' })
 
   const ordenarPorAno = filtros.destinacaoFinal === 'Eliminação'
   query = query.order(ordenarPorAno ? 'ano_producao' : 'created_at', { ascending: ordenarPorAno })
@@ -138,6 +193,18 @@ export function CentralRelatoriosPage() {
     queryFn: async () => {
       const { data } = await supabase.from('ttd_codigos').select('destinacao_final')
       return Array.from(new Set((data ?? []).map(d => d.destinacao_final).filter(Boolean))).sort() as string[]
+    },
+  })
+
+  const { data: avaliadores } = useQuery({
+    queryKey: ['avaliadores-para-filtro'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('usuarios')
+        .select('id, nome')
+        .or('pode_avaliar_processos.eq.true,papel.eq.coordenador,papel.eq.coordenador_substituto')
+        .order('nome')
+      return (data ?? []) as { id: string; nome: string }[]
     },
   })
 
@@ -299,6 +366,42 @@ export function CentralRelatoriosPage() {
           <div className="sm:col-span-2 lg:col-span-3">
             <label className="label">Busca livre (nº do documento, interessado ou assunto)</label>
             <input className="input" value={filtros.busca} onChange={e => atualizarFiltro({ busca: e.target.value })} />
+          </div>
+        </div>
+
+        {/* Filtros da camada de avaliação */}
+        <div className="border-t border-gray-100 pt-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Avaliação</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="label">Avaliador</label>
+              <select className="input" value={filtros.avaliadorId} onChange={e => atualizarFiltro({ avaliadorId: e.target.value })}>
+                <option value="">Todos</option>
+                {(avaliadores ?? []).map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Status da avaliação</label>
+              <select
+                className="input"
+                value={filtros.statusAvaliacao}
+                onChange={e => atualizarFiltro({ statusAvaliacao: e.target.value as FiltrosState['statusAvaliacao'] })}
+              >
+                <option value="qualquer">Qualquer</option>
+                <option value="sem_avaliacao">Não avaliado</option>
+                <option value="aguardando_confirmacao">Aguardando confirmação</option>
+                <option value="confirmada">Confirmada</option>
+                <option value="devolvida">Devolvida</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Data da avaliação — de</label>
+              <input type="date" className="input" value={filtros.avaliacaoDe} onChange={e => atualizarFiltro({ avaliacaoDe: e.target.value })} />
+            </div>
+            <div>
+              <label className="label">Data da avaliação — até</label>
+              <input type="date" className="input" value={filtros.avaliacaoAte} onChange={e => atualizarFiltro({ avaliacaoAte: e.target.value })} />
+            </div>
           </div>
         </div>
 

@@ -144,6 +144,7 @@ export interface Processo {
   created_at: string
   caixa?: Caixa
   ttd?: TtdCodigo
+  avaliacoes?: Avaliacao[]
 }
 
 export type StatusAvaliacao = 'aguardando_confirmacao' | 'confirmada' | 'devolvida'
