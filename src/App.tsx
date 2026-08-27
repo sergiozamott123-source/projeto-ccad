@@ -26,6 +26,7 @@ import { RequisicoesAvaliacaoPage } from '@/pages/RequisicoesAvaliacaoPage'
 import { WelcomePage } from '@/pages/WelcomePage'
 import { ProtocoloGeralPage } from '@/pages/ProtocoloGeralPage'
 import { CentralRelatoriosPage } from '@/pages/CentralRelatoriosPage'
+import { BuscaProcessosPage } from '@/pages/BuscaProcessosPage'
 
 export default function App() {
   return (
@@ -39,6 +40,9 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.papel === 'apoio_tecnico'} />}>
                 <Route path="/dashboard" element={<DashboardPage />} />
+              </Route>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.acesso_busca_emprestimos === true} />}>
+                <Route path="/busca-processos" element={<BuscaProcessosPage />} />
               </Route>
               <Route path="/minha-parte" element={<MinhaParte />} />
               <Route path="/demandas" element={<DemandasPage />} />
