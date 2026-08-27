@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send, Search,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -17,11 +17,16 @@ interface NavItem {
   icon: React.ReactNode
   roles?: string[]
   flag?: keyof Usuario
+  novo?: boolean
   children?: { to: string; label: string }[]
 }
 
 const NAV: NavItem[] = [
   { to: '/dashboard',   label: 'Dashboard',   icon: <LayoutDashboard size={18} />, roles: ['coordenador','coordenador_substituto','apoio_tecnico'] },
+  {
+    to: '/busca-processos', label: 'Buscar Processo', icon: <Search size={18} />,
+    roles: ['coordenador', 'coordenador_substituto'], flag: 'acesso_busca_emprestimos', novo: true,
+  },
   { to: '/minha-parte', label: 'Minhas Atribuições',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar','coordenador','coordenador_substituto'] },
   { to: '/confirmar-eliminacoes', label: 'Confirmar Eliminações', icon: <CheckSquare size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/requisicoes-avaliacao', label: 'Requisições de Avaliação', icon: <Send size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes' },
@@ -177,6 +182,11 @@ export function AppLayout() {
             >
               {item.icon}
               <span className="flex-1">{item.label}</span>
+              {item.novo && (
+                <span className="bg-teal-400 text-navy-700 text-[9px] font-bold tracking-wide rounded-full px-1.5 py-0.5">
+                  NOVO
+                </span>
+              )}
               {item.to === '/demandas' && (demandasPendentesCount ?? 0) > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                   {demandasPendentesCount}
