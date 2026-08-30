@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send, Search,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send, Search, Clock,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -25,6 +25,10 @@ const NAV: NavItem[] = [
   { to: '/dashboard',   label: 'Dashboard',   icon: <LayoutDashboard size={18} />, roles: ['coordenador','coordenador_substituto','apoio_tecnico'] },
   {
     to: '/busca-processos', label: 'Buscar Processo', icon: <Search size={18} />,
+    roles: ['coordenador', 'coordenador_substituto'], flag: 'acesso_busca_emprestimos',
+  },
+  {
+    to: '/painel-emprestimos', label: 'Painel de Empréstimos', icon: <Clock size={18} />,
     roles: ['coordenador', 'coordenador_substituto'], flag: 'acesso_busca_emprestimos', novo: true,
   },
   { to: '/minha-parte', label: 'Minhas Atribuições',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar','coordenador','coordenador_substituto'] },

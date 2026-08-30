@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import jsPDF from 'jspdf'
 import { Search, Archive, AlertTriangle, Clock, X, FileSignature, Undo2, CheckCircle2, CalendarClock } from 'lucide-react'
@@ -612,7 +613,8 @@ function ModalProrrogarPrazo({
 export function BuscaProcessosPage() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
-  const [termo, setTermo] = useState('')
+  const [searchParams] = useSearchParams()
+  const [termo, setTermo] = useState(searchParams.get('termo') ?? '')
   const [ano, setAno] = useState('')
   const [interessado, setInteressado] = useState('')
   const [setor, setSetor] = useState('')
