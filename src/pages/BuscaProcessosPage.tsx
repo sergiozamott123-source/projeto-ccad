@@ -13,7 +13,7 @@ const PRAZO_PADRAO_DIAS = 15
 type ProcessoBusca = Processo & {
   caixa: Pick<Caixa, 'numero' | 'setor'> | null
   avaliacoes: Pick<Avaliacao, 'decisao' | 'status' | 'confirmado_em'>[] | null
-  emprestimos: Pick
+  emprestimos: Pick<
     Emprestimo,
     'id' | 'solicitante_nome' | 'solicitante_matricula' | 'desarquivado_em' | 'prazo_previsto' | 'devolvido_em'
   >[] | null
