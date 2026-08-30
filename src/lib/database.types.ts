@@ -1,84 +1,377 @@
--- ============================================================
--- FASE 14: Empréstimos de Processos — Etapa 1 (Desarquivamento)
--- ============================================================
--- Cria a base de dados para o módulo de Empréstimos: um novo status no
--- processo (arquivado/emprestado) e a tabela que guarda cada retirada
--- (desarquivamento) feita pelo Protocolo. A devolução e a prorrogação de
--- prazo usam essa mesma estrutura e chegam nas próximas etapas.
+export type Papel = 'coordenador' | 'coordenador_substituto' | 'responsavel_pilar' | 'membro' | 'apoio_tecnico'
+export type StatusUsuario = 'ativo' | 'convite_pendente'
+export type Relevancia = 'alta' | 'media' | 'baixa'
+export type StatusDemanda = 'pendente' | 'em_andamento' | 'concluida'
+export type StatusRelatorio = 'rascunho' | 'enviado' | 'atrasado'
+export type StatusTTD = 'vigente' | 'proposta' | 'descontinuado'
+export type ImpactoRisco = 'alto' | 'medio' | 'baixo'
+export type ProbabilidadeRisco = 'alta' | 'media' | 'baixa'
+export type StatusProposta = 'em_analise' | 'aprovada' | 'rejeitada'
+export type TipoReuniaoAta = 'mensal_consolidada' | 'quinzenal_frente' | 'checkpoint_trimestral'
+export type StatusConsultoriaMemorial = 'a_contratar' | 'contratado' | 'concluido'
+export type StatusLicitacaoDigitalizacao =
+  | 'a_iniciar' | 'tr_em_validacao' | 'licitacao_aberta' | 'contratado' | 'em_execucao'
+export type TipoMuralEvento =
+  | 'atividade_concluida' | 'ata_registrada' | 'indicador_lancado' | 'demanda_concluida' | 'fase_concluida'
 
--- Novo status de guarda do processo
-alter table processos add column if not exists status_emprestimo text not null default 'arquivado'
-  check (status_emprestimo in ('arquivado', 'emprestado'));
+export interface Usuario {
+  id: string
+  nome: string
+  email: string
+  papel: Papel
+  pilar_id: string | null
+  status: StatusUsuario
+  acesso_protocolo_geral: boolean
+  pode_avaliar_processos: boolean
+  pode_criar_requisicoes: boolean
+  acesso_busca_emprestimos: boolean
+}
 
-comment on column processos.status_emprestimo is
-  'Situação de guarda do processo: arquivado (disponível no Arquivo Geral) ou emprestado (retirado por alguém).';
+export interface Pilar {
+  id: string
+  nome: string
+  prazo_meses: number
+  responsavel_id: string | null
+  nome_normalizado: string | null
+  responsavel?: Usuario
+}
 
--- Tabela de empréstimos: um registro por retirada (desarquivamento)
-create table if not exists emprestimos (
-  id uuid primary key default uuid_generate_v4(),
-  processo_id uuid not null references processos(id),
-  solicitante_nome text not null,
-  solicitante_matricula text not null,
-  protocolista_id uuid not null references usuarios(id),
-  desarquivado_em timestamptz not null default now(),
-  prazo_previsto date not null,
-  devolvido_em timestamptz,
-  recebido_por_id uuid references usuarios(id),
-  declaracao_retirada_url text,
-  declaracao_devolucao_url text,
-  created_at timestamptz default now()
-);
+export interface Fase {
+  id: string
+  pilar_id: string
+  nome: string
+  ordem: number
+  percentual_conclusao: number
+}
 
-comment on table emprestimos is
-  'Histórico de retiradas (desarquivamento) e devoluções de processos pelo Protocolo. Um processo emprestado tem uma linha aqui com devolvido_em em branco.';
+export interface Demanda {
+  id: string
+  titulo: string
+  descricao: string
+  pilar_id: string | null
+  responsavel_pilar_id: string
+  criado_por: string
+  prazo: string
+  relevancia: Relevancia
+  status: StatusDemanda
+  created_at: string
+  concluida_em: string | null
+  pilar?: Pilar
+  responsavel_pilar?: Usuario
+  membros?: Usuario[]
+}
 
--- Histórico de prorrogações de prazo de um empréstimo (etapa futura, criado já agora para não precisar de nova migração depois)
-create table if not exists emprestimo_prorrogacoes (
-  id uuid primary key default uuid_generate_v4(),
-  emprestimo_id uuid not null references emprestimos(id) on delete cascade,
-  prazo_anterior date not null,
-  prazo_novo date not null,
-  motivo text,
-  autorizado_por_id uuid not null references usuarios(id),
-  created_at timestamptz default now()
-);
+export interface IndicadorMensal {
+  id: string
+  pilar_id: string
+  usuario_id: string
+  mes_referencia: string
+  caixas_organizadas: number
+  paginas_digitalizadas: number
+  documentos_indexados: number
+  certificacoes_digitais: number
+  evidencia_url: string | null
+  created_at: string
+}
 
-comment on table emprestimo_prorrogacoes is
-  'Histórico de prorrogações de prazo de devolução de um empréstimo (registrado diretamente pelo Protocolo, sem limite de vezes).';
+export interface RelatorioMensal {
+  id: string
+  usuario_id: string
+  pilar_id: string
+  mes_referencia: string
+  atividades_realizadas: string
+  dificuldades: string
+  horas_dedicadas: number
+  evidencias_urls: string[]
+  status: StatusRelatorio
+  enviado_em: string | null
+  demandas_relacionadas: string[]
+  usuario?: Usuario
+  pilar?: Pilar
+}
 
--- RLS: mesmo padrão do restante do sistema — leitura liberada para todo
--- usuário autenticado; escrita restrita a quem tem acesso à funcionalidade
--- (Coordenador, Coordenador Substituto, ou quem tiver acesso_busca_emprestimos).
-alter table emprestimos enable row level security;
-alter table emprestimo_prorrogacoes enable row level security;
+export interface Risco {
+  id: string
+  pilar_id: string
+  titulo: string
+  descricao: string
+  impacto: ImpactoRisco
+  probabilidade: ProbabilidadeRisco
+  mitigacao: string
+  status: string
+  pilar?: Pilar
+}
 
-create policy "emprestimos_select" on emprestimos for select to authenticated using (true);
-create policy "emprestimos_insert" on emprestimos for insert to authenticated with check (
-  exists (
-    select 1 from usuarios u
-    where u.id = auth.uid()
-      and (u.papel in ('coordenador','coordenador_substituto') or u.acesso_busca_emprestimos = true)
-  )
-);
-create policy "emprestimos_update" on emprestimos for update to authenticated using (
-  exists (
-    select 1 from usuarios u
-    where u.id = auth.uid()
-      and (u.papel in ('coordenador','coordenador_substituto') or u.acesso_busca_emprestimos = true)
-  )
-);
+export interface TtdCodigo {
+  id: string
+  codigo: string
+  classe: string
+  serie: string
+  assunto: string
+  especie: string
+  fase_corrente: string
+  fase_intermediaria: string
+  destinacao_final: string
+  legislacao: string
+  observacao: string
+  status: StatusTTD
+  versao: number
+  vigente_desde: string | null
+}
 
-create policy "emprestimo_prorrogacoes_select" on emprestimo_prorrogacoes for select to authenticated using (true);
-create policy "emprestimo_prorrogacoes_insert" on emprestimo_prorrogacoes for insert to authenticated with check (
-  exists (
-    select 1 from usuarios u
-    where u.id = auth.uid()
-      and (u.papel in ('coordenador','coordenador_substituto') or u.acesso_busca_emprestimos = true)
-  )
-);
+export interface Caixa {
+  id: string
+  numero: string
+  setor: string
+  status: string
+}
 
--- Conferência: deve retornar 1 linha em cada consulta
-select column_name, data_type from information_schema.columns
-  where table_name = 'processos' and column_name = 'status_emprestimo';
-select table_name from information_schema.tables where table_name = 'emprestimos';
-select table_name from information_schema.tables where table_name = 'emprestimo_prorrogacoes';
+export type Interessado = 'CDTIV' | 'PMV'
+
+export type StatusEmprestimoProcesso = 'arquivado' | 'emprestado'
+
+export interface Processo {
+  id: string
+  caixa_id: string
+  ttd_codigo_id: string | null
+  numero_documento: string
+  interessado: string
+  assunto_processo: string
+  ano_producao: number
+  ano_producao_complemento: string | null
+  observacao_intake: string | null
+  data_ultima_movimentacao: string | null
+  sem_data_ultima_movimentacao: boolean
+  requer_revisao_manual: boolean
+  potencial_expositivo: boolean
+  status_emprestimo: StatusEmprestimoProcesso
+  created_at: string
+  caixa?: Caixa
+  ttd?: TtdCodigo
+  avaliacoes?: Avaliacao[]
+  emprestimos?: Emprestimo[]
+}
+
+export type StatusAvaliacao = 'aguardando_confirmacao' | 'confirmada' | 'devolvida'
+
+export interface Avaliacao {
+  id: string
+  processo_id: string
+  avaliado_por: string
+  decisao: string
+  ata_referencia: string | null
+  status: StatusAvaliacao
+  motivo_devolucao: string | null
+  confirmado_por: string | null
+  confirmado_em: string | null
+  pilar_id: string | null
+  created_at: string
+  processo?: Processo
+  avaliador?: Usuario
+  confirmador?: Usuario
+}
+
+export type StatusRequisicaoAvaliacao = 'pendente' | 'concluida' | 'cancelada'
+
+export interface RequisicaoAvaliacao {
+  id: string
+  caixa_id: string
+  avaliador_id: string
+  criado_por: string
+  status: StatusRequisicaoAvaliacao
+  data_entrega: string
+  created_at: string
+  concluida_em: string | null
+  caixa?: Caixa
+  avaliador?: Usuario
+  criador?: Usuario
+}
+
+export interface Emprestimo {
+  id: string
+  processo_id: string
+  solicitante_nome: string
+  solicitante_matricula: string
+  protocolista_id: string
+  desarquivado_em: string
+  prazo_previsto: string
+  devolvido_em: string | null
+  recebido_por_id: string | null
+  declaracao_retirada_url: string | null
+  declaracao_devolucao_url: string | null
+  created_at: string
+  processo?: Processo
+  protocolista?: Usuario
+  recebido_por?: Usuario
+  prorrogacoes?: EmprestimoProrrogacao[]
+}
+
+export interface EmprestimoProrrogacao {
+  id: string
+  emprestimo_id: string
+  prazo_anterior: string
+  prazo_novo: string
+  motivo: string | null
+  autorizado_por_id: string
+  created_at: string
+  autorizado_por?: Usuario
+}
+
+export interface PropostaRevisaoTtd {
+  id: string
+  ttd_codigo_id: string | null
+  proposto_por: string
+  justificativa: string
+  status: StatusProposta
+  usuario?: Usuario
+  ttd?: TtdCodigo
+}
+
+export interface ReuniaoAta {
+  id: string
+  tipo: TipoReuniaoAta
+  pilar_id: string | null
+  data_reuniao: string
+  resumo: string | null
+  encaminhado_nrh: boolean
+  criado_por: string | null
+  created_at: string
+  pilar?: Pilar
+}
+
+export interface DepartamentoMapeado {
+  id: string
+  nome: string
+  mapeado: boolean
+  mapeado_por: string | null
+  data_mapeamento: string | null
+  mapeado_por_usuario?: Usuario
+}
+
+export interface ProtocoloBoasPraticas {
+  id: string
+  versao: number
+  conteudo: string
+  atualizado_por: string | null
+  atualizado_em: string
+  atualizado_por_usuario?: Usuario
+}
+
+export interface BenchmarkingRegistro {
+  id: string
+  instituicao: string
+  data_visita: string | null
+  notas: string | null
+  registrado_por: string | null
+  created_at: string
+}
+
+export interface ConsultoriaMemorial {
+  id: string
+  especialista: string | null
+  area: string
+  status: StatusConsultoriaMemorial
+  data_contratacao: string | null
+}
+
+export interface ProjetoMemorial {
+  id: string
+  conceito_layout: string | null
+  orcamento_estimado: number | null
+  atualizado_por: string | null
+  atualizado_em: string
+}
+
+export interface LicitacaoDigitalizacao {
+  id: string
+  status: StatusLicitacaoDigitalizacao
+  tr_validado: boolean
+  dotacao_confirmada: boolean
+  empresa_contratada: string | null
+  data_assinatura: string | null
+  data_inicio_execucao: string | null
+  atualizado_por: string | null
+  atualizado_em: string
+}
+
+export interface AtividadeFase {
+  id: string
+  fase_id: string
+  titulo: string
+  concluida: boolean
+  concluida_por: string | null
+  concluida_em: string | null
+  criado_por: string | null
+  created_at: string
+  concluida_por_usuario?: Usuario
+}
+
+export interface MuralEvento {
+  id: string
+  tipo: TipoMuralEvento
+  pilar_id: string | null
+  usuario_id: string | null
+  descricao: string
+  ocorrido_em: string
+  pilar?: Pilar
+  usuario?: Usuario
+}
+
+export interface DigitalizacaoMetaAnual {
+  id: string
+  ano_execucao: number
+  caixas_meta: number
+  paginas_meta: number
+  documentos_meta: number
+  certificacoes_meta: number
+  investimento_meta: number
+  investimento_realizado: number | null
+  atualizado_por: string | null
+  atualizado_em: string
+}
+
+export interface RelatorioSalvo {
+  id: string
+  nome: string
+  filtros: Record<string, any>
+  colunas: string[]
+  criado_por: string | null
+  created_at: string
+}
+
+// Supabase DB type wrapper (for createClient generic)
+export interface Database {
+  public: {
+    Tables: {
+      usuarios: { Row: Usuario; Insert: Partial<Usuario>; Update: Partial<Usuario> }
+      pilares: { Row: Pilar; Insert: Partial<Pilar>; Update: Partial<Pilar> }
+      fases: { Row: Fase; Insert: Partial<Fase>; Update: Partial<Fase> }
+      demandas: { Row: Demanda; Insert: Partial<Demanda>; Update: Partial<Demanda> }
+      indicadores_mensais: { Row: IndicadorMensal; Insert: Partial<IndicadorMensal>; Update: Partial<IndicadorMensal> }
+      relatorios_mensais: { Row: RelatorioMensal; Insert: Partial<RelatorioMensal>; Update: Partial<RelatorioMensal> }
+      riscos: { Row: Risco; Insert: Partial<Risco>; Update: Partial<Risco> }
+      ttd_codigos: { Row: TtdCodigo; Insert: Partial<TtdCodigo>; Update: Partial<TtdCodigo> }
+      caixas: { Row: Caixa; Insert: Partial<Caixa>; Update: Partial<Caixa> }
+      processos: { Row: Processo; Insert: Partial<Processo>; Update: Partial<Processo> }
+      avaliacoes: { Row: Avaliacao; Insert: Partial<Avaliacao>; Update: Partial<Avaliacao> }
+      emprestimos: { Row: Emprestimo; Insert: Partial<Emprestimo>; Update: Partial<Emprestimo> }
+      emprestimo_prorrogacoes: { Row: EmprestimoProrrogacao; Insert: Partial<EmprestimoProrrogacao>; Update: Partial<EmprestimoProrrogacao> }
+      requisicoes_avaliacao: { Row: RequisicaoAvaliacao; Insert: Partial<RequisicaoAvaliacao>; Update: Partial<RequisicaoAvaliacao> }
+      propostas_revisao_ttd: { Row: PropostaRevisaoTtd; Insert: Partial<PropostaRevisaoTtd>; Update: Partial<PropostaRevisaoTtd> }
+      reunioes_atas: { Row: ReuniaoAta; Insert: Partial<ReuniaoAta>; Update: Partial<ReuniaoAta> }
+      departamentos_mapeados: { Row: DepartamentoMapeado; Insert: Partial<DepartamentoMapeado>; Update: Partial<DepartamentoMapeado> }
+      protocolo_boas_praticas: { Row: ProtocoloBoasPraticas; Insert: Partial<ProtocoloBoasPraticas>; Update: Partial<ProtocoloBoasPraticas> }
+      benchmarking_registros: { Row: BenchmarkingRegistro; Insert: Partial<BenchmarkingRegistro>; Update: Partial<BenchmarkingRegistro> }
+      consultoria_memorial: { Row: ConsultoriaMemorial; Insert: Partial<ConsultoriaMemorial>; Update: Partial<ConsultoriaMemorial> }
+      projeto_memorial: { Row: ProjetoMemorial; Insert: Partial<ProjetoMemorial>; Update: Partial<ProjetoMemorial> }
+      licitacao_digitalizacao: { Row: LicitacaoDigitalizacao; Insert: Partial<LicitacaoDigitalizacao>; Update: Partial<LicitacaoDigitalizacao> }
+      digitalizacao_metas_anuais: { Row: DigitalizacaoMetaAnual; Insert: Partial<DigitalizacaoMetaAnual>; Update: Partial<DigitalizacaoMetaAnual> }
+      atividades_fase: { Row: AtividadeFase; Insert: Partial<AtividadeFase>; Update: Partial<AtividadeFase> }
+      mural_eventos: { Row: MuralEvento; Insert: Partial<MuralEvento>; Update: Partial<MuralEvento> }
+      relatorios_salvos: { Row: RelatorioSalvo; Insert: Partial<RelatorioSalvo>; Update: Partial<RelatorioSalvo> }
+    }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+  }
+}
