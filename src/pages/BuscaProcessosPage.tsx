@@ -21,15 +21,27 @@ export function BuscaProcessosPage() {
   const [termo, setTermo] = useState('')
   const [ano, setAno] = useState('')
   const [interessado, setInteressado] = useState('')
+  const [setor, setSetor] = useState('')
 
-  const temFiltro = termo.trim().length >= 2 || ano.trim().length > 0 || interessado.length > 0
+  const temFiltro = termo.trim().length >= 2 || ano.trim().length > 0 || interessado.length > 0 || setor.length > 0
+
+  const { data: setores } = useQuery({
+    queryKey: ['setores-disponiveis'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('caixas').select('setor').not('setor', 'is', null)
+      if (error) throw error
+      const unicos = Array.from(new Set((data ?? []).map(c => c.setor).filter((s): s is string => !!s)))
+      return unicos.sort((a, b) => a.localeCompare(b))
+    },
+    staleTime: 5 * 60 * 1000,
+  })
 
   const { data: resultados, isLoading, isFetching } = useQuery({
-    queryKey: ['busca-processos', termo, ano, interessado],
+    queryKey: ['busca-processos', termo, ano, interessado, setor],
     queryFn: async () => {
       let query = supabase
         .from('processos')
-        .select('*, caixa:caixa_id(numero,setor), avaliacoes(decisao,status,confirmado_em)')
+        .select('*, caixa:caixa_id!inner(numero,setor), avaliacoes(decisao,status,confirmado_em)')
 
       if (termo.trim().length >= 2) {
         const t = termo.trim()
@@ -42,6 +54,9 @@ export function BuscaProcessosPage() {
       }
       if (interessado) {
         query = query.eq('interessado', interessado)
+      }
+      if (setor) {
+        query = query.eq('caixa.setor', setor)
       }
 
       const { data, error } = await query
@@ -88,6 +103,12 @@ export function BuscaProcessosPage() {
             <option value="">Interessado — todos</option>
             <option value="CDTIV">CDTIV</option>
             <option value="PMV">PMV</option>
+          </select>
+          <select className="input w-48" value={setor} onChange={e => setSetor(e.target.value)}>
+            <option value="">Setor de origem — todos</option>
+            {(setores ?? []).map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
           </select>
         </div>
         <p className="text-xs text-gray-400">
@@ -138,6 +159,9 @@ export function BuscaProcessosPage() {
                     <Archive size={11} /> Caixa
                   </p>
                   <p className="text-base font-bold text-amber-800">{p.caixa?.numero ?? '—'}</p>
+                  {p.caixa?.setor && (
+                    <p className="text-[10px] text-amber-600 mt-0.5">{p.caixa.setor}</p>
+                  )}
                 </div>
 
                 <div className="shrink-0 flex flex-col items-stretch gap-1">
