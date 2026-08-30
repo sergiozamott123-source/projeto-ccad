@@ -128,6 +128,8 @@ export interface Caixa {
 
 export type Interessado = 'CDTIV' | 'PMV'
 
+export type StatusEmprestimoProcesso = 'arquivado' | 'emprestado'
+
 export interface Processo {
   id: string
   caixa_id: string
@@ -142,10 +144,12 @@ export interface Processo {
   sem_data_ultima_movimentacao: boolean
   requer_revisao_manual: boolean
   potencial_expositivo: boolean
+  status_emprestimo: StatusEmprestimoProcesso
   created_at: string
   caixa?: Caixa
   ttd?: TtdCodigo
   avaliacoes?: Avaliacao[]
+  emprestimos?: Emprestimo[]
 }
 
 export type StatusAvaliacao = 'aguardando_confirmacao' | 'confirmada' | 'devolvida'
@@ -181,6 +185,36 @@ export interface RequisicaoAvaliacao {
   caixa?: Caixa
   avaliador?: Usuario
   criador?: Usuario
+}
+
+export interface Emprestimo {
+  id: string
+  processo_id: string
+  solicitante_nome: string
+  solicitante_matricula: string
+  protocolista_id: string
+  desarquivado_em: string
+  prazo_previsto: string
+  devolvido_em: string | null
+  recebido_por_id: string | null
+  declaracao_retirada_url: string | null
+  declaracao_devolucao_url: string | null
+  created_at: string
+  processo?: Processo
+  protocolista?: Usuario
+  recebido_por?: Usuario
+  prorrogacoes?: EmprestimoProrrogacao[]
+}
+
+export interface EmprestimoProrrogacao {
+  id: string
+  emprestimo_id: string
+  prazo_anterior: string
+  prazo_novo: string
+  motivo: string | null
+  autorizado_por_id: string
+  created_at: string
+  autorizado_por?: Usuario
 }
 
 export interface PropostaRevisaoTtd {
@@ -320,6 +354,8 @@ export interface Database {
       caixas: { Row: Caixa; Insert: Partial<Caixa>; Update: Partial<Caixa> }
       processos: { Row: Processo; Insert: Partial<Processo>; Update: Partial<Processo> }
       avaliacoes: { Row: Avaliacao; Insert: Partial<Avaliacao>; Update: Partial<Avaliacao> }
+      emprestimos: { Row: Emprestimo; Insert: Partial<Emprestimo>; Update: Partial<Emprestimo> }
+      emprestimo_prorrogacoes: { Row: EmprestimoProrrogacao; Insert: Partial<EmprestimoProrrogacao>; Update: Partial<EmprestimoProrrogacao> }
       requisicoes_avaliacao: { Row: RequisicaoAvaliacao; Insert: Partial<RequisicaoAvaliacao>; Update: Partial<RequisicaoAvaliacao> }
       propostas_revisao_ttd: { Row: PropostaRevisaoTtd; Insert: Partial<PropostaRevisaoTtd>; Update: Partial<PropostaRevisaoTtd> }
       reunioes_atas: { Row: ReuniaoAta; Insert: Partial<ReuniaoAta>; Update: Partial<ReuniaoAta> }
