@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import jsPDF from 'jspdf'
-import { Search, Archive, AlertTriangle, Clock, X, FileSignature, Undo2, CheckCircle2 } from 'lucide-react'
+import { Search, Archive, AlertTriangle, Clock, X, FileSignature, Undo2, CheckCircle2, CalendarClock } from 'lucide-react'
 import { format, addDays, isPast } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase'
@@ -503,6 +503,112 @@ function ModalRegistrarDevolucao({
   )
 }
 
+function ModalProrrogarPrazo({
+  processo,
+  emprestimo,
+  protocolistaId,
+  onClose,
+  onConfirmado,
+}: {
+  processo: ProcessoBusca
+  emprestimo: NonNullable<ReturnType<typeof emprestimoAtivo>>
+  protocolistaId: string
+  onClose: () => void
+  onConfirmado: () => void
+}) {
+  const [novoPrazo, setNovoPrazo] = useState(
+    format(addDays(new Date(`${emprestimo.prazo_previsto}T00:00:00`), PRAZO_PADRAO_DIAS), 'yyyy-MM-dd'),
+  )
+  const [motivo, setMotivo] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
+
+  const formValido = novoPrazo && novoPrazo > emprestimo.prazo_previsto
+
+  async function handleConfirmar() {
+    if (!formValido) return
+    setSalvando(true)
+    setErro('')
+    try {
+      const { error: erroInsert } = await supabase.from('emprestimo_prorrogacoes').insert({
+        emprestimo_id: emprestimo.id,
+        prazo_anterior: emprestimo.prazo_previsto,
+        prazo_novo: novoPrazo,
+        motivo: motivo.trim() || null,
+        autorizado_por_id: protocolistaId,
+      })
+      if (erroInsert) throw erroInsert
+
+      const { error: erroUpdate } = await supabase
+        .from('emprestimos')
+        .update({ prazo_previsto: novoPrazo })
+        .eq('id', emprestimo.id)
+      if (erroUpdate) throw erroUpdate
+
+      onConfirmado()
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível registrar a prorrogação.')
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              <CalendarClock size={18} className="text-navy-600" /> Prorrogar Prazo
+            </h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Processo {processo.numero_documento} — {emprestimo.solicitante_nome}
+            </p>
+          </div>
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-3 text-sm">
+          <p><span className="text-gray-500">Prazo atual:</span> {format(new Date(`${emprestimo.prazo_previsto}T00:00:00`), 'dd/MM/yyyy')}</p>
+        </div>
+
+        <div>
+          <label className="label">Novo prazo de devolução</label>
+          <input type="date" className="input" value={novoPrazo} onChange={e => setNovoPrazo(e.target.value)} />
+          <p className="text-xs text-gray-400 mt-1">Precisa ser depois do prazo atual.</p>
+        </div>
+        <div>
+          <label className="label">Motivo (opcional)</label>
+          <input className="input" value={motivo} onChange={e => setMotivo(e.target.value)} placeholder="Ex.: análise ainda em andamento" />
+        </div>
+
+        <p className="text-xs text-gray-500">
+          Não é necessário novo documento assinado — a prorrogação fica registrada apenas no sistema, já prevista na Declaração de Desarquivamento original.
+        </p>
+
+        {erro && <p className="text-sm text-red-600">{erro}</p>}
+
+        <div className="flex items-center justify-end gap-2 pt-2">
+          <button type="button" className="btn-secondary text-sm" onClick={onClose} disabled={salvando}>
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn-primary text-sm"
+            disabled={!formValido || salvando}
+            onClick={handleConfirmar}
+          >
+            <CheckCircle2 size={14} /> {salvando ? 'Registrando…' : 'Confirmar Prorrogação'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function BuscaProcessosPage() {
   const { profile } = useAuth()
   const queryClient = useQueryClient()
@@ -512,6 +618,7 @@ export function BuscaProcessosPage() {
   const [setor, setSetor] = useState('')
   const [processoParaEmprestimo, setProcessoParaEmprestimo] = useState<ProcessoBusca | null>(null)
   const [processoParaDevolucao, setProcessoParaDevolucao] = useState<ProcessoBusca | null>(null)
+  const [processoParaProrrogacao, setProcessoParaProrrogacao] = useState<ProcessoBusca | null>(null)
   const [mensagemSucesso, setMensagemSucesso] = useState('')
 
   const temFiltro = termo.trim().length >= 2 || ano.trim().length > 0 || interessado.length > 0 || setor.length > 0
@@ -575,6 +682,13 @@ export function BuscaProcessosPage() {
   function handleDevolucaoConfirmada() {
     setProcessoParaDevolucao(null)
     setMensagemSucesso('Devolução registrada e Declaração de Devolução baixada. O processo já está disponível novamente na caixa.')
+    queryClient.invalidateQueries({ queryKey })
+    window.setTimeout(() => setMensagemSucesso(''), 8000)
+  }
+
+  function handleProrrogacaoConfirmada() {
+    setProcessoParaProrrogacao(null)
+    setMensagemSucesso('Prorrogação registrada. O novo prazo já aparece na Busca — não é necessário nenhum documento assinado.')
     queryClient.invalidateQueries({ queryKey })
     window.setTimeout(() => setMensagemSucesso(''), 8000)
   }
@@ -698,13 +812,22 @@ export function BuscaProcessosPage() {
 
                 <div className="shrink-0 flex flex-col items-stretch gap-1">
                   {podeDevolver ? (
-                    <button
-                      className="btn-secondary text-xs py-1.5 px-3"
-                      title="Registrar devolução"
-                      onClick={() => setProcessoParaDevolucao(p)}
-                    >
-                      <Undo2 size={12} /> Registrar Devolução
-                    </button>
+                    <>
+                      <button
+                        className="btn-secondary text-xs py-1.5 px-3"
+                        title="Registrar devolução"
+                        onClick={() => setProcessoParaDevolucao(p)}
+                      >
+                        <Undo2 size={12} /> Registrar Devolução
+                      </button>
+                      <button
+                        className="btn-secondary text-xs py-1.5 px-3"
+                        title="Prorrogar prazo"
+                        onClick={() => setProcessoParaProrrogacao(p)}
+                      >
+                        <CalendarClock size={12} /> Prorrogar Prazo
+                      </button>
+                    </>
                   ) : (
                     <button
                       className={podeEmprestar ? 'btn-secondary text-xs py-1.5 px-3' : 'btn-secondary text-xs py-1.5 px-3 opacity-60 cursor-not-allowed'}
@@ -743,6 +866,16 @@ export function BuscaProcessosPage() {
           protocolistaNome={profile?.nome ?? '—'}
           onClose={() => setProcessoParaDevolucao(null)}
           onConfirmado={handleDevolucaoConfirmada}
+        />
+      )}
+
+      {processoParaProrrogacao && emprestimoAtivo(processoParaProrrogacao) && profile && (
+        <ModalProrrogarPrazo
+          processo={processoParaProrrogacao}
+          emprestimo={emprestimoAtivo(processoParaProrrogacao)!}
+          protocolistaId={profile.id}
+          onClose={() => setProcessoParaProrrogacao(null)}
+          onConfirmado={handleProrrogacaoConfirmada}
         />
       )}
     </div>
