@@ -20,13 +20,14 @@ interface LinhaProcesso {
   numero: string
   ano: string
   assunto: string
+  setorOrigem: string
   interessado: InteressadoOpcao
   dataUltimaMovimentacao: string
   semDataUltimaMovimentacao: boolean
 }
 
-function linhaVazia(): LinhaProcesso {
-  return { numero: '', ano: '', assunto: '', interessado: '', dataUltimaMovimentacao: '', semDataUltimaMovimentacao: false }
+function linhaVazia(setorPadrao = ''): LinhaProcesso {
+  return { numero: '', ano: '', assunto: '', setorOrigem: setorPadrao, interessado: '', dataUltimaMovimentacao: '', semDataUltimaMovimentacao: false }
 }
 
 function hoje() {
@@ -39,7 +40,7 @@ function hoje() {
 // etiqueta do processo. Interessado e a data da última movimentação
 // não costumam vir prontos de uma lista colada — ficam para
 // preencher linha a linha na tabela abaixo, junto com os demais.
-function parseLinhasColadas(texto: string): LinhaProcesso[] {
+function parseLinhasColadas(texto: string, setorPadrao = ''): LinhaProcesso[] {
   return texto
     .split('\n')
     .map(l => l.trim())
@@ -47,7 +48,7 @@ function parseLinhasColadas(texto: string): LinhaProcesso[] {
     .map(l => {
       const partes = l.includes('\t') ? l.split('\t') : l.split(/\s+/)
       const [numero, ano, ...resto] = partes
-      return { ...linhaVazia(), numero: (numero ?? '').trim(), ano: (ano ?? '').trim(), assunto: resto.join(' ').trim() }
+      return { ...linhaVazia(setorPadrao), numero: (numero ?? '').trim(), ano: (ano ?? '').trim(), assunto: resto.join(' ').trim() }
     })
     .filter(l => l.numero)
 }
@@ -57,14 +58,14 @@ function parseLinhasColadas(texto: string): LinhaProcesso[] {
 // do processo, ano de produção e assunto da etiqueta. Se a primeira
 // linha parecer um cabeçalho (a coluna do "ano" não é um ano de
 // verdade), ela é descartada.
-async function parseArquivoPlanilha(file: File): Promise<LinhaProcesso[]> {
+async function parseArquivoPlanilha(file: File, setorPadrao = ''): Promise<LinhaProcesso[]> {
   const buffer = await file.arrayBuffer()
   const workbook = XLSX.read(buffer, { type: 'array' })
   const primeiraAba = workbook.Sheets[workbook.SheetNames[0]]
   const linhasBrutas = XLSX.utils.sheet_to_json<(string | number)[]>(primeiraAba, { header: 1, blankrows: false })
 
   const paraLinha = (r: (string | number)[]): LinhaProcesso => ({
-    ...linhaVazia(),
+    ...linhaVazia(setorPadrao),
     numero: String(r[0] ?? '').trim(),
     ano: String(r[1] ?? '').trim(),
     assunto: String(r[2] ?? '').trim(),
@@ -97,12 +98,15 @@ export function RequisicoesAvaliacaoPage() {
 
   const setorEfetivo = (setor === '__novo__' ? setorNovo : setor).trim()
 
+  // Lista de setores já usados, para sugerir nos campos de setor (o
+  // padrão da entrada e o de cada linha) — vem de processos.setor_origem,
+  // que é o registro por processo (uma caixa pode ter vários setores).
   const { data: setoresExistentes } = useQuery({
     queryKey: ['setores-disponiveis'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('caixas').select('setor').not('setor', 'is', null)
+      const { data, error } = await supabase.from('processos').select('setor_origem').not('setor_origem', 'is', null)
       if (error) throw error
-      return Array.from(new Set((data ?? []).map(c => c.setor).filter((s): s is string => !!s))).sort()
+      return Array.from(new Set((data ?? []).map(p => p.setor_origem).filter((s): s is string => !!s))).sort()
     },
   })
 
@@ -126,7 +130,7 @@ export function RequisicoesAvaliacaoPage() {
   })
 
   function processarColado() {
-    const novas = parseLinhasColadas(textoColado)
+    const novas = parseLinhasColadas(textoColado, setorEfetivo)
     if (novas.length === 0) return
     setLinhas(prev => [...prev, ...novas])
     setTextoColado('')
@@ -143,12 +147,16 @@ export function RequisicoesAvaliacaoPage() {
   // Uma linha só entra na requisição se tiver todos os campos abaixo
   // preenchidos: sem eles, o avaliador chega numa tela sem informação
   // suficiente para classificar, ou o cadastro fica incompleto no
-  // Arquivo Geral (número, ano, assunto, interessado e a informação
-  // da última movimentação — mesmo que seja "não há").
+  // Arquivo Geral (número, ano, assunto, setor de origem, interessado
+  // e a informação da última movimentação — mesmo que seja "não há").
+  // O setor é por processo (e não mais um só para a caixa inteira)
+  // porque uma mesma caixa física pode reunir processos de setores
+  // diferentes.
   function linhaCompleta(l: LinhaProcesso) {
     return !!(
       l.ano.trim() &&
       l.assunto.trim() &&
+      l.setorOrigem.trim() &&
       l.interessado &&
       (l.semDataUltimaMovimentacao || l.dataUltimaMovimentacao.trim())
     )
@@ -165,7 +173,7 @@ export function RequisicoesAvaliacaoPage() {
   async function processarArquivo(file: File) {
     setErroArquivo('')
     try {
-      const novas = await parseArquivoPlanilha(file)
+      const novas = await parseArquivoPlanilha(file, setorEfetivo)
       if (novas.length === 0) {
         setErroArquivo('Não encontrei nenhuma linha com número de processo nessa planilha.')
         return
@@ -177,7 +185,6 @@ export function RequisicoesAvaliacaoPage() {
   }
 
   const podeEnviar =
-    !!setorEfetivo &&
     !!quantidadeDeclaradaNum &&
     posseConfirmada &&
     !!avaliadorId &&
@@ -189,14 +196,22 @@ export function RequisicoesAvaliacaoPage() {
     mutationFn: async () => {
       if (!podeEnviar || !profile) return
 
-      const { data: codigoEntrada, error: eCodigo } = await supabase.rpc('gerar_codigo_entrada_caixa', { p_setor: setorEfetivo })
+      const { data: codigoEntrada, error: eCodigo } = await supabase.rpc('gerar_codigo_entrada_caixa')
       if (eCodigo) throw eCodigo
+
+      // O setor da caixa (usado nas telas de Busca/Relatórios como
+      // "setor predominante") só é gravado quando todos os processos
+      // da caixa forem do mesmo setor. Se a caixa tiver processos de
+      // setores diferentes, fica em branco por ali — o setor de cada
+      // processo continua correto e disponível individualmente.
+      const setoresDaCaixa = new Set(linhasValidas.map(l => l.setorOrigem.trim()))
+      const setorPredominante = setoresDaCaixa.size === 1 ? [...setoresDaCaixa][0] : null
 
       const { data: novaCaixa, error: eCaixa } = await supabase
         .from('caixas')
         .insert({
           numero: codigoEntrada,
-          setor: setorEfetivo,
+          setor: setorPredominante,
           status: 'em_avaliacao',
           quantidade_declarada: quantidadeDeclaradaNum,
         })
@@ -214,6 +229,7 @@ export function RequisicoesAvaliacaoPage() {
           ano_producao: anoMatch ? Number(anoMatch[1]) : null,
           ano_producao_complemento: anoMatch && anoMatch[2].trim() ? anoMatch[2].trim() : null,
           assunto_processo: l.assunto.trim(),
+          setor_origem: l.setorOrigem.trim(),
           interessado: l.interessado || null,
           data_ultima_movimentacao: l.semDataUltimaMovimentacao ? null : l.dataUltimaMovimentacao.trim() || null,
           sem_data_ultima_movimentacao: l.semDataUltimaMovimentacao,
@@ -275,14 +291,14 @@ export function RequisicoesAvaliacaoPage() {
         <h2 className="font-semibold text-gray-900 mb-3">Nova requisição — entrada de caixa</h2>
 
         <p className="text-xs text-gray-500 mb-3">
-          Preencha os dados da caixa física que acabou de chegar. O sistema gera sozinho o código de entrada dela (ex.: <span className="font-mono">CX001-NSP</span>) — o número final de arquivamento no Arquivo Geral só é definido depois, quando a avaliação voltar para conferência.
+          Preencha os dados da caixa física que acabou de chegar. O sistema gera sozinho o código de entrada dela (ex.: <span className="font-mono">CX001</span>) — o número final de arquivamento no Arquivo Geral só é definido depois, quando a avaliação voltar para conferência.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="label">Setor de origem *</label>
+            <label className="label">Setor de origem padrão</label>
             <select className="input" value={setor} onChange={e => setSetor(e.target.value)}>
-              <option value="">Selecione…</option>
+              <option value="">Nenhum (preencher por processo)</option>
               {(setoresExistentes ?? []).map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
@@ -296,6 +312,9 @@ export function RequisicoesAvaliacaoPage() {
                 onChange={e => setSetorNovo(e.target.value.toUpperCase())}
               />
             )}
+            <p className="text-[11px] text-gray-400 mt-1">
+              Se a caixa tiver processos de mais de um setor, deixe assim e informe o setor de cada processo na tabela abaixo — este campo só preenche o padrão de linhas novas.
+            </p>
           </div>
           <div>
             <label className="label">Quantos processos físicos há na caixa? *</label>
@@ -343,7 +362,7 @@ export function RequisicoesAvaliacaoPage() {
         <div className="mt-5 pt-4 border-t border-gray-100">
           <label className="label">Processos da caixa</label>
           <p className="text-xs text-gray-400 mb-2">
-            Arraste aqui a planilha com a relação dos processos (número, ano de produção e o assunto que está na etiqueta), ou cole a lista diretamente. Depois, complete na tabela abaixo o Interessado (CDTIV ou PMV) e a última movimentação de cada processo — se não houver despacho registrado, marque a caixinha "Não há data de último despacho" em vez de deixar em branco. Todos esses campos são obrigatórios para enviar a requisição.
+            Arraste aqui a planilha com a relação dos processos (número, ano de produção e o assunto que está na etiqueta), ou cole a lista diretamente. Depois, complete na tabela abaixo o Setor de origem, o Interessado (CDTIV ou PMV) e a última movimentação de cada processo — se não houver despacho registrado, marque a caixinha "Não há data de último despacho" em vez de deixar em branco. Todos esses campos são obrigatórios para enviar a requisição. Uma mesma caixa pode ter processos de setores diferentes: o "Setor de origem padrão" acima só preenche as linhas automaticamente, cada uma pode ser corrigida individualmente.
           </p>
 
           <div
@@ -391,12 +410,16 @@ export function RequisicoesAvaliacaoPage() {
 
           {linhas.length > 0 && (
             <div className="mt-4 overflow-x-auto">
+              <datalist id="setores-sugeridos">
+                {(setoresExistentes ?? []).map(s => <option key={s} value={s} />)}
+              </datalist>
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-left text-gray-400">
                     <th className="font-medium pb-1 pr-2">Nº Processo *</th>
                     <th className="font-medium pb-1 pr-2">Ano *</th>
                     <th className="font-medium pb-1 pr-2">Assunto (da etiqueta) *</th>
+                    <th className="font-medium pb-1 pr-2">Setor de origem *</th>
                     <th className="font-medium pb-1 pr-2">Interessado *</th>
                     <th className="font-medium pb-1 pr-2">Última movimentação *</th>
                     <th></th>
@@ -424,6 +447,15 @@ export function RequisicoesAvaliacaoPage() {
                             placeholder="Assunto obrigatório…"
                             value={l.assunto}
                             onChange={e => atualizarLinha(i, 'assunto', e.target.value)}
+                          />
+                        </td>
+                        <td className="py-1 pr-2">
+                          <input
+                            list="setores-sugeridos"
+                            className={clsx('input py-1 text-xs w-28', !!preenchida && !l.setorOrigem.trim() && 'border-red-300')}
+                            placeholder="Ex.: NSP"
+                            value={l.setorOrigem}
+                            onChange={e => atualizarLinha(i, 'setorOrigem', e.target.value.toUpperCase())}
                           />
                         </td>
                         <td className="py-1 pr-2">
@@ -482,13 +514,13 @@ export function RequisicoesAvaliacaoPage() {
 
           {linhasIncompletas.length > 0 && (
             <p className="text-xs text-red-600 mt-2">
-              {linhasIncompletas.length} processo{linhasIncompletas.length === 1 ? '' : 's'} com algum campo obrigatório em branco (destacado{linhasIncompletas.length === 1 ? '' : 's'} acima: ano, assunto, interessado ou última movimentação). Preencha ou remova antes de enviar.
+              {linhasIncompletas.length} processo{linhasIncompletas.length === 1 ? '' : 's'} com algum campo obrigatório em branco (destacado{linhasIncompletas.length === 1 ? '' : 's'} acima: ano, assunto, setor de origem, interessado ou última movimentação). Preencha ou remova antes de enviar.
             </p>
           )}
 
           <button
             className="btn-secondary text-xs mt-3"
-            onClick={() => setLinhas(prev => [...prev, linhaVazia()])}
+            onClick={() => setLinhas(prev => [...prev, linhaVazia(setorEfetivo)])}
           >
             <Plus size={13} /> Adicionar linha em branco
           </button>
