@@ -89,6 +89,7 @@ export function CatalogarProcessoPage() {
         numero_documento: form.numero_documento,
         interessado: form.interessado,
         assunto_processo: form.assunto_processo,
+        setor_origem: form.setor.trim() || null,
         ano_producao: form.ano_producao ? +form.ano_producao : null,
         requer_revisao_manual: !form.ttd_codigo_id,
         potencial_expositivo: potencialExpositivo,
