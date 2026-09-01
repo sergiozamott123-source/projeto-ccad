@@ -350,6 +350,13 @@ export interface RelatorioSalvo {
   created_at: string
 }
 
+export interface SetorCdtiv {
+  id: string
+  sigla: string
+  ativo: boolean
+  criado_em: string
+}
+
 // Supabase DB type wrapper (for createClient generic)
 export interface Database {
   public: {
