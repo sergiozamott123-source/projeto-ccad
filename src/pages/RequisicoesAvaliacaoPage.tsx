@@ -21,13 +21,22 @@ interface LinhaProcesso {
   ano: string
   assunto: string
   setorOrigem: string
+  setorOrigemNovo: string
   interessado: InteressadoOpcao
   dataUltimaMovimentacao: string
   semDataUltimaMovimentacao: boolean
 }
 
+// Quando setorOrigem === '__novo__', o setor de fato está sendo
+// digitado em setorOrigemNovo (mesmo esquema do campo "Setor de
+// origem padrão" logo abaixo) — esta função resolve o valor final,
+// pronto para validar ou gravar.
+function setorLinhaEfetivo(l: LinhaProcesso): string {
+  return (l.setorOrigem === '__novo__' ? l.setorOrigemNovo : l.setorOrigem).trim()
+}
+
 function linhaVazia(setorPadrao = ''): LinhaProcesso {
-  return { numero: '', ano: '', assunto: '', setorOrigem: setorPadrao, interessado: '', dataUltimaMovimentacao: '', semDataUltimaMovimentacao: false }
+  return { numero: '', ano: '', assunto: '', setorOrigem: setorPadrao, setorOrigemNovo: '', interessado: '', dataUltimaMovimentacao: '', semDataUltimaMovimentacao: false }
 }
 
 function hoje() {
@@ -98,15 +107,17 @@ export function RequisicoesAvaliacaoPage() {
 
   const setorEfetivo = (setor === '__novo__' ? setorNovo : setor).trim()
 
-  // Lista de setores já usados, para sugerir nos campos de setor (o
-  // padrão da entrada e o de cada linha) — vem de processos.setor_origem,
-  // que é o registro por processo (uma caixa pode ter vários setores).
+  // Lista oficial de setores da CDTIV, para escolher nos campos de
+  // setor (o padrão da entrada e o de cada linha) — cadastrada em
+  // Equipe & Responsáveis. Um setor realmente novo, digitado por aqui
+  // via "+ Novo setor…", é adicionado a essa lista oficial na hora de
+  // enviar a requisição (ver mutação "enviar" abaixo).
   const { data: setoresExistentes } = useQuery({
     queryKey: ['setores-disponiveis'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('processos').select('setor_origem').not('setor_origem', 'is', null)
+      const { data, error } = await supabase.from('setores_cdtiv').select('sigla').eq('ativo', true).order('sigla')
       if (error) throw error
-      return Array.from(new Set((data ?? []).map(p => p.setor_origem).filter((s): s is string => !!s))).sort()
+      return (data ?? []).map(s => s.sigla)
     },
   })
 
@@ -156,7 +167,7 @@ export function RequisicoesAvaliacaoPage() {
     return !!(
       l.ano.trim() &&
       l.assunto.trim() &&
-      l.setorOrigem.trim() &&
+      setorLinhaEfetivo(l) &&
       l.interessado &&
       (l.semDataUltimaMovimentacao || l.dataUltimaMovimentacao.trim())
     )
@@ -204,8 +215,16 @@ export function RequisicoesAvaliacaoPage() {
       // da caixa forem do mesmo setor. Se a caixa tiver processos de
       // setores diferentes, fica em branco por ali — o setor de cada
       // processo continua correto e disponível individualmente.
-      const setoresDaCaixa = new Set(linhasValidas.map(l => l.setorOrigem.trim()))
+      const setoresDaCaixa = new Set(linhasValidas.map(l => setorLinhaEfetivo(l)))
       const setorPredominante = setoresDaCaixa.size === 1 ? [...setoresDaCaixa][0] : null
+
+      // Qualquer setor digitado como "novo" (no padrão da entrada ou
+      // em alguma linha) entra na lista oficial agora, para já aparecer
+      // pronto para seleção da próxima vez — sem duplicar o que já existe.
+      const { error: eSetores } = await supabase
+        .from('setores_cdtiv')
+        .upsert([...setoresDaCaixa].map(sigla => ({ sigla })), { onConflict: 'sigla', ignoreDuplicates: true })
+      if (eSetores) throw eSetores
 
       const { data: novaCaixa, error: eCaixa } = await supabase
         .from('caixas')
@@ -229,7 +248,7 @@ export function RequisicoesAvaliacaoPage() {
           ano_producao: anoMatch ? Number(anoMatch[1]) : null,
           ano_producao_complemento: anoMatch && anoMatch[2].trim() ? anoMatch[2].trim() : null,
           assunto_processo: l.assunto.trim(),
-          setor_origem: l.setorOrigem.trim(),
+          setor_origem: setorLinhaEfetivo(l),
           interessado: l.interessado || null,
           data_ultima_movimentacao: l.semDataUltimaMovimentacao ? null : l.dataUltimaMovimentacao.trim() || null,
           sem_data_ultima_movimentacao: l.semDataUltimaMovimentacao,
@@ -410,9 +429,6 @@ export function RequisicoesAvaliacaoPage() {
 
           {linhas.length > 0 && (
             <div className="mt-4 overflow-x-auto">
-              <datalist id="setores-sugeridos">
-                {(setoresExistentes ?? []).map(s => <option key={s} value={s} />)}
-              </datalist>
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-left text-gray-400">
@@ -450,13 +466,25 @@ export function RequisicoesAvaliacaoPage() {
                           />
                         </td>
                         <td className="py-1 pr-2">
-                          <input
-                            list="setores-sugeridos"
-                            className={clsx('input py-1 text-xs w-28', !!preenchida && !l.setorOrigem.trim() && 'border-red-300')}
-                            placeholder="Ex.: NSP"
+                          <select
+                            className={clsx('input py-1 text-xs w-28', !!preenchida && !setorLinhaEfetivo(l) && 'border-red-300')}
                             value={l.setorOrigem}
-                            onChange={e => atualizarLinha(i, 'setorOrigem', e.target.value.toUpperCase())}
-                          />
+                            onChange={e => atualizarLinha(i, 'setorOrigem', e.target.value)}
+                          >
+                            <option value="">Selecione…</option>
+                            {(setoresExistentes ?? []).map(s => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                            <option value="__novo__">+ Novo setor…</option>
+                          </select>
+                          {l.setorOrigem === '__novo__' && (
+                            <input
+                              className="input py-1 text-xs w-28 mt-1"
+                              placeholder="Sigla (ex.: NSP)"
+                              value={l.setorOrigemNovo}
+                              onChange={e => atualizarLinha(i, 'setorOrigemNovo', e.target.value.toUpperCase())}
+                            />
+                          )}
                         </td>
                         <td className="py-1 pr-2">
                           <select
