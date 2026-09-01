@@ -130,6 +130,18 @@ function exportarRelatorioMembroPdf(usuario: Usuario, relatorio: RelatorioMensal
   if (relatorio.dificuldades) {
     secao('Dificuldades encontradas', relatorio.dificuldades)
   }
+  if (relatorio.processos_avaliados_qtd > 0) {
+    secao(
+      'Processos avaliados no mês',
+      `${relatorio.processos_avaliados_qtd} processo(s) — nº ${relatorio.processos_avaliados_numeros.join(', ')}`,
+    )
+  }
+  if (relatorio.requisicoes_emitidas_qtd > 0) {
+    secao(
+      'Requisições emitidas no mês',
+      `${relatorio.requisicoes_emitidas_qtd} requisição(ões) — caixas ${relatorio.requisicoes_emitidas_caixas.join(', ')}`,
+    )
+  }
 
   novaLinha(8)
   doc.setFontSize(11)
@@ -488,6 +500,22 @@ export function RelatoriosEquipePage() {
                           Dificuldades encontradas
                         </p>
                         <p className="text-gray-700 whitespace-pre-wrap">{relatorio.dificuldades}</p>
+                      </div>
+                    )}
+                    {(relatorio.processos_avaliados_qtd > 0 || relatorio.requisicoes_emitidas_qtd > 0) && (
+                      <div className="rounded-lg bg-teal-50/60 border border-teal-100 p-3 space-y-1.5">
+                        {relatorio.processos_avaliados_qtd > 0 && (
+                          <p className="text-xs text-gray-700">
+                            <strong>{relatorio.processos_avaliados_qtd}</strong> processo(s) avaliado(s) — nº{' '}
+                            {relatorio.processos_avaliados_numeros.join(', ')}
+                          </p>
+                        )}
+                        {relatorio.requisicoes_emitidas_qtd > 0 && (
+                          <p className="text-xs text-gray-700">
+                            <strong>{relatorio.requisicoes_emitidas_qtd}</strong> requisição(ões) emitida(s) — caixas{' '}
+                            {relatorio.requisicoes_emitidas_caixas.join(', ')}
+                          </p>
+                        )}
                       </div>
                     )}
                     <p className="text-xs text-gray-400">
