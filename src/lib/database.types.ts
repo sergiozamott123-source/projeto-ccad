@@ -143,6 +143,7 @@ export interface Processo {
   numero_documento: string
   interessado: string
   assunto_processo: string
+  setor_origem: string | null
   ano_producao: number
   ano_producao_complemento: string | null
   observacao_intake: string | null
