@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy } from 'lucide-react'
+import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy, PackageCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, formatDistanceToNow, startOfMonth, subMonths } from 'date-fns'
@@ -30,6 +30,7 @@ const MURAL_ICON: Record<TipoMuralEvento, React.ReactNode> = {
   indicador_lancado: <TrendingUp size={16} className="text-accent-600" />,
   demanda_concluida: <Flag size={16} className="text-purple-600" />,
   fase_concluida: <Trophy size={16} className="text-yellow-600" />,
+  caixa_arquivada: <PackageCheck size={16} className="text-navy-600" />,
 }
 
 function muralTexto(e: MuralEvento) {
@@ -39,6 +40,7 @@ function muralTexto(e: MuralEvento) {
     case 'indicador_lancado': return `${e.usuario?.nome ?? '—'} lançou os indicadores do mês`
     case 'demanda_concluida': return `${e.usuario?.nome ?? '—'} concluiu a demanda "${e.descricao}"`
     case 'fase_concluida': return `Fase "${e.descricao}" concluída pela equipe`
+    case 'caixa_arquivada': return `${e.usuario?.nome ?? 'Protocolo'} conferiu e arquivou a caixa ${e.descricao} no Arquivo Geral`
   }
 }
 

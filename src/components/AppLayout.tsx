@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send, Search, Clock,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send, Search, Clock, PackageCheck,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -34,6 +34,7 @@ const NAV: NavItem[] = [
   { to: '/minha-parte', label: 'Minhas Atribuições',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar','coordenador','coordenador_substituto'] },
   { to: '/confirmar-eliminacoes', label: 'Confirmar Eliminações', icon: <CheckSquare size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/requisicoes-avaliacao', label: 'Requisições de Avaliação', icon: <Send size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes' },
+  { to: '/conferencia-caixas', label: 'Conferência de Caixas', icon: <PackageCheck size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
   { to: '/demandas',    label: 'Demandas',     icon: <ClipboardList size={18} /> },
   { to: '/relatorios',  label: 'Relatórios',   icon: <FileText size={18} /> },
   { to: '/relatorios-equipe', label: 'Relatórios da Equipe', icon: <FileSearch size={18} />, roles: ['coordenador'] },
@@ -97,6 +98,18 @@ export function AppLayout() {
       return count ?? 0
     },
     enabled: !!profile?.id && isCoord,
+  })
+
+  const { data: caixasConferenciaPendentesCount } = useQuery({
+    queryKey: ['caixas-conferencia-pendentes-count', profile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('caixas')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'aguardando_conferencia')
+      return count ?? 0
+    },
+    enabled: !!profile?.id && (isCoord || profile?.pode_criar_requisicoes === true),
   })
 
   function isVisible(item: NavItem) {
@@ -199,6 +212,11 @@ export function AppLayout() {
               {item.to === '/confirmar-eliminacoes' && (eliminacoesPendentesCount ?? 0) > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                   {eliminacoesPendentesCount}
+                </span>
+              )}
+              {item.to === '/conferencia-caixas' && (caixasConferenciaPendentesCount ?? 0) > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {caixasConferenciaPendentesCount}
                 </span>
               )}
             </NavLink>

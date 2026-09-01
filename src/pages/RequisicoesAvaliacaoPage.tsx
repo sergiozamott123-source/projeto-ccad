@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Send, X, Plus, ClipboardPaste } from 'lucide-react'
+import { Send, X, Plus, ClipboardPaste, UploadCloud, PackageSearch } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format } from 'date-fns'
@@ -8,7 +9,7 @@ import type { RequisicaoAvaliacao } from '@/lib/database.types'
 import clsx from 'clsx'
 
 type RequisicaoLista = RequisicaoAvaliacao & {
-  caixa: { numero: string } | null
+  caixa: { numero: string; status: string } | null
   avaliador: { nome: string } | null
   criador: { nome: string } | null
 }
@@ -51,27 +52,58 @@ function parseLinhasColadas(texto: string): LinhaProcesso[] {
     .filter(l => l.numero)
 }
 
+// Lê a planilha (.xlsx/.xls/.csv) que a Ana/Ariadne já preencheu com a
+// relação da caixa, na mesma ordem de colunas do texto colado: número
+// do processo, ano de produção e assunto da etiqueta. Se a primeira
+// linha parecer um cabeçalho (a coluna do "ano" não é um ano de
+// verdade), ela é descartada.
+async function parseArquivoPlanilha(file: File): Promise<LinhaProcesso[]> {
+  const buffer = await file.arrayBuffer()
+  const workbook = XLSX.read(buffer, { type: 'array' })
+  const primeiraAba = workbook.Sheets[workbook.SheetNames[0]]
+  const linhasBrutas = XLSX.utils.sheet_to_json<(string | number)[]>(primeiraAba, { header: 1, blankrows: false })
+
+  const paraLinha = (r: (string | number)[]): LinhaProcesso => ({
+    ...linhaVazia(),
+    numero: String(r[0] ?? '').trim(),
+    ano: String(r[1] ?? '').trim(),
+    assunto: String(r[2] ?? '').trim(),
+  })
+
+  const semCabecalho =
+    linhasBrutas.length > 0 && !/^\d{4}/.test(String(linhasBrutas[0][1] ?? '').trim())
+      ? linhasBrutas.slice(1)
+      : linhasBrutas
+
+  return semCabecalho.map(paraLinha).filter(l => l.numero)
+}
+
 export function RequisicoesAvaliacaoPage() {
   const { profile } = useAuth()
   const qc = useQueryClient()
-  const [caixaNumero, setCaixaNumero] = useState('')
+  const [setor, setSetor] = useState('')
+  const [setorNovo, setSetorNovo] = useState('')
+  const [quantidadeDeclarada, setQuantidadeDeclarada] = useState('')
+  const [posseConfirmada, setPosseConfirmada] = useState(false)
   const [dataEntrega, setDataEntrega] = useState(hoje())
   const [avaliadorId, setAvaliadorId] = useState('')
   const [textoColado, setTextoColado] = useState('')
   const [linhas, setLinhas] = useState<LinhaProcesso[]>([])
+  const [arrastandoArquivo, setArrastandoArquivo] = useState(false)
+  const [erroArquivo, setErroArquivo] = useState('')
+  const [ignorarDivergenciaQtd, setIgnorarDivergenciaQtd] = useState(false)
   const [erro, setErro] = useState('')
+  const arquivoInputRef = useRef<HTMLInputElement>(null)
 
-  const caixaNumeroBusca = caixaNumero.trim()
+  const setorEfetivo = (setor === '__novo__' ? setorNovo : setor).trim()
 
-  const { data: caixaExistente } = useQuery({
-    queryKey: ['caixa-existente', caixaNumeroBusca],
+  const { data: setoresExistentes } = useQuery({
+    queryKey: ['setores-disponiveis'],
     queryFn: async () => {
-      const { data: caixa } = await supabase.from('caixas').select('id, numero').eq('numero', caixaNumeroBusca).maybeSingle()
-      if (!caixa) return null
-      const { count } = await supabase.from('processos').select('*', { count: 'exact', head: true }).eq('caixa_id', caixa.id)
-      return { ...caixa, totalProcessos: count ?? 0 }
+      const { data, error } = await supabase.from('caixas').select('setor').not('setor', 'is', null)
+      if (error) throw error
+      return Array.from(new Set((data ?? []).map(c => c.setor).filter((s): s is string => !!s))).sort()
     },
-    enabled: caixaNumeroBusca.length > 0,
   })
 
   const { data: avaliadores } = useQuery({
@@ -87,7 +119,7 @@ export function RequisicoesAvaliacaoPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('requisicoes_avaliacao')
-        .select('*, caixa:caixa_id(numero), avaliador:avaliador_id(nome), criador:criado_por(nome)')
+        .select('*, caixa:caixa_id(numero,status), avaliador:avaliador_id(nome), criador:criado_por(nome)')
         .order('created_at', { ascending: false })
       return (data ?? []) as RequisicaoLista[]
     },
@@ -126,31 +158,55 @@ export function RequisicoesAvaliacaoPage() {
   const linhasValidas = linhasPreenchidas.filter(linhaCompleta)
   const linhasIncompletas = linhasPreenchidas.filter(l => !linhaCompleta(l))
 
+  const quantidadeDeclaradaNum = quantidadeDeclarada.trim() ? Number(quantidadeDeclarada) : null
+  const divergeQuantidade =
+    quantidadeDeclaradaNum != null && linhasValidas.length > 0 && linhasValidas.length !== quantidadeDeclaradaNum
+
+  async function processarArquivo(file: File) {
+    setErroArquivo('')
+    try {
+      const novas = await parseArquivoPlanilha(file)
+      if (novas.length === 0) {
+        setErroArquivo('Não encontrei nenhuma linha com número de processo nessa planilha.')
+        return
+      }
+      setLinhas(prev => [...prev, ...novas])
+    } catch {
+      setErroArquivo('Não consegui ler esse arquivo. Confira se é uma planilha .xlsx, .xls ou .csv.')
+    }
+  }
+
+  const podeEnviar =
+    !!setorEfetivo &&
+    !!quantidadeDeclaradaNum &&
+    posseConfirmada &&
+    !!avaliadorId &&
+    linhasValidas.length > 0 &&
+    linhasIncompletas.length === 0 &&
+    (!divergeQuantidade || ignorarDivergenciaQtd)
+
   const enviar = useMutation({
     mutationFn: async () => {
-      if (!caixaNumeroBusca || !avaliadorId || !profile || linhasValidas.length === 0 || linhasIncompletas.length > 0) return
+      if (!podeEnviar || !profile) return
 
-      let caixaId = caixaExistente?.id
-      if (!caixaId) {
-        const { data: novaCaixa, error: eCaixa } = await supabase
-          .from('caixas')
-          .insert({ numero: caixaNumeroBusca })
-          .select('id')
-          .single()
-        if (eCaixa) throw eCaixa
-        caixaId = novaCaixa!.id
-      }
+      const { data: codigoEntrada, error: eCodigo } = await supabase.rpc('gerar_codigo_entrada_caixa', { p_setor: setorEfetivo })
+      if (eCodigo) throw eCodigo
+
+      const { data: novaCaixa, error: eCaixa } = await supabase
+        .from('caixas')
+        .insert({
+          numero: codigoEntrada,
+          setor: setorEfetivo,
+          status: 'em_avaliacao',
+          quantidade_declarada: quantidadeDeclaradaNum,
+        })
+        .select('id')
+        .single()
+      if (eCaixa) throw eCaixa
+      const caixaId = novaCaixa!.id
 
       for (const l of linhasValidas) {
         const numero = l.numero.trim()
-        const { data: existente } = await supabase
-          .from('processos')
-          .select('id')
-          .eq('caixa_id', caixaId)
-          .eq('numero_documento', numero)
-          .maybeSingle()
-        if (existente) continue
-
         const anoMatch = l.ano.trim().match(/^(\d{4})(.*)$/)
         const { error: eProc } = await supabase.from('processos').insert({
           caixa_id: caixaId,
@@ -175,8 +231,12 @@ export function RequisicoesAvaliacaoPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['requisicoes-avaliacao'] })
-      qc.invalidateQueries({ queryKey: ['caixa-existente'] })
-      setCaixaNumero('')
+      qc.invalidateQueries({ queryKey: ['setores-disponiveis'] })
+      setSetor('')
+      setSetorNovo('')
+      setQuantidadeDeclarada('')
+      setPosseConfirmada(false)
+      setIgnorarDivergenciaQtd(false)
       setAvaliadorId('')
       setLinhas([])
       setTextoColado('')
@@ -184,11 +244,7 @@ export function RequisicoesAvaliacaoPage() {
       setErro('')
     },
     onError: (e: any) => {
-      setErro(
-        e?.message?.includes('duplicate') || e?.code === '23505'
-          ? 'Essa caixa já foi enviada para esse avaliador e ainda está pendente.'
-          : e?.message || 'Erro ao enviar a requisição. Tente novamente.',
-      )
+      setErro(e?.message || 'Erro ao enviar a requisição. Tente novamente.')
     },
   })
 
@@ -216,35 +272,57 @@ export function RequisicoesAvaliacaoPage() {
       </div>
 
       <div className="card p-5">
-        <h2 className="font-semibold text-gray-900 mb-3">Nova requisição</h2>
+        <h2 className="font-semibold text-gray-900 mb-3">Nova requisição — entrada de caixa</h2>
+
+        <p className="text-xs text-gray-500 mb-3">
+          Preencha os dados da caixa física que acabou de chegar. O sistema gera sozinho o código de entrada dela (ex.: <span className="font-mono">CX001-NSP</span>) — o número final de arquivamento no Arquivo Geral só é definido depois, quando a avaliação voltar para conferência.
+        </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <label className="label">Nº da caixa</label>
-            <input className="input" placeholder="Número da caixa…" value={caixaNumero} onChange={e => setCaixaNumero(e.target.value)} />
+            <label className="label">Setor de origem *</label>
+            <select className="input" value={setor} onChange={e => setSetor(e.target.value)}>
+              <option value="">Selecione…</option>
+              {(setoresExistentes ?? []).map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+              <option value="__novo__">+ Novo setor…</option>
+            </select>
+            {setor === '__novo__' && (
+              <input
+                className="input mt-1.5"
+                placeholder="Sigla do setor (ex.: NSP)"
+                value={setorNovo}
+                onChange={e => setSetorNovo(e.target.value.toUpperCase())}
+              />
+            )}
+          </div>
+          <div>
+            <label className="label">Quantos processos físicos há na caixa? *</label>
+            <input
+              type="number"
+              min={1}
+              className="input"
+              placeholder="Ex.: 25"
+              value={quantidadeDeclarada}
+              onChange={e => { setQuantidadeDeclarada(e.target.value); setIgnorarDivergenciaQtd(false) }}
+            />
           </div>
           <div>
             <label className="label">Data da entrega</label>
             <input type="date" className="input" value={dataEntrega} onChange={e => setDataEntrega(e.target.value)} />
           </div>
-          <div>
-            <label className="label">Avaliador</label>
-            <select className="input" value={avaliadorId} onChange={e => setAvaliadorId(e.target.value)}>
-              <option value="">Selecione…</option>
-              {(avaliadores ?? []).map(a => (
-                <option key={a.id} value={a.id}>{a.nome}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
-        {caixaNumeroBusca && (
-          <p className="text-xs text-gray-500 mt-2">
-            {caixaExistente
-              ? `Caixa ${caixaExistente.numero} já existe, com ${caixaExistente.totalProcessos} processo(s) catalogado(s). Os processos abaixo serão adicionados a ela, sem duplicar os que já existem.`
-              : `Caixa ${caixaNumeroBusca} ainda não existe — será criada agora.`}
-          </p>
-        )}
+        <div className="mt-3">
+          <label className="label">Avaliador credenciado *</label>
+          <select className="input sm:w-1/3" value={avaliadorId} onChange={e => setAvaliadorId(e.target.value)}>
+            <option value="">Selecione…</option>
+            {(avaliadores ?? []).map(a => (
+              <option key={a.id} value={a.id}>{a.nome}</option>
+            ))}
+          </select>
+        </div>
 
         {(avaliadores ?? []).length === 0 && (
           <p className="text-sm text-orange-600 bg-orange-50 rounded-lg px-3 py-2 mt-3">
@@ -252,22 +330,64 @@ export function RequisicoesAvaliacaoPage() {
           </p>
         )}
 
+        <label className="flex items-start gap-2 mt-4 text-sm text-gray-700 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={posseConfirmada}
+            onChange={e => setPosseConfirmada(e.target.checked)}
+          />
+          Confirmo que estou de posse da caixa física e já levantei a relação completa dos processos que ela contém.
+        </label>
+
         <div className="mt-5 pt-4 border-t border-gray-100">
           <label className="label">Processos da caixa</label>
           <p className="text-xs text-gray-400 mb-2">
-            Cole aqui a lista de processos — um por linha, igual na planilha: número do processo, ano de produção e o assunto que está na etiqueta do processo. Depois de colar, complete na tabela abaixo o Interessado (CDTIV ou PMV) e a última movimentação de cada processo — se não houver despacho registrado, marque a caixinha "Não há data de último despacho" em vez de deixar em branco. Todos esses campos são obrigatórios para enviar a requisição.
+            Arraste aqui a planilha com a relação dos processos (número, ano de produção e o assunto que está na etiqueta), ou cole a lista diretamente. Depois, complete na tabela abaixo o Interessado (CDTIV ou PMV) e a última movimentação de cada processo — se não houver despacho registrado, marque a caixinha "Não há data de último despacho" em vez de deixar em branco. Todos esses campos são obrigatórios para enviar a requisição.
           </p>
-          <div className="flex gap-2">
-            <textarea
-              className="input min-h-[80px] resize-y font-mono text-xs"
-              placeholder={'1309\t1993\tPRORROGAÇÃO DE CONVÊNIO COM A TEC VITÓRIA\n1254\t1993A\tCI Nº 220 - PAGAMENTO DE FATURA'}
-              value={textoColado}
-              onChange={e => setTextoColado(e.target.value)}
+
+          <div
+            className={clsx(
+              'flex flex-col items-center justify-center gap-1.5 border-2 border-dashed rounded-lg py-6 px-4 text-center cursor-pointer transition-colors',
+              arrastandoArquivo ? 'border-teal-400 bg-teal-50' : 'border-gray-200 hover:border-gray-300',
+            )}
+            onClick={() => arquivoInputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setArrastandoArquivo(true) }}
+            onDragLeave={() => setArrastandoArquivo(false)}
+            onDrop={e => {
+              e.preventDefault()
+              setArrastandoArquivo(false)
+              const file = e.dataTransfer.files?.[0]
+              if (file) processarArquivo(file)
+            }}
+          >
+            <UploadCloud size={22} className="text-gray-400" />
+            <p className="text-sm text-gray-600">Arraste a planilha aqui, ou clique para escolher o arquivo</p>
+            <p className="text-[11px] text-gray-400">.xlsx, .xls ou .csv</p>
+            <input
+              ref={arquivoInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={e => { const file = e.target.files?.[0]; if (file) processarArquivo(file); e.target.value = '' }}
             />
           </div>
-          <button className="btn-secondary text-xs mt-2" onClick={processarColado} disabled={!textoColado.trim()}>
-            <ClipboardPaste size={13} /> Adicionar à lista
-          </button>
+          {erroArquivo && <p className="text-xs text-red-600 mt-1.5">{erroArquivo}</p>}
+
+          <details className="mt-3">
+            <summary className="text-xs text-gray-500 cursor-pointer select-none">ou cole a lista de processos (texto copiado da planilha)</summary>
+            <div className="flex gap-2 mt-2">
+              <textarea
+                className="input min-h-[80px] resize-y font-mono text-xs"
+                placeholder={'1309\t1993\tPRORROGAÇÃO DE CONVÊNIO COM A TEC VITÓRIA\n1254\t1993A\tCI Nº 220 - PAGAMENTO DE FATURA'}
+                value={textoColado}
+                onChange={e => setTextoColado(e.target.value)}
+              />
+            </div>
+            <button className="btn-secondary text-xs mt-2" onClick={processarColado} disabled={!textoColado.trim()}>
+              <ClipboardPaste size={13} /> Adicionar à lista
+            </button>
+          </details>
 
           {linhas.length > 0 && (
             <div className="mt-4 overflow-x-auto">
@@ -374,10 +494,25 @@ export function RequisicoesAvaliacaoPage() {
           </button>
         </div>
 
+        {divergeQuantidade && (
+          <div className="mt-4 flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+            <PackageSearch size={16} className="mt-0.5 shrink-0" />
+            <div>
+              <p>
+                Você declarou <strong>{quantidadeDeclaradaNum}</strong> processo(s) na caixa, mas a lista abaixo tem <strong>{linhasValidas.length}</strong>. Confira se a caixa foi totalmente esgotada antes de enviar.
+              </p>
+              <label className="flex items-center gap-1.5 mt-1.5 text-xs">
+                <input type="checkbox" checked={ignorarDivergenciaQtd} onChange={e => setIgnorarDivergenciaQtd(e.target.checked)} />
+                Enviar mesmo assim
+              </label>
+            </div>
+          </div>
+        )}
+
         <div className="mt-5 pt-4 border-t border-gray-100 flex items-center gap-3">
           <button
             className="btn-primary text-sm"
-            disabled={!caixaNumeroBusca || !avaliadorId || linhasValidas.length === 0 || linhasIncompletas.length > 0 || enviar.isPending}
+            disabled={!podeEnviar || enviar.isPending}
             onClick={() => enviar.mutate()}
           >
             <Send size={14} /> {enviar.isPending ? 'Enviando…' : `Enviar requisição (${linhasValidas.length} processo${linhasValidas.length === 1 ? '' : 's'})`}
@@ -401,6 +536,16 @@ export function RequisicoesAvaliacaoPage() {
                     <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', statusLabel[r.status]?.style)}>
                       {statusLabel[r.status]?.label ?? r.status}
                     </span>
+                    {r.caixa?.status === 'aguardando_conferencia' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-100 text-navy-700">
+                        Aguardando conferência do Protocolo
+                      </span>
+                    )}
+                    {r.caixa?.status === 'arquivada' && (
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-700">
+                        Arquivada
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-400">
                     Para {r.avaliador?.nome ?? '—'} · enviado por {r.criador?.nome ?? '—'} · entregue em {format(new Date(r.data_entrega + 'T00:00:00'), 'dd/MM/yyyy')}
