@@ -4,6 +4,7 @@ import { Search, MessageSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { TtdCodigo } from '@/lib/database.types'
+import { correspondeBusca } from '@/lib/textSearch'
 import clsx from 'clsx'
 
 export function TtdPage() {
@@ -26,10 +27,9 @@ export function TtdPage() {
   })
 
   const filtered = (ttds ?? []).filter(t => {
+    // Busca tolerante a acento e à ordem das palavras — ver src/lib/textSearch.ts
     const matchSearch = !search
-      || t.codigo.toLowerCase().includes(search.toLowerCase())
-      || t.assunto.toLowerCase().includes(search.toLowerCase())
-      || t.serie.toLowerCase().includes(search.toLowerCase())
+      || correspondeBusca(`${t.codigo} ${t.serie} ${t.assunto}`, search)
     const matchClasse = classeFilter === 'todos' || t.classe.startsWith(classeFilter)
     const matchStatus = statusFilter === 'todos' || t.status === statusFilter
     return matchSearch && matchClasse && matchStatus
