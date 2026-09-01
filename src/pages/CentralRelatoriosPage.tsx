@@ -41,7 +41,7 @@ const COLUNAS: { key: string; label: string }[] = [
   { key: 'assunto_processo', label: 'Assunto' },
   { key: 'ano_producao', label: 'Ano' },
   { key: 'caixa.numero', label: 'Caixa' },
-  { key: 'caixa.setor', label: 'Setor' },
+  { key: 'setor_origem', label: 'Setor' },
   { key: 'ttd.codigo', label: 'Código TTD' },
   { key: 'ttd.classe', label: 'Classe' },
   { key: 'ttd.serie', label: 'Série' },
@@ -55,7 +55,7 @@ const COLUNAS: { key: string; label: string }[] = [
 ]
 
 const COLUNAS_PADRAO = [
-  'numero_documento', 'interessado', 'assunto_processo', 'caixa.setor', 'ttd.classe',
+  'numero_documento', 'interessado', 'assunto_processo', 'setor_origem', 'ttd.classe',
   'avaliacao.avaliador', 'avaliacao.status',
 ]
 
@@ -76,7 +76,7 @@ function getValor(p: Processo, key: string): string | number {
     case 'assunto_processo': return p.assunto_processo ?? ''
     case 'ano_producao': return p.ano_producao ?? ''
     case 'caixa.numero': return p.caixa?.numero ?? ''
-    case 'caixa.setor': return p.caixa?.setor ?? ''
+    case 'setor_origem': return p.setor_origem ?? p.caixa?.setor ?? ''
     case 'ttd.codigo': return p.ttd?.codigo ?? ''
     case 'ttd.classe': return p.ttd?.classe ?? ''
     case 'ttd.serie': return p.ttd?.serie ?? ''
@@ -111,9 +111,9 @@ const AVALIACAO_CAMPOS = 'status,decisao,created_at,confirmado_em,avaliado_por,c
 // processos sem TTD/caixa/avaliação correspondente ficariam excluídos de
 // toda consulta
 function buildQuery(filtros: FiltrosState) {
-  const caixaJoin = filtros.setor
-    ? 'caixa:caixa_id!inner(numero,setor,status)'
-    : 'caixa:caixa_id(numero,setor,status)'
+  // setor agora é filtrado direto em processos.setor_origem (não precisa
+  // mais de !inner no join de caixa para isso).
+  const caixaJoin = 'caixa:caixa_id(numero,setor,status)'
   const ttdJoin = (filtros.classe || filtros.destinacaoFinal)
     ? 'ttd:ttd_codigo_id!inner(codigo,classe,serie,assunto,destinacao_final,legislacao)'
     : 'ttd:ttd_codigo_id(codigo,classe,serie,assunto,destinacao_final,legislacao)'
@@ -132,7 +132,7 @@ function buildQuery(filtros: FiltrosState) {
     .from('processos')
     .select(`*, ${caixaJoin}, ${ttdJoin}, ${avaliacaoJoin}`, { count: 'exact' })
 
-  if (filtros.setor) query = query.eq('caixa.setor', filtros.setor)
+  if (filtros.setor) query = query.eq('setor_origem', filtros.setor)
   if (filtros.classe) query = query.eq('ttd.classe', filtros.classe)
   if (filtros.destinacaoFinal) query = query.eq('ttd.destinacao_final', filtros.destinacaoFinal)
   if (filtros.anoDe) query = query.gte('ano_producao', Number(filtros.anoDe))
@@ -176,8 +176,8 @@ export function CentralRelatoriosPage() {
   const { data: setores } = useQuery({
     queryKey: ['setores-distintos'],
     queryFn: async () => {
-      const { data } = await supabase.from('caixas').select('setor').not('setor', 'is', null)
-      return Array.from(new Set((data ?? []).map(d => d.setor).filter(Boolean))).sort() as string[]
+      const { data } = await supabase.from('processos').select('setor_origem').not('setor_origem', 'is', null)
+      return Array.from(new Set((data ?? []).map(d => d.setor_origem).filter(Boolean))).sort() as string[]
     },
   })
 

@@ -98,7 +98,8 @@ export function RevisaoManualPage() {
                     <span className="font-mono text-sm font-semibold text-gray-900">{p.numero_documento}</span>
                     {p.caixa && (
                       <span className="text-xs text-gray-400">
-                        Caixa: {(p.caixa as { numero: string }).numero} | {(p.caixa as { setor: string }).setor}
+                        Caixa: {(p.caixa as { numero: string }).numero}
+                        {(p.setor_origem ?? (p.caixa as { setor: string | null }).setor) && ` | ${p.setor_origem ?? (p.caixa as { setor: string | null }).setor}`}
                       </span>
                     )}
                     {p.ano_producao && (

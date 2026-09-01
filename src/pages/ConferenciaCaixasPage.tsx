@@ -10,6 +10,7 @@ type ProcessoConferencia = {
   id: string
   numero_documento: string
   assunto_processo: string | null
+  setor_origem: string | null
   avaliacoes: { decisao: string; status: string; ttd: { codigo: string; assunto: string } | null }[]
 }
 
@@ -35,7 +36,7 @@ export function ConferenciaCaixasPage() {
       const { data, error } = await supabase
         .from('caixas')
         .select(
-          '*, requisicoes_avaliacao(*, avaliador:avaliador_id(nome)), processos(id, numero_documento, assunto_processo, avaliacoes(decisao, status, ttd:ttd_codigo_id(codigo, assunto)))',
+          '*, requisicoes_avaliacao(*, avaliador:avaliador_id(nome)), processos(id, numero_documento, assunto_processo, setor_origem, avaliacoes(decisao, status, ttd:ttd_codigo_id(codigo, assunto)))',
         )
         .eq('status', 'aguardando_conferencia')
         .order('created_at', { ascending: true, referencedTable: 'requisicoes_avaliacao' })
@@ -106,6 +107,14 @@ export function ConferenciaCaixasPage() {
               const totalProcessos = c.processos?.length ?? 0
               const divergeQtd = c.quantidade_declarada != null && c.quantidade_declarada !== totalProcessos
               const aberta = abertaId === c.id
+              // A caixa pode ter processos de mais de um setor — mostra o
+              // setor único quando é o caso, ou avisa que é mista (o setor
+              // de cada processo aparece na lista abaixo, ao abrir "Conferir
+              // códigos").
+              const setoresDaCaixa = Array.from(
+                new Set((c.processos ?? []).map(p => p.setor_origem).filter((s): s is string => !!s)),
+              ).sort()
+              const setorMisto = setoresDaCaixa.length > 1
 
               return (
                 <div key={c.id} className="py-4 px-2">
@@ -113,7 +122,18 @@ export function ConferenciaCaixasPage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
                         <span className="font-mono font-semibold text-gray-900 text-sm">{c.numero}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">{c.setor}</span>
+                        {setorMisto ? (
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium"
+                            title={`Setores desta caixa: ${setoresDaCaixa.join(', ')}`}
+                          >
+                            Múltiplos setores ({setoresDaCaixa.join(', ')})
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                            {setoresDaCaixa[0] ?? c.setor ?? '—'}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-gray-400">
                         Avaliado por {requisicao?.avaliador?.nome ?? '—'} · {totalProcessos} processo{totalProcessos === 1 ? '' : 's'}
@@ -145,6 +165,9 @@ export function ConferenciaCaixasPage() {
                           <div key={p.id} className="px-3 py-2 text-xs flex items-center justify-between gap-2 flex-wrap">
                             <div className="min-w-0">
                               <span className="font-mono font-semibold text-gray-800">{p.numero_documento}</span>
+                              {setorMisto && p.setor_origem && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600 ml-2">{p.setor_origem}</span>
+                              )}
                               {p.assunto_processo && <span className="text-gray-500 ml-2 truncate">{p.assunto_processo}</span>}
                             </div>
                             <div className="flex items-center gap-2 shrink-0">

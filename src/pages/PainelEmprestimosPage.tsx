@@ -12,7 +12,7 @@ type EmprestimoAtivo = {
   desarquivado_em: string
   prazo_previsto: string
   processo:
-    | (Pick<Processo, 'numero_documento' | 'assunto_processo' | 'interessado'> & {
+    | (Pick<Processo, 'numero_documento' | 'assunto_processo' | 'interessado' | 'setor_origem'> & {
         caixa: Pick<Caixa, 'numero' | 'setor'> | null
       })
     | null
@@ -27,7 +27,7 @@ export function PainelEmprestimosPage() {
       const { data, error } = await supabase
         .from('emprestimos')
         .select(
-          'id,solicitante_nome,solicitante_matricula,desarquivado_em,prazo_previsto,processo:processo_id(numero_documento,assunto_processo,interessado,caixa:caixa_id(numero,setor))',
+          'id,solicitante_nome,solicitante_matricula,desarquivado_em,prazo_previsto,processo:processo_id(numero_documento,assunto_processo,interessado,setor_origem,caixa:caixa_id(numero,setor))',
         )
         .is('devolvido_em', null)
         .order('prazo_previsto', { ascending: true })
@@ -113,7 +113,7 @@ export function PainelEmprestimosPage() {
                     {e.processo?.caixa?.numero && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
                         Caixa {e.processo.caixa.numero}
-                        {e.processo.caixa.setor ? ` — ${e.processo.caixa.setor}` : ''}
+                        {(e.processo.setor_origem ?? e.processo.caixa.setor) ? ` — ${e.processo.setor_origem ?? e.processo.caixa.setor}` : ''}
                       </span>
                     )}
                     {atrasado ? (
