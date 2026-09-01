@@ -4,6 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Search, Star } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { TtdCodigo, Caixa } from '@/lib/database.types'
+import { correspondeBusca } from '@/lib/textSearch'
 import clsx from 'clsx'
 
 interface ProcessoForm {
@@ -29,20 +30,28 @@ export function CatalogarProcessoPage() {
   const [potencialExpositivo, setPotencialExpositivo] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const { data: ttdResults } = useQuery({
-    queryKey: ['ttd-search', ttdSearch],
+  // Busca a tabela vigente inteira uma única vez e filtra no navegador —
+  // isso permite uma busca tolerante a acento e à ordem das palavras
+  // (ver src/lib/textSearch.ts), o que a busca "ilike" direto no banco
+  // não conseguia fazer (por isso vários assuntos conhecidos não
+  // apareciam nas buscas).
+  const { data: ttdTodos } = useQuery({
+    queryKey: ['ttd-codigos-vigentes'],
     queryFn: async () => {
-      if (ttdSearch.length < 2) return []
       const { data } = await supabase
         .from('ttd_codigos')
         .select('*')
-        .or(`codigo.ilike.%${ttdSearch}%,assunto.ilike.%${ttdSearch}%,serie.ilike.%${ttdSearch}%`)
         .eq('status', 'vigente') // só código já em vigor pode classificar processo — "proposta" ainda não foi aprovado
-        .limit(12)
+        .order('codigo')
       return (data ?? []) as TtdCodigo[]
     },
-    enabled: ttdSearch.length >= 2,
   })
+
+  const ttdResults = ttdSearch.length >= 2
+    ? (ttdTodos ?? [])
+        .filter(t => correspondeBusca(`${t.codigo} ${t.serie} ${t.assunto}`, ttdSearch))
+        .slice(0, 12)
+    : []
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
