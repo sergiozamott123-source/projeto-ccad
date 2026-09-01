@@ -86,6 +86,10 @@ export interface RelatorioMensal {
   status: StatusRelatorio
   enviado_em: string | null
   demandas_relacionadas: string[]
+  processos_avaliados_qtd: number
+  processos_avaliados_numeros: string[]
+  requisicoes_emitidas_qtd: number
+  requisicoes_emitidas_caixas: string[]
   usuario?: Usuario
   pilar?: Pilar
 }
