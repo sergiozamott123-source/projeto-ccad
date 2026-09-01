@@ -12,7 +12,7 @@ export type StatusConsultoriaMemorial = 'a_contratar' | 'contratado' | 'concluid
 export type StatusLicitacaoDigitalizacao =
   | 'a_iniciar' | 'tr_em_validacao' | 'licitacao_aberta' | 'contratado' | 'em_execucao'
 export type TipoMuralEvento =
-  | 'atividade_concluida' | 'ata_registrada' | 'indicador_lancado' | 'demanda_concluida' | 'fase_concluida'
+  | 'atividade_concluida' | 'ata_registrada' | 'indicador_lancado' | 'demanda_concluida' | 'fase_concluida' | 'caixa_arquivada'
 
 export interface Usuario {
   id: string
@@ -119,11 +119,17 @@ export interface TtdCodigo {
   vigente_desde: string | null
 }
 
+export type StatusCaixa = 'catalogada' | 'em_avaliacao' | 'aguardando_conferencia' | 'arquivada'
+
 export interface Caixa {
   id: string
   numero: string
   setor: string
-  status: string
+  status: StatusCaixa
+  quantidade_declarada: number | null
+  conferido_por: string | null
+  conferido_em: string | null
+  conferidor?: Usuario
 }
 
 export type Interessado = 'CDTIV' | 'PMV'
