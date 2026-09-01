@@ -625,12 +625,14 @@ export function BuscaProcessosPage() {
 
   const temFiltro = termo.trim().length >= 2 || ano.trim().length > 0 || interessado.length > 0 || setor.length > 0
 
+  // Vem de processos.setor_origem (campo por processo, desde a Fase 15) —
+  // uma caixa pode ter processos de mais de um setor.
   const { data: setores } = useQuery({
     queryKey: ['setores-disponiveis'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('caixas').select('setor').not('setor', 'is', null)
+      const { data, error } = await supabase.from('processos').select('setor_origem').not('setor_origem', 'is', null)
       if (error) throw error
-      const unicos = Array.from(new Set((data ?? []).map(c => c.setor).filter((s): s is string => !!s)))
+      const unicos = Array.from(new Set((data ?? []).map(p => p.setor_origem).filter((s): s is string => !!s)))
       return unicos.sort((a, b) => a.localeCompare(b))
     },
     staleTime: 5 * 60 * 1000,
@@ -644,7 +646,7 @@ export function BuscaProcessosPage() {
       let query = supabase
         .from('processos')
         .select(
-          '*, caixa:caixa_id!inner(numero,setor), avaliacoes(decisao,status,confirmado_em), emprestimos(id,solicitante_nome,solicitante_matricula,desarquivado_em,prazo_previsto,devolvido_em)',
+          '*, caixa:caixa_id(numero,setor), avaliacoes(decisao,status,confirmado_em), emprestimos(id,solicitante_nome,solicitante_matricula,desarquivado_em,prazo_previsto,devolvido_em)',
         )
 
       if (termo.trim().length >= 2) {
@@ -660,7 +662,7 @@ export function BuscaProcessosPage() {
         query = query.eq('interessado', interessado)
       }
       if (setor) {
-        query = query.eq('caixa.setor', setor)
+        query = query.eq('setor_origem', setor)
       }
 
       const { data, error } = await query
@@ -807,8 +809,8 @@ export function BuscaProcessosPage() {
                     <Archive size={11} /> Caixa
                   </p>
                   <p className="text-base font-bold text-amber-800">{p.caixa?.numero ?? '—'}</p>
-                  {p.caixa?.setor && (
-                    <p className="text-[10px] text-amber-600 mt-0.5">{p.caixa.setor}</p>
+                  {(p.setor_origem ?? p.caixa?.setor) && (
+                    <p className="text-[10px] text-amber-600 mt-0.5">{p.setor_origem ?? p.caixa?.setor}</p>
                   )}
                 </div>
 
