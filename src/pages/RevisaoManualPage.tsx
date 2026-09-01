@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle, AlertCircle, Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { Processo, TtdCodigo } from '@/lib/database.types'
+import { correspondeBusca } from '@/lib/textSearch'
 export function RevisaoManualPage() {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
@@ -22,20 +23,28 @@ export function RevisaoManualPage() {
     },
   })
 
-  const { data: ttdResults } = useQuery({
-    queryKey: ['ttd-search-revisao', ttdSearch],
+  // Busca a tabela vigente inteira uma única vez e filtra no navegador —
+  // isso permite uma busca tolerante a acento e à ordem das palavras
+  // (ver src/lib/textSearch.ts), o que a busca "ilike" direto no banco
+  // não conseguia fazer (por isso vários assuntos conhecidos não
+  // apareciam nas buscas).
+  const { data: ttdTodos } = useQuery({
+    queryKey: ['ttd-codigos-vigentes-revisao'],
     queryFn: async () => {
-      if (ttdSearch.length < 2) return []
       const { data } = await supabase
         .from('ttd_codigos')
-        .select('id, codigo, assunto, fase_corrente, fase_intermediaria, destinacao_final, status')
-        .or(`codigo.ilike.%${ttdSearch}%,assunto.ilike.%${ttdSearch}%`)
+        .select('id, codigo, assunto, serie, fase_corrente, fase_intermediaria, destinacao_final, status')
         .eq('status', 'vigente')
-        .limit(8)
+        .order('codigo')
       return (data ?? []) as TtdCodigo[]
     },
-    enabled: ttdSearch.length >= 2,
   })
+
+  const ttdResults = ttdSearch.length >= 2
+    ? (ttdTodos ?? [])
+        .filter(t => correspondeBusca(`${t.codigo} ${t.assunto}`, ttdSearch))
+        .slice(0, 8)
+    : []
 
   const classify = useMutation({
     mutationFn: async ({ processoId, ttdId }: { processoId: string; ttdId: string }) => {
