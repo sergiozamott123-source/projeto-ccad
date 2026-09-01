@@ -1,12 +1,67 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, Send, Save } from 'lucide-react'
+import { FileText, Send, Save, Wand2, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { RelatorioMensal, Demanda } from '@/lib/database.types'
-import { format, startOfMonth, subMonths } from 'date-fns'
+import { format, startOfMonth, subMonths, addMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import clsx from 'clsx'
+
+interface AtividadesImportadas {
+  processos_avaliados_qtd: number
+  processos_avaliados_numeros: string[]
+  requisicoes_emitidas_qtd: number
+  requisicoes_emitidas_caixas: string[]
+}
+
+const ATIVIDADES_VAZIAS: AtividadesImportadas = {
+  processos_avaliados_qtd: 0,
+  processos_avaliados_numeros: [],
+  requisicoes_emitidas_qtd: 0,
+  requisicoes_emitidas_caixas: [],
+}
+
+// Busca, direto no banco, quantos processos o membro avaliou e quantas
+// requisições ele emitiu (se for do Protocolo) dentro do mês de
+// referência do relatório — para preencher automaticamente essa parte,
+// em vez do membro ter que lembrar e digitar esses números de cabeça.
+async function buscarAtividadesDoMes(usuarioId: string, mesReferencia: string): Promise<AtividadesImportadas> {
+  const inicio = mesReferencia
+  const fim = format(addMonths(new Date(mesReferencia), 1), 'yyyy-MM-dd')
+
+  const [avaliacoesRes, requisicoesRes] = await Promise.all([
+    supabase
+      .from('avaliacoes')
+      .select('processo:processo_id(numero_documento)')
+      .eq('avaliado_por', usuarioId)
+      .gte('created_at', inicio)
+      .lt('created_at', fim),
+    supabase
+      .from('requisicoes_avaliacao')
+      .select('caixa:caixa_id(numero)')
+      .eq('criado_por', usuarioId)
+      .gte('created_at', inicio)
+      .lt('created_at', fim),
+  ])
+
+  const numerosProcessos = (avaliacoesRes.data ?? [])
+    .map(a => (a as unknown as { processo: { numero_documento: string | null } | null }).processo?.numero_documento)
+    .filter((n): n is string => !!n)
+    .sort()
+
+  const numerosCaixas = (requisicoesRes.data ?? [])
+    .map(r => (r as unknown as { caixa: { numero: string | null } | null }).caixa?.numero)
+    .filter((n): n is string => !!n)
+    .sort()
+
+  return {
+    processos_avaliados_qtd: numerosProcessos.length,
+    processos_avaliados_numeros: numerosProcessos,
+    requisicoes_emitidas_qtd: numerosCaixas.length,
+    requisicoes_emitidas_caixas: numerosCaixas,
+  }
+}
 
 const STATUS_COLOR: Record<string, string> = {
   rascunho: 'bg-gray-100 text-gray-600',
@@ -24,7 +79,10 @@ export function RelatoriosPage() {
   const [form, setForm] = useState({
     atividades_realizadas: '',
     dificuldades: '',
- })
+    ...ATIVIDADES_VAZIAS,
+  })
+  const [importando, setImportando] = useState(false)
+  const [importado, setImportado] = useState(false)
 
   const { data: relatorios } = useQuery({
     queryKey: ['meus-relatorios', profile?.id],
@@ -59,6 +117,38 @@ export function RelatoriosPage() {
 
   const [demandasChecked, setDemandasChecked] = useState<string[]>([])
 
+  const relatorioDoMes = relatorios?.find(r => r.mes_referencia === selectedMes)
+
+  // Sempre que troca o mês selecionado (ou os relatórios terminam de
+  // carregar), recarrega o formulário com o que já está salvo daquele
+  // mês — sem isso, clicar em "Editar relatório" abria os campos em
+  // branco mesmo já havendo um rascunho salvo.
+  useEffect(() => {
+    setForm({
+      atividades_realizadas: relatorioDoMes?.atividades_realizadas ?? '',
+      dificuldades: relatorioDoMes?.dificuldades ?? '',
+      processos_avaliados_qtd: relatorioDoMes?.processos_avaliados_qtd ?? 0,
+      processos_avaliados_numeros: relatorioDoMes?.processos_avaliados_numeros ?? [],
+      requisicoes_emitidas_qtd: relatorioDoMes?.requisicoes_emitidas_qtd ?? 0,
+      requisicoes_emitidas_caixas: relatorioDoMes?.requisicoes_emitidas_caixas ?? [],
+    })
+    setDemandasChecked(relatorioDoMes?.demandas_relacionadas ?? [])
+    setImportado(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMes, relatorioDoMes?.id])
+
+  async function handleImportarAtividades() {
+    if (!profile?.id) return
+    setImportando(true)
+    try {
+      const atividades = await buscarAtividadesDoMes(profile.id, selectedMes)
+      setForm(v => ({ ...v, ...atividades }))
+      setImportado(true)
+    } finally {
+      setImportando(false)
+    }
+  }
+
   const saveRelatorio = useMutation({
     mutationFn: async (status: 'rascunho' | 'enviado') => {
       const existing = relatorios?.find(r => r.mes_referencia === selectedMes)
@@ -89,8 +179,6 @@ export function RelatoriosPage() {
       setShowForm(false)
     },
   })
-
-  const relatorioDoMes = relatorios?.find(r => r.mes_referencia === selectedMes)
 
   return (
     <div className="space-y-5">
@@ -128,6 +216,61 @@ export function RelatoriosPage() {
           <h2 className="font-semibold text-gray-900">
             Relatório — {format(new Date(selectedMes), 'MMMM yyyy', { locale: ptBR })}
           </h2>
+
+          {(profile?.pode_avaliar_processos || profile?.pode_criar_requisicoes) && (
+            <div className="rounded-xl border border-teal-100 bg-teal-50/60 p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Importar minhas atividades do mês</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Busca automaticamente, no próprio sistema, quantos processos você avaliou
+                    {profile?.pode_criar_requisicoes ? ' e quantas requisições você emitiu' : ''} em{' '}
+                    {format(new Date(selectedMes), 'MMMM yyyy', { locale: ptBR })} — sem precisar contar de cabeça.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary text-xs py-1.5 shrink-0"
+                  disabled={importando}
+                  onClick={handleImportarAtividades}
+                >
+                  <Wand2 size={14} /> {importando ? 'Buscando…' : 'Importar atividades'}
+                </button>
+              </div>
+
+              {importado && (
+                <p className="text-xs text-green-700 flex items-center gap-1">
+                  <CheckCircle2 size={13} /> Atividades importadas — confira abaixo e clique em "Salvar rascunho" ou "Enviar relatório" para gravar.
+                </p>
+              )}
+
+              {profile?.pode_avaliar_processos && (
+                <div className="text-sm">
+                  <p className="text-gray-700">
+                    <strong>{form.processos_avaliados_qtd}</strong> processo(s) avaliado(s) no mês
+                  </p>
+                  {form.processos_avaliados_numeros.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Nº: {form.processos_avaliados_numeros.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {profile?.pode_criar_requisicoes && (
+                <div className="text-sm">
+                  <p className="text-gray-700">
+                    <strong>{form.requisicoes_emitidas_qtd}</strong> requisição(ões) emitida(s) no mês
+                  </p>
+                  {form.requisicoes_emitidas_caixas.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Caixas: {form.requisicoes_emitidas_caixas.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="label">Atividades realizadas *</label>
