@@ -128,6 +128,12 @@ export type StatusCaixa = 'catalogada' | 'em_avaliacao' | 'aguardando_conferenci
 export interface Caixa {
   id: string
   numero: string
+  // Número físico da caixa (o escrito na etiqueta dela e usado no
+  // controle do Protocolo, ex.: "280") — distinto de `numero`, que é o
+  // código interno gerado pelo sistema (ex.: "CX003"). Adicionado na
+  // Fase 20; fica `null` para caixas sem planilha de origem.
+  // Ver migracao_fase20_numero_fisico_caixa.sql.
+  numero_fisico?: string | null
   setor: string
   status: StatusCaixa
   quantidade_declarada: number | null
