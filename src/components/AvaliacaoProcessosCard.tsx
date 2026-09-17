@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2 } from 'lucide-react'
+import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2, FileSignature } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
 import type { Processo, TtdCodigo, Avaliacao, RequisicaoAvaliacao } from '@/lib/database.types'
+import { declaracaoCrpa, gerarCrpaPdf } from '@/lib/documentosCepaCrpa'
 import clsx from 'clsx'
 
 // Uma avaliação já "resolve" o processo (não precisa mais avaliar) se ela
@@ -14,6 +15,21 @@ const STATUS_RESOLVE: Avaliacao['status'][] = ['confirmada', 'aguardando_confirm
 
 function isEliminacao(destino: string | null | undefined) {
   return !!destino && destino.toLowerCase().includes('elimin')
+}
+
+// ------------------------------------------------------------------
+// CRPA — Confirmação de Recebimento de Processos para Avaliação
+// (Fase 21). Gera-se quando o avaliador confirma explicitamente que
+// recebeu a caixa — sempre associada à CEPA que originou o envio.
+// ------------------------------------------------------------------
+
+interface StatusCepaCrpa {
+  cepaId: string
+  cepaNumero: number
+  cepaAno: number
+  crpaId: string | null
+  crpaNumero: number | null
+  crpaAno: number | null
 }
 
 export function AvaliacaoProcessosCard() {
@@ -30,13 +46,90 @@ export function AvaliacaoProcessosCard() {
     queryFn: async () => {
       const { data } = await supabase
         .from('requisicoes_avaliacao')
-        .select('*, caixa:caixa_id(numero), criador:criado_por(nome)')
+        .select('*, caixa:caixa_id(numero, quantidade_declarada), criador:criado_por(nome)')
         .eq('avaliador_id', profile!.id)
         .eq('status', 'pendente')
         .order('created_at', { ascending: true })
-      return (data ?? []) as (RequisicaoAvaliacao & { caixa: { numero: string } | null; criador: { nome: string } | null })[]
+      return (data ?? []) as (RequisicaoAvaliacao & {
+        caixa: { numero: string; quantidade_declarada: number | null } | null
+        criador: { nome: string } | null
+      })[]
     },
     enabled: !!profile?.id && !isCoord,
+  })
+
+  // Fase 21 — antes de deixar carregar a caixa, cada requisição pendente
+  // precisa ter uma CEPA emitida pelo Protocolo e, além disso, o próprio
+  // avaliador precisa confirmar o recebimento (gerando a CRPA). Uma
+  // consulta só, já que normalmente são poucas requisições pendentes.
+  const idsRequisicoesPendentes = (minhasRequisicoes ?? []).map(r => r.id)
+  const { data: cepasCrpasBrutos } = useQuery({
+    queryKey: ['cepas-status', idsRequisicoesPendentes],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('cepas')
+        .select('id, requisicao_avaliacao_id, numero_sequencial, ano, crpas(id, numero_sequencial, ano)')
+        .in('requisicao_avaliacao_id', idsRequisicoesPendentes)
+      return (data ?? []) as any[]
+    },
+    enabled: !isCoord && idsRequisicoesPendentes.length > 0,
+  })
+
+  const statusPorRequisicao = useMemo(() => {
+    const mapa = new Map<string, StatusCepaCrpa>()
+    for (const c of cepasCrpasBrutos ?? []) {
+      const crpa = Array.isArray(c.crpas) ? c.crpas[0] : c.crpas
+      mapa.set(c.requisicao_avaliacao_id, {
+        cepaId: c.id,
+        cepaNumero: c.numero_sequencial,
+        cepaAno: c.ano,
+        crpaId: crpa?.id ?? null,
+        crpaNumero: crpa?.numero_sequencial ?? null,
+        crpaAno: crpa?.ano ?? null,
+      })
+    }
+    return mapa
+  }, [cepasCrpasBrutos])
+
+  // Requisição selecionada para confirmar recebimento — abre o painel
+  // com a declaração e o botão de confirmação explícita.
+  const [confirmando, setConfirmando] = useState<{
+    requisicaoId: string
+    cepaId: string
+    cepaNumero: number
+    cepaAno: number
+    caixaNumero: string
+    qtdProcessos: number
+  } | null>(null)
+
+  const confirmarRecebimento = useMutation({
+    mutationFn: async (p: NonNullable<typeof confirmando>) => {
+      if (!profile) throw new Error('Sessão expirada — recarregue a página.')
+      const cepaCodigo = `CEPA ${String(p.cepaNumero).padStart(2, '0')}/${p.cepaAno}`
+      const declaracao = declaracaoCrpa(p.caixaNumero, p.qtdProcessos, cepaCodigo)
+      const { data, error } = await supabase
+        .from('crpas')
+        .insert({ cepa_id: p.cepaId, avaliador_id: profile.id, declaracao })
+        .select('numero_sequencial, ano')
+        .single()
+      if (error) throw error
+      return { p, cepaCodigo, declaracao, numeroSequencial: data!.numero_sequencial as number, ano: data!.ano as number }
+    },
+    onSuccess: ({ p, cepaCodigo, declaracao, numeroSequencial, ano }) => {
+      gerarCrpaPdf({
+        numeroSequencial,
+        ano,
+        caixaNumero: p.caixaNumero,
+        avaliadorNome: profile?.nome ?? '—',
+        qtdProcessos: p.qtdProcessos,
+        cepaCodigo,
+        declaracao,
+        geradoEm: new Date(),
+      })
+      setConfirmando(null)
+      qc.invalidateQueries({ queryKey: ['cepas-status'] })
+      setCaixaBusca(p.caixaNumero)
+    },
   })
   const [ttdSearch, setTtdSearch] = useState('')
   const [selectedTtd, setSelectedTtd] = useState<TtdCodigo | null>(null)
@@ -307,21 +400,101 @@ export function AvaliacaoProcessosCard() {
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {(minhasRequisicoes ?? []).map(r => (
+              {(minhasRequisicoes ?? []).map(r => {
+                const caixaNumero = r.caixa?.numero ?? '—'
+                const qtdProcessos = r.caixa?.quantidade_declarada ?? 0
+                const status = statusPorRequisicao.get(r.id)
+
+                if (!status) {
+                  return (
+                    <span
+                      key={r.id}
+                      title="O Protocolo ainda não emitiu a CEPA (Confirmação de Envio) desta caixa."
+                      className="text-xs px-3 py-1.5 rounded-full border border-dashed border-gray-300 text-gray-400 font-medium"
+                    >
+                      Caixa {caixaNumero} · aguardando emissão da CEPA
+                    </span>
+                  )
+                }
+
+                if (!status.crpaId) {
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() =>
+                        setConfirmando({
+                          requisicaoId: r.id,
+                          cepaId: status.cepaId,
+                          cepaNumero: status.cepaNumero,
+                          cepaAno: status.cepaAno,
+                          caixaNumero,
+                          qtdProcessos,
+                        })
+                      }
+                      className="text-xs px-3 py-1.5 rounded-full border border-amber-300 bg-amber-50 text-amber-800 font-medium hover:border-amber-400 flex items-center gap-1.5"
+                    >
+                      <FileSignature size={12} />
+                      Caixa {caixaNumero} · confirmar recebimento
+                    </button>
+                  )
+                }
+
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setCaixaBusca(caixaNumero)}
+                    className={clsx(
+                      'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors',
+                      caixaBusca === caixaNumero
+                        ? 'bg-teal-500 text-white border-teal-500'
+                        : 'bg-white border-gray-300 text-gray-700 hover:border-teal-400',
+                    )}
+                  >
+                    Caixa {caixaNumero} · enviada por {r.criador?.nome?.split(' ')[0] ?? '—'}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {confirmando && (
+            <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs">
+              <p className="font-semibold text-gray-900 mb-1.5 flex items-center gap-1.5">
+                <FileSignature size={13} />
+                Confirmação de Recebimento de Processos para Avaliação (CRPA)
+              </p>
+              <p className="text-gray-700 mb-2 leading-relaxed">
+                {declaracaoCrpa(
+                  confirmando.caixaNumero,
+                  confirmando.qtdProcessos,
+                  `CEPA ${String(confirmando.cepaNumero).padStart(2, '0')}/${confirmando.cepaAno}`,
+                )}
+              </p>
+              <p className="text-gray-400 mb-3">
+                Ao confirmar, você assina eletronicamente este recebimento em seu nome
+                {profile?.nome ? ` (${profile.nome})` : ''} e a caixa fica liberada para avaliação.
+              </p>
+              {confirmarRecebimento.isError && (
+                <p className="text-red-600 mb-2">Erro ao confirmar o recebimento. Tente novamente.</p>
+              )}
+              <div className="flex gap-2">
                 <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setCaixaBusca(r.caixa?.numero ?? '')}
-                  className={clsx(
-                    'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors',
-                    caixaBusca === r.caixa?.numero
-                      ? 'bg-teal-500 text-white border-teal-500'
-                      : 'bg-white border-gray-300 text-gray-700 hover:border-teal-400',
-                  )}
+                  className="btn-primary text-xs py-1.5 px-3"
+                  disabled={confirmarRecebimento.isPending}
+                  onClick={() => confirmarRecebimento.mutate(confirmando)}
                 >
-                  Caixa {r.caixa?.numero ?? '—'} · enviada por {r.criador?.nome?.split(' ')[0] ?? '—'}
+                  {confirmarRecebimento.isPending ? 'Confirmando…' : 'Confirmar recebimento e gerar CRPA'}
                 </button>
-              ))}
+                <button
+                  type="button"
+                  className="text-gray-500 hover:text-gray-700"
+                  onClick={() => setConfirmando(null)}
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send, Search, Clock, PackageCheck,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -42,6 +42,7 @@ const NAV: NavItem[] = [
   { to: '/riscos',      label: 'Riscos',       icon: <AlertCircle size={18} /> },
   { to: '/equipe',      label: 'Equipe',       icon: <Users size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/central-relatorios', label: 'Central de Relatórios', icon: <FileBarChart size={18} />, roles: ['coordenador','coordenador_substituto'] },
+  { to: '/cepas-crpas', label: 'CEPAs e CRPAs', icon: <FileSignature size={18} />, roles: ['coordenador','coordenador_substituto'], novo: true },
   {
     to: '/acervo', label: 'Acervo', icon: <Archive size={18} />,
     roles: ['coordenador', 'coordenador_substituto'],
