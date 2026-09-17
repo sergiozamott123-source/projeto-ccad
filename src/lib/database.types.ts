@@ -204,6 +204,39 @@ export interface RequisicaoAvaliacao {
   criador?: Usuario
 }
 
+// CEPA/CRPA (Fase 21) — ver migracao_fase21_cepa_crpa.sql.
+// numero_sequencial e ano são preenchidos sozinhos pelo banco (gatilho
+// no INSERT) — a tela nunca informa esses dois campos.
+export interface Cepa {
+  id: string
+  numero_sequencial: number
+  ano: number
+  requisicao_avaliacao_id: string
+  caixa_id: string
+  avaliador_id: string
+  gerado_por: string
+  gerado_em: string
+  declaracao: string
+  created_at: string
+  caixa?: Caixa
+  avaliador?: Usuario
+  gerador?: Usuario
+  crpa?: Crpa | null
+}
+
+export interface Crpa {
+  id: string
+  numero_sequencial: number
+  ano: number
+  cepa_id: string
+  avaliador_id: string
+  confirmado_em: string
+  declaracao: string
+  created_at: string
+  cepa?: Cepa
+  avaliador?: Usuario
+}
+
 export interface Emprestimo {
   id: string
   processo_id: string
@@ -381,6 +414,8 @@ export interface Database {
       emprestimos: { Row: Emprestimo; Insert: Partial<Emprestimo>; Update: Partial<Emprestimo> }
       emprestimo_prorrogacoes: { Row: EmprestimoProrrogacao; Insert: Partial<EmprestimoProrrogacao>; Update: Partial<EmprestimoProrrogacao> }
       requisicoes_avaliacao: { Row: RequisicaoAvaliacao; Insert: Partial<RequisicaoAvaliacao>; Update: Partial<RequisicaoAvaliacao> }
+      cepas: { Row: Cepa; Insert: Partial<Cepa>; Update: Partial<Cepa> }
+      crpas: { Row: Crpa; Insert: Partial<Crpa>; Update: Partial<Crpa> }
       propostas_revisao_ttd: { Row: PropostaRevisaoTtd; Insert: Partial<PropostaRevisaoTtd>; Update: Partial<PropostaRevisaoTtd> }
       reunioes_atas: { Row: ReuniaoAta; Insert: Partial<ReuniaoAta>; Update: Partial<ReuniaoAta> }
       departamentos_mapeados: { Row: DepartamentoMapeado; Insert: Partial<DepartamentoMapeado>; Update: Partial<DepartamentoMapeado> }
