@@ -29,6 +29,7 @@ import { ProtocoloGeralPage } from '@/pages/ProtocoloGeralPage'
 import { CentralRelatoriosPage } from '@/pages/CentralRelatoriosPage'
 import { BuscaProcessosPage } from '@/pages/BuscaProcessosPage'
 import { PainelEmprestimosPage } from '@/pages/PainelEmprestimosPage'
+import { CepasCrpasPage } from '@/pages/CepasCrpasPage'
 
 export default function App() {
   return (
@@ -83,6 +84,9 @@ export default function App() {
               <Route path="/pilares/digitalizacao" element={<DigitalizacaoPilarPage />} />
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
                 <Route path="/central-relatorios" element={<CentralRelatoriosPage />} />
+              </Route>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
+                <Route path="/cepas-crpas" element={<CepasCrpasPage />} />
               </Route>
             </Route>
           </Route>
