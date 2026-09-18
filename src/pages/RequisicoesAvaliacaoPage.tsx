@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Send, X, Plus, ClipboardPaste, UploadCloud, PackageSearch, FileSignature, Download, CheckCircle2 } from 'lucide-react'
+import { Send, X, Plus, ClipboardPaste, UploadCloud, PackageSearch, FileSignature } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -11,7 +11,7 @@ import { declaracaoCepa, gerarCepaPdf } from '@/lib/documentosCepaCrpa'
 import clsx from 'clsx'
 
 type RequisicaoLista = RequisicaoAvaliacao & {
-  caixa: { numero: string; status: string } | null
+  caixa: { numero: string; numero_fisico: string | null; status: string; quantidade_declarada: number | null } | null
   avaliador: { nome: string } | null
   criador: { nome: string } | null
 }
@@ -117,9 +117,14 @@ async function parseArquivoPlanilha(file: File, setorPadrao = ''): Promise<Linha
 // CEPA — Confirmação de Envio de Processos para Avaliação (Fase 21)
 // ------------------------------------------------------------------
 
-// Uma caixa recém-enviada (pelo fluxo simples ou por um dos lotes da
-// Planilha Mãe) que ainda não teve sua CEPA emitida — ou já teve, e
-// esta linha só guarda o resultado para permitir baixar de novo.
+// Uma caixa (de qualquer um dos dois fluxos de envio) cuja requisição
+// já foi enviada mas ainda não tem CEPA emitida. Diferente da versão
+// anterior desta tela, esta lista é sempre recalculada a partir do
+// que está de fato salvo no banco (ver `pendentesCepa` abaixo) — não
+// depende de nada guardado só na memória do navegador. Assim, se o
+// Protocolo enviar uma caixa e sair da tela (ou atualizar a página)
+// antes de emitir a CEPA, ela continua aparecendo aqui na próxima
+// visita, em vez de sumir e travar o avaliador para sempre.
 interface PendenteCepa {
   requisicaoId: string
   caixaId: string
@@ -129,7 +134,6 @@ interface PendenteCepa {
   qtdProcessos: number
   dataEntrega: string
   emitindo: boolean
-  emitida: { numeroSequencial: number; ano: number; geradoEm: string } | null
   erro: string
 }
 
@@ -159,11 +163,13 @@ export function RequisicoesAvaliacaoPage() {
   const [posseConfirmadaLote, setPosseConfirmadaLote] = useState(false)
   const [erroLote, setErroLote] = useState('')
 
-  // Caixas recém-enviadas (por qualquer um dos dois fluxos) aguardando
-  // a emissão da CEPA — Fase 21. Fica visível até o Protocolo emitir
-  // (ou baixar de novo) o documento de cada uma; não se perde ao
-  // enviar um novo lote logo em seguida.
-  const [pendentesCepa, setPendentesCepa] = useState<PendenteCepa[]>([])
+  // Estado só de interface para o botão "Emitir CEPA" de cada item da
+  // lista (ver `pendentesCepa` mais abaixo): qual está emitindo agora
+  // e qual deu erro. Pode se perder numa atualização de página sem
+  // problema nenhum — a lista em si (quem ainda precisa de CEPA) vem
+  // sempre do banco, não daqui.
+  const [emitindoIds, setEmitindoIds] = useState<Record<string, boolean>>({})
+  const [errosCepa, setErrosCepa] = useState<Record<string, string>>({})
 
   const setorEfetivo = (setor === '__novo__' ? setorNovo : setor).trim()
 
@@ -194,11 +200,46 @@ export function RequisicoesAvaliacaoPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from('requisicoes_avaliacao')
-        .select('*, caixa:caixa_id(numero,status), avaliador:avaliador_id(nome), criador:criado_por(nome)')
+        .select('*, caixa:caixa_id(numero,numero_fisico,status,quantidade_declarada), avaliador:avaliador_id(nome), criador:criado_por(nome)')
         .order('created_at', { ascending: false })
       return (data ?? []) as RequisicaoLista[]
     },
   })
+
+  // Quais requisições já têm CEPA emitida — Fase 21. Consultado sempre
+  // do banco (nunca de estado local) para que "quem ainda está
+  // aguardando emissão da CEPA" reflita a realidade mesmo depois de
+  // atualizar a página, trocar de tela ou de sessão.
+  const { data: idsComCepa } = useQuery({
+    queryKey: ['cepas-por-requisicao'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('cepas').select('requisicao_avaliacao_id')
+      if (error) throw error
+      return new Set((data ?? []).map(c => c.requisicao_avaliacao_id as string))
+    },
+  })
+
+  // Lista de caixas enviadas (requisição com status "pendente") que
+  // ainda não têm CEPA — é isso que aparece no card "Emitir CEPA"
+  // logo abaixo. Como vem inteira do banco (requisicoes + idsComCepa),
+  // nunca "some" sozinha: some só quando a CEPA é realmente emitida.
+  const pendentesCepa: PendenteCepa[] = useMemo(() => {
+    if (!requisicoes || !idsComCepa) return []
+    return requisicoes
+      .filter(r => r.status === 'pendente' && !idsComCepa.has(r.id))
+      .map(r => ({
+        requisicaoId: r.id,
+        caixaId: r.caixa_id,
+        caixaNumero: r.caixa?.numero_fisico || r.caixa?.numero || '—',
+        avaliadorId: r.avaliador_id,
+        avaliadorNome: r.avaliador?.nome ?? '—',
+        qtdProcessos: r.caixa?.quantidade_declarada ?? 0,
+        dataEntrega: r.data_entrega,
+        emitindo: !!emitindoIds[r.id],
+        erro: errosCepa[r.id] ?? '',
+      }))
+      .reverse()
+  }, [requisicoes, idsComCepa, emitindoIds, errosCepa])
 
   function processarColado() {
     const novas = parseLinhasColadas(textoColado, setorEfetivo)
@@ -383,27 +424,9 @@ export function RequisicoesAvaliacaoPage() {
         dataEntrega,
       }
     },
-    onSuccess: (resultado) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['requisicoes-avaliacao'] })
       qc.invalidateQueries({ queryKey: ['setores-disponiveis'] })
-      if (resultado) {
-        const avaliadorNome = (avaliadores ?? []).find(a => a.id === resultado.avaliadorId)?.nome ?? '—'
-        setPendentesCepa(prev => [
-          ...prev,
-          {
-            requisicaoId: resultado.requisicaoId,
-            caixaId: resultado.caixaId,
-            caixaNumero: resultado.caixaNumero,
-            avaliadorId: resultado.avaliadorId,
-            avaliadorNome,
-            qtdProcessos: resultado.qtdProcessos,
-            dataEntrega: resultado.dataEntrega,
-            emitindo: false,
-            emitida: null,
-            erro: '',
-          },
-        ])
-      }
       setSetor('')
       setSetorNovo('')
       setQuantidadeDeclarada('')
@@ -529,23 +552,6 @@ export function RequisicoesAvaliacaoPage() {
         const restantes = (prev ?? []).filter(l => !enviados.has(l.numeroFisico))
         return restantes.length > 0 ? restantes : null
       })
-      if (resumo.length > 0) {
-        setPendentesCepa(prev => [
-          ...prev,
-          ...resumo.map(r => ({
-            requisicaoId: r.requisicaoId,
-            caixaId: r.caixaId,
-            caixaNumero: r.numeroFisico,
-            avaliadorId: r.avaliadorId,
-            avaliadorNome: (avaliadores ?? []).find(a => a.id === r.avaliadorId)?.nome ?? '—',
-            qtdProcessos: r.qtdProcessos,
-            dataEntrega: r.dataEntrega,
-            emitindo: false,
-            emitida: null,
-            erro: '',
-          })),
-        ])
-      }
       if (enviados.size > 0) setErroLote('')
     },
     onError: (e: any) => {
@@ -591,12 +597,10 @@ export function RequisicoesAvaliacaoPage() {
       return { item, declaracao, numeroSequencial: data!.numero_sequencial as number, ano: data!.ano as number }
     },
     onMutate: (item: PendenteCepa) => {
-      setPendentesCepa(prev =>
-        prev.map(p => (p.requisicaoId === item.requisicaoId ? { ...p, emitindo: true, erro: '' } : p)),
-      )
+      setEmitindoIds(prev => ({ ...prev, [item.requisicaoId]: true }))
+      setErrosCepa(prev => ({ ...prev, [item.requisicaoId]: '' }))
     },
     onSuccess: ({ item, declaracao, numeroSequencial, ano }) => {
-      const geradoEm = new Date()
       gerarCepaPdf({
         numeroSequencial,
         ano,
@@ -606,45 +610,26 @@ export function RequisicoesAvaliacaoPage() {
         dataEntrega: item.dataEntrega,
         nomeProtocolo: profile?.nome ?? '—',
         declaracao,
-        geradoEm,
+        geradoEm: new Date(),
       })
-      setPendentesCepa(prev =>
-        prev.map(p =>
-          p.requisicaoId === item.requisicaoId
-            ? { ...p, emitindo: false, emitida: { numeroSequencial, ano, geradoEm: geradoEm.toISOString() } }
-            : p,
-        ),
-      )
+      setEmitindoIds(prev => ({ ...prev, [item.requisicaoId]: false }))
+      // A CEPA já está gravada no banco — atualiza a lista local na hora
+      // (sem esperar a próxima consulta) e confirma com o servidor logo
+      // em seguida, para o item sumir do "aguardando emissão" já nesta
+      // tela e em qualquer outra aberta (Minhas Atribuições do avaliador).
+      qc.setQueryData<Set<string>>(['cepas-por-requisicao'], prev => {
+        const atualizado = new Set(prev ?? [])
+        atualizado.add(item.requisicaoId)
+        return atualizado
+      })
+      qc.invalidateQueries({ queryKey: ['cepas-por-requisicao'] })
       qc.invalidateQueries({ queryKey: ['cepas-crpas'] })
     },
     onError: (e: any, item: PendenteCepa) => {
-      setPendentesCepa(prev =>
-        prev.map(p =>
-          p.requisicaoId === item.requisicaoId
-            ? { ...p, emitindo: false, erro: e?.message || 'Erro ao emitir a CEPA. Tente novamente.' }
-            : p,
-        ),
-      )
+      setEmitindoIds(prev => ({ ...prev, [item.requisicaoId]: false }))
+      setErrosCepa(prev => ({ ...prev, [item.requisicaoId]: e?.message || 'Erro ao emitir a CEPA. Tente novamente.' }))
     },
   })
-
-  // Já emitida — apenas baixa o PDF de novo, sem gravar outro registro
-  // (a CEPA já existe no banco; regenerar o arquivo é só reimprimir o
-  // mesmo conteúdo a partir dos dados que já temos aqui na tela).
-  function baixarCepaNovamente(item: PendenteCepa) {
-    if (!item.emitida) return
-    gerarCepaPdf({
-      numeroSequencial: item.emitida.numeroSequencial,
-      ano: item.emitida.ano,
-      caixaNumero: item.caixaNumero,
-      avaliadorNome: item.avaliadorNome,
-      qtdProcessos: item.qtdProcessos,
-      dataEntrega: item.dataEntrega,
-      nomeProtocolo: profile?.nome ?? '—',
-      declaracao: declaracaoCepa(item.caixaNumero, item.avaliadorNome, item.qtdProcessos, item.dataEntrega),
-      geradoEm: new Date(item.emitida.geradoEm),
-    })
-  }
 
   return (
     <div className="space-y-5">
@@ -664,9 +649,10 @@ export function RequisicoesAvaliacaoPage() {
                 Emitir CEPA — Confirmação de Envio de Processos para Avaliação
               </h2>
               <p className="text-xs text-gray-600 mt-0.5">
-                Caixa{pendentesCepa.length === 1 ? '' : 's'} enviada{pendentesCepa.length === 1 ? '' : 's'} agora
-                há pouco. Emita a CEPA de cada uma — o documento é assinado eletronicamente em seu nome e fica
-                disponível para o Coordenador consultar.
+                {pendentesCepa.length === 1 ? 'Esta caixa foi enviada' : 'Estas caixas foram enviadas'} e ainda{' '}
+                {pendentesCepa.length === 1 ? 'aguarda' : 'aguardam'} a emissão da CEPA — o avaliador só consegue
+                confirmar o recebimento depois disso. Emita a CEPA de cada uma abaixo; o documento é assinado
+                eletronicamente em seu nome, baixado na hora, e fica disponível depois em "CEPAs e CRPAs".
               </p>
             </div>
           </div>
@@ -683,42 +669,17 @@ export function RequisicoesAvaliacaoPage() {
                   {item.erro && <p className="text-red-600 text-xs mt-0.5">{item.erro}</p>}
                 </div>
 
-                {item.emitida ? (
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center gap-1 text-xs font-medium text-teal-700 bg-teal-100 rounded-full px-2.5 py-1">
-                      <CheckCircle2 size={13} />
-                      CEPA {String(item.emitida.numeroSequencial).padStart(2, '0')}/{item.emitida.ano} emitida
-                    </span>
-                    <button
-                      onClick={() => baixarCepaNovamente(item)}
-                      className="flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900 border border-gray-300 rounded-full px-2.5 py-1"
-                    >
-                      <Download size={13} />
-                      Baixar novamente
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => emitirCepa.mutate(item)}
-                    disabled={item.emitindo}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 disabled:opacity-60 rounded-full px-3 py-1.5"
-                  >
-                    <FileSignature size={13} />
-                    {item.emitindo ? 'Emitindo…' : 'Emitir CEPA'}
-                  </button>
-                )}
+                <button
+                  onClick={() => emitirCepa.mutate(item)}
+                  disabled={item.emitindo}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 disabled:opacity-60 rounded-full px-3 py-1.5"
+                >
+                  <FileSignature size={13} />
+                  {item.emitindo ? 'Emitindo…' : 'Emitir CEPA'}
+                </button>
               </div>
             ))}
           </div>
-
-          {pendentesCepa.every(p => p.emitida) && (
-            <button
-              onClick={() => setPendentesCepa([])}
-              className="text-xs text-gray-500 hover:text-gray-700 mt-3 underline"
-            >
-              Ocultar esta lista
-            </button>
-          )}
         </div>
       )}
 
