@@ -1,11 +1,24 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, Undo2, ChevronDown, ChevronUp, PencilLine } from 'lucide-react'
+import { CheckCircle, Undo2, ChevronDown, ChevronUp, PencilLine, History } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
 import type { Avaliacao, TtdCodigo } from '@/lib/database.types'
 import { TtdCodigoPicker } from '@/components/TtdCodigoPicker'
+import clsx from 'clsx'
+
+type HistoricoDevolucao = {
+  id: string
+  processo_id: string
+  motivo_devolucao: string | null
+  confirmado_em: string | null
+  created_at: string
+  processo: { numero_documento: string; caixa: { numero: string } | null } | null
+  avaliador: { nome: string } | null
+  devolvido_por: { nome: string } | null
+  proximo: { status: Avaliacao['status']; created_at: string } | null
+}
 
 type AvaliacaoFila = Avaliacao & {
   processo: {
@@ -29,6 +42,7 @@ export function ConfirmarEliminacoesPage() {
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
   const [corrigindoId, setCorrigindoId] = useState<string | null>(null)
   const [novoTtd, setNovoTtd] = useState<TtdCodigo | null>(null)
+  const [mostrarHistorico, setMostrarHistorico] = useState(false)
 
   function abrirDevolver(id: string) {
     setDevolvendoId(devolvendoId === id ? null : id)
@@ -85,7 +99,52 @@ export function ConfirmarEliminacoesPage() {
   function invalidar() {
     qc.invalidateQueries({ queryKey: ['confirmar-eliminacoes'] })
     qc.invalidateQueries({ queryKey: ['confirmar-eliminacoes-stats'] })
+    qc.invalidateQueries({ queryKey: ['historico-devolucoes'] })
   }
+
+  // Histórico de devoluções — só carrega quando o painel é aberto, para não
+  // pesar a tela no dia a dia. Para cada devolução, verifica se já existe uma
+  // avaliação mais nova do mesmo processo (ou seja, se o avaliador já refez)
+  // e qual foi o resultado dessa nova avaliação — é isso que dá a "prova" de
+  // que a devolução realmente chegou e foi tratada, e não só desapareceu da fila.
+  const { data: historico, isLoading: carregandoHistorico } = useQuery({
+    queryKey: ['historico-devolucoes', profile?.id, profile?.pilar_id, podeVerTudo, mostrarHistorico],
+    queryFn: async () => {
+      let query = supabase
+        .from('avaliacoes')
+        .select('id, processo_id, motivo_devolucao, confirmado_em, created_at, processo:processo_id(numero_documento, caixa:caixa_id(numero)), avaliador:avaliado_por(nome), devolvido_por:confirmado_por(nome)')
+        .eq('status', 'devolvida')
+        .order('confirmado_em', { ascending: false })
+        .limit(50)
+
+      if (!podeVerTudo) query = query.eq('pilar_id', profile!.pilar_id)
+
+      const { data: devolvidas } = await query
+      const lista = (devolvidas ?? []) as unknown as HistoricoDevolucao[]
+      if (lista.length === 0) return lista
+
+      const processoIds = Array.from(new Set(lista.map(l => l.processo_id)))
+      const { data: todasAvaliacoes } = await supabase
+        .from('avaliacoes')
+        .select('id, processo_id, status, created_at')
+        .in('processo_id', processoIds)
+        .order('created_at', { ascending: true })
+
+      const porProcesso = new Map<string, { id: string; status: Avaliacao['status']; created_at: string }[]>()
+      for (const a of todasAvaliacoes ?? []) {
+        if (!porProcesso.has(a.processo_id)) porProcesso.set(a.processo_id, [])
+        porProcesso.get(a.processo_id)!.push(a)
+      }
+
+      return lista.map(item => {
+        const linha = porProcesso.get(item.processo_id) ?? []
+        const idx = linha.findIndex(a => a.id === item.id)
+        const proximo = idx >= 0 ? linha[idx + 1] : undefined
+        return { ...item, proximo: proximo ? { status: proximo.status, created_at: proximo.created_at } : null }
+      })
+    },
+    enabled: !!profile && mostrarHistorico,
+  })
 
   const confirmar = useMutation({
     mutationFn: async (id: string) => {
@@ -329,6 +388,74 @@ export function ConfirmarEliminacoesPage() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div className="card p-3 sm:p-4">
+        <button
+          type="button"
+          className="w-full flex items-center justify-between text-left"
+          onClick={() => setMostrarHistorico(v => !v)}
+        >
+          <span className="font-semibold text-gray-900 text-sm flex items-center gap-2">
+            <History size={16} className="text-gray-400" /> Histórico de devoluções
+          </span>
+          {mostrarHistorico ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+        </button>
+
+        {mostrarHistorico && (
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-400 mb-2">
+              Mostrando as 50 devoluções mais recentes{podeVerTudo ? '' : ' da sua equipe'}, do mais novo para o mais antigo.
+            </p>
+            {carregandoHistorico ? (
+              <p className="text-center py-6 text-gray-400 text-sm">Carregando…</p>
+            ) : (historico ?? []).length === 0 ? (
+              <p className="text-center py-6 text-gray-400 text-sm">Nenhuma devolução registrada até o momento.</p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {(historico ?? []).map(h => (
+                  <div key={h.id} className="py-3">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          <span className="font-mono font-semibold text-gray-900 text-sm">{h.processo?.numero_documento}</span>
+                          {h.processo?.caixa && <span className="text-xs text-gray-400">Caixa {h.processo.caixa.numero}</span>}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Avaliado por {h.avaliador?.nome ?? '—'} · devolvido por {h.devolvido_por?.nome ?? '—'}
+                          {h.confirmado_em && <> em {format(new Date(h.confirmado_em), 'dd/MM/yyyy HH:mm')}</>}
+                        </p>
+                      </div>
+                      {h.proximo ? (
+                        <span
+                          className={clsx(
+                            'text-xs px-2 py-0.5 rounded-full font-medium shrink-0',
+                            h.proximo.status === 'confirmada' && 'bg-teal-100 text-teal-700',
+                            h.proximo.status === 'devolvida' && 'bg-red-100 text-red-700',
+                            h.proximo.status === 'aguardando_confirmacao' && 'bg-amber-100 text-amber-700'
+                          )}
+                        >
+                          {h.proximo.status === 'confirmada' && 'Refeito e confirmado'}
+                          {h.proximo.status === 'devolvida' && 'Refeito e devolvido novamente'}
+                          {h.proximo.status === 'aguardando_confirmacao' && 'Refeito, aguardando nova confirmação'}
+                        </span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 shrink-0">
+                          Aguardando o avaliador refazer
+                        </span>
+                      )}
+                    </div>
+                    {h.motivo_devolucao && (
+                      <p className="text-xs text-gray-600 mt-1.5 bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5">
+                        "{h.motivo_devolucao}"
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
