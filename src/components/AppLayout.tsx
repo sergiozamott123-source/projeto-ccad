@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, FileSearch, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature,
+  LayoutDashboard, ListTodo, ClipboardList, ShieldAlert,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -36,12 +36,13 @@ const NAV: NavItem[] = [
   { to: '/requisicoes-avaliacao', label: 'Requisições de Avaliação', icon: <Send size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes' },
   { to: '/conferencia-caixas', label: 'Conferência de Caixas', icon: <PackageCheck size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
   { to: '/demandas',    label: 'Demandas',     icon: <ClipboardList size={18} /> },
-  { to: '/relatorios',  label: 'Relatórios',   icon: <FileText size={18} /> },
-  { to: '/relatorios-equipe', label: 'Relatórios da Equipe', icon: <FileSearch size={18} />, roles: ['coordenador'] },
+  // Sem "roles": item visível a todos — dentro dele, a aba "Meus Relatórios
+  // Mensais" é aberta a qualquer um, e "Relatórios da Equipe"/"Relatórios
+  // Diversos" só aparecem para quem já é Coordenação (lógica na própria página).
+  { to: '/central-relatorios', label: 'Central de Relatórios', icon: <FileBarChart size={18} /> },
   { to: '/conformidade',label: 'Conformidade', icon: <ShieldAlert size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/riscos',      label: 'Riscos',       icon: <AlertCircle size={18} /> },
   { to: '/equipe',      label: 'Equipe',       icon: <Users size={18} />, roles: ['coordenador','coordenador_substituto'] },
-  { to: '/central-relatorios', label: 'Central de Relatórios', icon: <FileBarChart size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/cepas-crpas', label: 'CEPAs e CRPAs', icon: <FileSignature size={18} />, roles: ['coordenador','coordenador_substituto'], novo: true },
   {
     to: '/acervo', label: 'Acervo', icon: <Archive size={18} />,
