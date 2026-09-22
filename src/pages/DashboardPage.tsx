@@ -161,6 +161,25 @@ export function DashboardPage() {
   const [aba, setAba] = useState<AbaDashboard>('geral')
   const mesAtual = format(startOfMonth(new Date()), 'yyyy-MM-dd')
 
+  // Etapa 5 do plano de Acompanhamento de Avaliações: filtro de período
+  // para a aba "Avaliações". Por padrão mostra o acumulado desde o início
+  // (sem filtro nenhum — igual ao que já existia nas Etapas 2 e 4). O
+  // filtro atua sobre `data_entrega` de `requisicoes_avaliacao` (a data em
+  // que a caixa chegou fisicamente e foi enviada para avaliação) — ou
+  // seja, "período" aqui significa "caixas entregues nesse intervalo", e
+  // os números de processos/avaliações seguem naturalmente essas caixas,
+  // reaproveitando toda a lógica que já existe nas Etapas 2 e 4.
+  type PeriodoFiltro = 'total' | 'mes' | 'personalizado'
+  const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>('total')
+  const [periodoInicio, setPeriodoInicio] = useState('')
+  const [periodoFim, setPeriodoFim] = useState('')
+  const periodoRange: { inicio: string; fim: string | null } | null =
+    periodoFiltro === 'mes'
+      ? { inicio: mesAtual, fim: null }
+      : periodoFiltro === 'personalizado' && periodoInicio && periodoFim
+      ? { inicio: periodoInicio, fim: periodoFim }
+      : null
+
   const { data: indicadores } = useQuery({
     queryKey: ['indicadores-totais'],
     queryFn: async () => {
@@ -248,14 +267,20 @@ export function DashboardPage() {
   // Só carrega quando a aba está aberta e só para quem já vê o Dashboard
   // completo (Coordenação) — mesma regra combinada com o Sérgio.
   const { data: resumoAvaliacoes, isLoading: carregandoResumoAvaliacoes } = useQuery({
-    queryKey: ['dashboard-avaliacoes-resumo'],
+    queryKey: ['dashboard-avaliacoes-resumo', periodoRange],
     queryFn: async () => {
       // 1) Cada requisição de avaliação não cancelada é uma caixa que o
-      // Protocolo efetivamente entregou a um avaliador.
-      const { data: requisicoes } = await supabase
+      // Protocolo efetivamente entregou a um avaliador. Quando há um
+      // período selecionado (Etapa 5), restringimos pela data de entrega
+      // da caixa — o resto da consulta (processos, avaliações, %) segue
+      // naturalmente essas mesmas caixas, sem precisar mudar mais nada.
+      let requisicoesQuery = supabase
         .from('requisicoes_avaliacao')
         .select('status, caixa_id')
         .in('status', ['pendente', 'concluida'])
+      if (periodoRange) requisicoesQuery = requisicoesQuery.gte('data_entrega', periodoRange.inicio)
+      if (periodoRange?.fim) requisicoesQuery = requisicoesQuery.lte('data_entrega', periodoRange.fim)
+      const { data: requisicoes } = await requisicoesQuery
 
       const listaRequisicoes = requisicoes ?? []
       const caixaIds = Array.from(new Set(listaRequisicoes.map(r => r.caixa_id)))
@@ -305,7 +330,7 @@ export function DashboardPage() {
   // tem sob responsabilidade e quanto já avaliou. Só para Coordenação (ver
   // decisão de visibilidade no plano) — é dado de desempenho individual.
   const { data: desempenhoAvaliadores, isLoading: carregandoDesempenho } = useQuery({
-    queryKey: ['dashboard-desempenho-avaliadores'],
+    queryKey: ['dashboard-desempenho-avaliadores', periodoRange],
     queryFn: async () => {
       const { data: avaliadoresData } = await supabase
         .from('usuarios')
@@ -318,12 +343,17 @@ export function DashboardPage() {
       const avaliadorIds = avaliadores.map(a => a.id)
 
       // Caixas sob responsabilidade de cada um — mesma regra da Etapa 2
-      // (requisição não cancelada = responsabilidade vigente).
-      const { data: requisicoesData } = await supabase
+      // (requisição não cancelada = responsabilidade vigente). Com um
+      // período selecionado (Etapa 5), restringe às caixas entregues
+      // naquele intervalo — mesma lógica aplicada em `resumoAvaliacoes`.
+      let requisicoesQuery = supabase
         .from('requisicoes_avaliacao')
         .select('avaliador_id, caixa_id')
         .in('avaliador_id', avaliadorIds)
         .in('status', ['pendente', 'concluida'])
+      if (periodoRange) requisicoesQuery = requisicoesQuery.gte('data_entrega', periodoRange.inicio)
+      if (periodoRange?.fim) requisicoesQuery = requisicoesQuery.lte('data_entrega', periodoRange.fim)
+      const { data: requisicoesData } = await requisicoesQuery
       const requisicoes = requisicoesData ?? []
 
       // Um mesmo caixa pode ter requisição ativa para mais de um avaliador
@@ -727,11 +757,72 @@ export function DashboardPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 mb-1">Acompanhamento de Avaliações</h2>
-              <p className="text-xs text-gray-400">
-                Caixas distribuídas pelo Protocolo para avaliação e o andamento da classificação dos processos.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 mb-1">Acompanhamento de Avaliações</h2>
+                <p className="text-xs text-gray-400">
+                  Caixas distribuídas pelo Protocolo para avaliação e o andamento da classificação dos processos.
+                </p>
+                {periodoRange && (
+                  <p className="text-xs text-teal-700 font-medium mt-1">
+                    Período: {format(new Date(`${periodoRange.inicio}T00:00:00`), "dd/MM/yyyy", { locale: ptBR })}
+                    {' '}até{' '}
+                    {periodoRange.fim
+                      ? format(new Date(`${periodoRange.fim}T00:00:00`), 'dd/MM/yyyy', { locale: ptBR })
+                      : 'hoje'}
+                  </p>
+                )}
+              </div>
+
+              {/* Etapa 5 do plano: filtro de período. Por padrão mostra o
+                  acumulado desde o início (sem filtro); "Este mês" e
+                  "Período" recalculam os números considerando só as caixas
+                  entregues naquele intervalo. */}
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-xs">
+                  {([
+                    { key: 'total', label: 'Desde o início' },
+                    { key: 'mes', label: 'Este mês' },
+                    { key: 'personalizado', label: 'Período' },
+                  ] as { key: PeriodoFiltro; label: string }[]).map(opcao => (
+                    <button
+                      key={opcao.key}
+                      type="button"
+                      onClick={() => setPeriodoFiltro(opcao.key)}
+                      className={clsx(
+                        'flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-colors',
+                        periodoFiltro === opcao.key ? 'bg-white text-teal-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      )}
+                    >
+                      {opcao.key === 'personalizado' && <Calendar size={13} />}
+                      {opcao.label}
+                    </button>
+                  ))}
+                </div>
+                {periodoFiltro === 'personalizado' && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <input
+                      type="date"
+                      value={periodoInicio}
+                      onChange={e => setPeriodoInicio(e.target.value)}
+                      className="border border-gray-200 rounded-md px-2 py-1 text-xs"
+                      aria-label="Data inicial do período"
+                    />
+                    <span>até</span>
+                    <input
+                      type="date"
+                      value={periodoFim}
+                      onChange={e => setPeriodoFim(e.target.value)}
+                      min={periodoInicio || undefined}
+                      className="border border-gray-200 rounded-md px-2 py-1 text-xs"
+                      aria-label="Data final do período"
+                    />
+                    {!(periodoInicio && periodoFim) && (
+                      <span className="text-gray-400 italic">escolha as duas datas</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {carregandoResumoAvaliacoes ? (
