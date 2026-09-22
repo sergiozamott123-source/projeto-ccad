@@ -28,6 +28,14 @@ const CAIXA_STATUS_LABEL: Record<StatusCaixa, string> = {
   arquivada: 'Arquivada',
 }
 
+// Cor da barra de progresso por avaliador, de acordo com o % concluído —
+// só um sinal visual rápido de quem precisa de mais atenção da Coordenação.
+function corDesempenho(percentual: number) {
+  if (percentual < 40) return '#ef4444' // vermelho
+  if (percentual < 75) return '#f59e0b' // âmbar
+  return '#14b8a6' // teal
+}
+
 const REUNIAO_TIPO_LABEL: Record<string, string> = {
   mensal_consolidada: 'Mensal Consolidada',
   quinzenal_frente: 'Quinzenal por Frente',
@@ -288,6 +296,88 @@ export function DashboardPage() {
       )
 
       return { caixasDistribuidas: caixaIds.length, pendentes, concluidas, totalProcessos, processosAvaliados, porStatus }
+    },
+    enabled: isCoord && aba === 'avaliacoes',
+  })
+
+  // Aba "Avaliações" — Etapa 4 do plano: quanto cada avaliador habilitado
+  // tem sob responsabilidade e quanto já avaliou. Só para Coordenação (ver
+  // decisão de visibilidade no plano) — é dado de desempenho individual.
+  const { data: desempenhoAvaliadores, isLoading: carregandoDesempenho } = useQuery({
+    queryKey: ['dashboard-desempenho-avaliadores'],
+    queryFn: async () => {
+      const { data: avaliadoresData } = await supabase
+        .from('usuarios')
+        .select('id, nome')
+        .eq('pode_avaliar_processos', true)
+        .order('nome')
+      const avaliadores = avaliadoresData ?? []
+      if (avaliadores.length === 0) return []
+
+      const avaliadorIds = avaliadores.map(a => a.id)
+
+      // Caixas sob responsabilidade de cada um — mesma regra da Etapa 2
+      // (requisição não cancelada = responsabilidade vigente).
+      const { data: requisicoesData } = await supabase
+        .from('requisicoes_avaliacao')
+        .select('avaliador_id, caixa_id')
+        .in('avaliador_id', avaliadorIds)
+        .in('status', ['pendente', 'concluida'])
+      const requisicoes = requisicoesData ?? []
+
+      const caixasPorAvaliador = new Map<string, Set<string>>()
+      for (const r of requisicoes) {
+        if (!caixasPorAvaliador.has(r.avaliador_id)) caixasPorAvaliador.set(r.avaliador_id, new Set())
+        caixasPorAvaliador.get(r.avaliador_id)!.add(r.caixa_id)
+      }
+
+      // Quantos processos existem em cada uma dessas caixas (uma consulta só,
+      // agrupada depois no navegador) — evita uma consulta por avaliador.
+      const todasCaixaIds = Array.from(new Set(requisicoes.map(r => r.caixa_id)))
+      const processosPorCaixa = new Map<string, number>()
+      if (todasCaixaIds.length > 0) {
+        const { data: processosData } = await supabase.from('processos').select('caixa_id').in('caixa_id', todasCaixaIds)
+        for (const p of processosData ?? []) {
+          processosPorCaixa.set(p.caixa_id, (processosPorCaixa.get(p.caixa_id) ?? 0) + 1)
+        }
+      }
+
+      // Quantos processos cada avaliador já avaliou de fato (avaliação
+      // confirmada ou aguardando confirmação — nunca uma devolvida, mesma
+      // regra da Etapa 2).
+      const { data: avaliacoesData } = await supabase
+        .from('avaliacoes')
+        .select('avaliado_por')
+        .in('avaliado_por', avaliadorIds)
+        .in('status', ['confirmada', 'aguardando_confirmacao'])
+      const avaliadosPorAvaliador = new Map<string, number>()
+      for (const a of avaliacoesData ?? []) {
+        avaliadosPorAvaliador.set(a.avaliado_por, (avaliadosPorAvaliador.get(a.avaliado_por) ?? 0) + 1)
+      }
+
+      const linhas = avaliadores.map(a => {
+        const caixaIdsDele = Array.from(caixasPorAvaliador.get(a.id) ?? [])
+        const processosAtribuidos = caixaIdsDele.reduce((soma, cid) => soma + (processosPorCaixa.get(cid) ?? 0), 0)
+        const processosAvaliados = avaliadosPorAvaliador.get(a.id) ?? 0
+        // Em tese, um avaliador só avalia processos de caixas que recebeu
+        // (a permissão do banco já garante isso) — mas se uma requisição foi
+        // cancelada depois de já avaliada, ou o histórico antigo entrou por
+        // outra via, o "avaliado" pode passar do "atribuído" ainda vigente.
+        // Trava em 100% para não mostrar um percentual estranho na tela.
+        const percentual = processosAtribuidos > 0
+          ? Math.min(100, Math.round((processosAvaliados / processosAtribuidos) * 100))
+          : processosAvaliados > 0 ? 100 : 0
+        return {
+          id: a.id,
+          nome: a.nome,
+          caixas: caixaIdsDele.length,
+          processosAtribuidos,
+          processosAvaliados,
+          percentual,
+        }
+      })
+
+      return linhas.sort((a, b) => a.percentual - b.percentual)
     },
     enabled: isCoord && aba === 'avaliacoes',
   })
@@ -664,10 +754,57 @@ export function DashboardPage() {
                   </div>
                 </div>
 
+                <div className="card p-5">
+                  <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Desempenho por avaliador</h3>
+                  <p className="text-xs text-gray-400 mb-4">
+                    % de processos já avaliados frente ao que está sob responsabilidade de cada um — do que mais precisa de atenção para o mais adiantado.
+                  </p>
+
+                  {carregandoDesempenho ? (
+                    <p className="text-center py-8 text-gray-400 text-sm">Carregando…</p>
+                  ) : (desempenhoAvaliadores ?? []).length === 0 ? (
+                    <p className="text-center py-8 text-gray-400 text-sm">Nenhum avaliador habilitado ainda.</p>
+                  ) : (
+                    <>
+                      <HorizontalProgressChart
+                        ariaLabel={`Percentual avaliado por avaliador: ${(desempenhoAvaliadores ?? [])
+                          .map(d => `${d.nome} ${d.percentual}%`)
+                          .join(', ')}`}
+                        data={(desempenhoAvaliadores ?? []).map(d => ({ label: d.nome, value: d.percentual, color: corDesempenho(d.percentual) }))}
+                      />
+
+                      <div className="mt-5 pt-4 border-t border-gray-100 overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-left text-gray-400">
+                              <th className="font-medium pb-2 pr-3">Avaliador</th>
+                              <th className="font-medium pb-2 pr-3">Caixas sob responsabilidade</th>
+                              <th className="font-medium pb-2 pr-3">Processos atribuídos</th>
+                              <th className="font-medium pb-2 pr-3">Processos avaliados</th>
+                              <th className="font-medium pb-2">% concluído</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(desempenhoAvaliadores ?? []).map(d => (
+                              <tr key={d.id} className="border-t border-gray-100">
+                                <td className="py-2 pr-3 font-medium text-gray-800">{d.nome}</td>
+                                <td className="py-2 pr-3 text-gray-600">{d.caixas}</td>
+                                <td className="py-2 pr-3 text-gray-600">{d.processosAtribuidos}</td>
+                                <td className="py-2 pr-3 text-gray-600">{d.processosAvaliados}</td>
+                                <td className="py-2 font-semibold" style={{ color: corDesempenho(d.percentual) }}>{d.percentual}%</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 flex items-start gap-2.5">
                   <Construction size={16} className="text-gray-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-gray-500">
-                    Em construção — os gráficos, o desempenho por avaliador e o filtro de período chegam nas próximas etapas.
+                    Em construção — o gráfico de rosca do percentual geral e o filtro de período chegam nas próximas etapas.
                   </p>
                 </div>
               </>
