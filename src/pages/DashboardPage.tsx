@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy, PackageCheck } from 'lucide-react'
+import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy, PackageCheck, ClipboardList, LayoutGrid, Construction } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, formatDistanceToNow, startOfMonth, subMonths } from 'date-fns'
@@ -130,8 +130,16 @@ function RiscoRow({ risco }: { risco: Risco }) {
   )
 }
 
+// Abas do Dashboard — Etapa 1 do plano "Acompanhamento de Avaliações no
+// Dashboard" (ver claude/plano-dashboard-acompanhamento-avaliacoes.md no
+// projeto Claude). Por enquanto só reorganiza o que já existia em "Visão
+// Geral" e abre espaço para a aba "Avaliações", preenchida nas próximas
+// etapas. Nenhum dado ou comportamento da Visão Geral muda nesta etapa.
+type AbaDashboard = 'geral' | 'avaliacoes'
+
 export function DashboardPage() {
   const { profile, isCoord } = useAuth()
+  const [aba, setAba] = useState<AbaDashboard>('geral')
   const mesAtual = format(startOfMonth(new Date()), 'yyyy-MM-dd')
 
   const { data: indicadores } = useQuery({
@@ -309,6 +317,32 @@ export function DashboardPage() {
         </p>
       </div>
 
+      {/* Abas */}
+      <div className="flex gap-1 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setAba('geral')}
+          className={clsx(
+            'flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            aba === 'geral' ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+          )}
+        >
+          <LayoutGrid size={15} /> Visão Geral
+        </button>
+        <button
+          type="button"
+          onClick={() => setAba('avaliacoes')}
+          className={clsx(
+            'flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            aba === 'avaliacoes' ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+          )}
+        >
+          <ClipboardList size={15} /> Avaliações
+        </button>
+      </div>
+
+      {aba === 'geral' && (
+      <>
       {/* Metric cards */}
       {isCoord && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -494,6 +528,22 @@ export function DashboardPage() {
             </p>
             <a href="/conformidade" className="text-sm text-red-600 hover:underline">Ver painel de conformidade →</a>
           </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {aba === 'avaliacoes' && (
+        <div className="card p-10 flex flex-col items-center text-center gap-2">
+          <div className="p-3 rounded-full bg-teal-50 text-teal-600 mb-1">
+            <Construction size={24} />
+          </div>
+          <h2 className="font-semibold text-gray-900">Acompanhamento de Avaliações — em construção</h2>
+          <p className="text-sm text-gray-500 max-w-md">
+            Aqui vão aparecer, nas próximas etapas: quantas caixas o Protocolo já distribuiu, quantas cada
+            membro tem sob responsabilidade e quantos processos cada um já avaliou — com gráficos e
+            percentuais. Combinado com o Sérgio em <span className="font-mono text-xs">plano-dashboard-acompanhamento-avaliacoes.md</span>.
+          </p>
         </div>
       )}
     </div>
