@@ -325,26 +325,30 @@ export function DashboardPage() {
         .in('status', ['pendente', 'concluida'])
       const requisicoes = requisicoesData ?? []
 
+      // Um mesmo caixa pode ter requisição ativa para mais de um avaliador
+      // ao mesmo tempo (ex.: já foi concluída por quem avaliou antes, e
+      // depois reaberta/reatribuída a outra pessoa, sem cancelar a antiga).
+      // Por isso guardamos os PARES (avaliador, caixa) — nunca "dono único
+      // da caixa" — senão as avaliações de um deles somem da conta.
       const caixasPorAvaliador = new Map<string, Set<string>>()
-      const avaliadorDaCaixa = new Map<string, string>()
+      const paresAtivos = new Set<string>()
       for (const r of requisicoes) {
         if (!caixasPorAvaliador.has(r.avaliador_id)) caixasPorAvaliador.set(r.avaliador_id, new Set())
         caixasPorAvaliador.get(r.avaliador_id)!.add(r.caixa_id)
-        avaliadorDaCaixa.set(r.caixa_id, r.avaliador_id)
+        paresAtivos.add(`${r.avaliador_id}::${r.caixa_id}`)
       }
 
-      // Quantos processos existem em cada uma dessas caixas — e de quem é
-      // cada processo (via a caixa) — numa consulta só, cruzada depois no
+      // Quantos processos existem em cada uma dessas caixas, e de qual
+      // caixa é cada processo — numa consulta só, cruzada depois no
       // navegador. Evita uma consulta por avaliador.
       const todasCaixaIds = Array.from(new Set(requisicoes.map(r => r.caixa_id)))
       const processosPorCaixa = new Map<string, number>()
-      const avaliadorDoProcesso = new Map<string, string>()
+      const caixaDoProcesso = new Map<string, string>()
       if (todasCaixaIds.length > 0) {
         const { data: processosData } = await supabase.from('processos').select('id, caixa_id').in('caixa_id', todasCaixaIds)
         for (const p of processosData ?? []) {
           processosPorCaixa.set(p.caixa_id, (processosPorCaixa.get(p.caixa_id) ?? 0) + 1)
-          const dono = avaliadorDaCaixa.get(p.caixa_id)
-          if (dono) avaliadorDoProcesso.set(p.id, dono)
+          caixaDoProcesso.set(p.id, p.caixa_id)
         }
       }
 
@@ -356,7 +360,9 @@ export function DashboardPage() {
       // com trabalho antigo (de antes das Requisições digitais, ou de caixas
       // já reatribuídas/canceladas) não entram aqui, senão o % ficaria sem
       // sentido (visto na prática: alguém aparecendo com mais "avaliado" do
-      // que "atribuído").
+      // que "atribuído"). A checagem é pelo PAR (quem avaliou, caixa do
+      // processo) — não por "dono único da caixa" — para não sumir com o
+      // trabalho de quem dividiu ou sucedeu outra pessoa na mesma caixa.
       const { data: avaliacoesData } = await supabase
         .from('avaliacoes')
         .select('avaliado_por, processo_id')
@@ -364,7 +370,8 @@ export function DashboardPage() {
         .in('status', ['confirmada', 'aguardando_confirmacao'])
       const avaliadosPorAvaliador = new Map<string, number>()
       for (const a of avaliacoesData ?? []) {
-        if (avaliadorDoProcesso.get(a.processo_id) !== a.avaliado_por) continue
+        const caixaId = caixaDoProcesso.get(a.processo_id)
+        if (!caixaId || !paresAtivos.has(`${a.avaliado_por}::${caixaId}`)) continue
         avaliadosPorAvaliador.set(a.avaliado_por, (avaliadosPorAvaliador.get(a.avaliado_por) ?? 0) + 1)
       }
 
