@@ -183,6 +183,7 @@ export interface Avaliacao {
   confirmado_por: string | null
   confirmado_em: string | null
   pilar_id: string | null
+  codigo_original_id: string | null
   created_at: string
   processo?: Processo
   avaliador?: Usuario

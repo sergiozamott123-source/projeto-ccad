@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, Undo2, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCircle, Undo2, ChevronDown, ChevronUp, PencilLine } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
 import type { Avaliacao, TtdCodigo } from '@/lib/database.types'
+import { TtdCodigoPicker } from '@/components/TtdCodigoPicker'
 
 type AvaliacaoFila = Avaliacao & {
   processo: {
@@ -26,6 +27,22 @@ export function ConfirmarEliminacoesPage() {
   const [devolvendoId, setDevolvendoId] = useState<string | null>(null)
   const [motivo, setMotivo] = useState('')
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
+  const [corrigindoId, setCorrigindoId] = useState<string | null>(null)
+  const [novoTtd, setNovoTtd] = useState<TtdCodigo | null>(null)
+
+  function abrirDevolver(id: string) {
+    setDevolvendoId(devolvendoId === id ? null : id)
+    setMotivo('')
+    setCorrigindoId(null)
+    setNovoTtd(null)
+  }
+
+  function abrirCorrigir(id: string) {
+    setCorrigindoId(corrigindoId === id ? null : id)
+    setNovoTtd(null)
+    setDevolvendoId(null)
+    setMotivo('')
+  }
 
   // Quem tem a permissão individual `pode_confirmar_eliminacoes` (ex.: Ariadne)
   // vê e confirma a fila inteira, de todos os pilares — igual ao Coordenador —
@@ -96,6 +113,39 @@ export function ConfirmarEliminacoesPage() {
     },
   })
 
+  // Corrige o código na hora (quando o Coordenador prefere ele mesmo ajustar
+  // um erro pontual, em vez de devolver para o avaliador refazer) — atualiza
+  // a classificação do processo e já confirma a eliminação com o código
+  // certo. Guarda o código original em `codigo_original_id` só para efeito
+  // de registro/acompanhamento (não muda nada visível para o avaliador).
+  const corrigirEConfirmar = useMutation({
+    mutationFn: async ({ avaliacao, ttd }: { avaliacao: AvaliacaoFila; ttd: TtdCodigo }) => {
+      if (avaliacao.processo?.ttd?.id !== ttd.id) {
+        const { error: e1 } = await supabase
+          .from('processos')
+          .update({ ttd_codigo_id: ttd.id })
+          .eq('id', avaliacao.processo_id)
+        if (e1) throw e1
+      }
+      const { error: e2 } = await supabase
+        .from('avaliacoes')
+        .update({
+          status: 'confirmada',
+          decisao: ttd.destinacao_final,
+          confirmado_por: profile!.id,
+          confirmado_em: new Date().toISOString(),
+          codigo_original_id: avaliacao.processo?.ttd?.id ?? null,
+        })
+        .eq('id', avaliacao.id)
+      if (e2) throw e2
+    },
+    onSuccess: () => {
+      invalidar()
+      setCorrigindoId(null)
+      setNovoTtd(null)
+    },
+  })
+
   if (!profile) return null
 
   return (
@@ -157,8 +207,14 @@ export function ConfirmarEliminacoesPage() {
                       <CheckCircle size={13} /> Confirmar
                     </button>
                     <button
+                      className="btn-secondary text-xs py-1.5 px-3 border-teal-200 text-teal-700"
+                      onClick={() => abrirCorrigir(p.id)}
+                    >
+                      <PencilLine size={13} /> Corrigir código
+                    </button>
+                    <button
                       className="btn-secondary text-xs py-1.5 px-3 border-red-200 text-red-700"
-                      onClick={() => { setDevolvendoId(devolvendoId === p.id ? null : p.id); setMotivo('') }}
+                      onClick={() => abrirDevolver(p.id)}
                     >
                       <Undo2 size={13} /> Devolver
                     </button>
@@ -239,6 +295,36 @@ export function ConfirmarEliminacoesPage() {
                         Cancelar
                       </button>
                     </div>
+                  </div>
+                )}
+
+                {corrigindoId === p.id && (
+                  <div className="mt-3 bg-teal-50 border border-teal-200 rounded-lg p-3">
+                    <label className="label text-teal-800">
+                      Escolha o código correto — a eliminação já é confirmada com o código novo
+                    </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Código usado pelo avaliador: <span className="font-mono font-semibold text-gray-700">{p.processo?.ttd?.codigo ?? '—'}</span>
+                    </p>
+                    <TtdCodigoPicker value={novoTtd} onSelect={setNovoTtd} />
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        className="btn-primary text-xs py-1.5 px-3"
+                        disabled={!novoTtd || corrigirEConfirmar.isPending}
+                        onClick={() => corrigirEConfirmar.mutate({ avaliacao: p, ttd: novoTtd! })}
+                      >
+                        {corrigirEConfirmar.isPending ? 'Corrigindo…' : 'Corrigir e confirmar'}
+                      </button>
+                      <button
+                        className="btn-secondary text-xs py-1.5 px-3"
+                        onClick={() => { setCorrigindoId(null); setNovoTtd(null) }}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                    {corrigirEConfirmar.isError && (
+                      <p className="mt-2 text-xs text-red-600">Não foi possível salvar a correção. Tente novamente.</p>
+                    )}
                   </div>
                 )}
               </div>
