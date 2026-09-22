@@ -559,35 +559,48 @@ export function DashboardPage() {
       </div>
 
       {aba === 'geral' && (
-      <>
-      {/* Metric cards */}
+      <div className="space-y-8">
+      {/* Metric cards — Etapa 6 do plano: antes esse bloco não tinha
+          nenhum título, ficando "solto" no topo da página (era um dos
+          motivos da sensação de "poluído" que o Sérgio apontou). Agora
+          tem cabeçalho e legenda, igual aos demais blocos da página. */}
       {isCoord && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            icon={<Archive size={20} className="text-teal-600" />}
-            label="Caixas catalogadas"
-            value={totalCaixas.toLocaleString('pt-BR')}
-            color="bg-teal-50"
-          />
-          <MetricCard
-            icon={<TrendingUp size={20} className="text-accent-600" />}
-            label="Páginas digitalizadas"
-            value={totalPaginas.toLocaleString('pt-BR')}
-            color="bg-orange-50"
-          />
-          <MetricCard
-            icon={<MapPin size={20} className="text-blue-600" />}
-            label="Documentos indexados"
-            value={totalIndexados.toLocaleString('pt-BR')}
-            color="bg-blue-50"
-          />
-          <MetricCard
-            icon={<CheckCircle size={20} className="text-green-600" />}
-            label="Relatórios em dia"
-            value={relatorioStats ? `${relatorioStats.enviados}/${relatorioStats.total}` : '—'}
-            sub={relatorioStats?.atrasados ? `${relatorioStats.atrasados} atrasado(s)` : undefined}
-            color="bg-green-50"
-          />
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Indicadores Institucionais</h2>
+          <p className="text-xs text-gray-400 mb-3">Totais combinados dos três pilares (Digitalização, Boas Práticas e Memória).</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              icon={<Archive size={20} className="text-teal-600" />}
+              label="Caixas catalogadas"
+              value={totalCaixas.toLocaleString('pt-BR')}
+              color="bg-teal-50"
+            />
+            <MetricCard
+              icon={<TrendingUp size={20} className="text-accent-600" />}
+              label="Páginas digitalizadas"
+              value={totalPaginas.toLocaleString('pt-BR')}
+              color="bg-orange-50"
+            />
+            <MetricCard
+              icon={<MapPin size={20} className="text-blue-600" />}
+              label="Documentos indexados"
+              value={totalIndexados.toLocaleString('pt-BR')}
+              color="bg-blue-50"
+            />
+            <MetricCard
+              icon={<CheckCircle size={20} className="text-green-600" />}
+              label="Relatórios em dia"
+              value={relatorioStats ? `${relatorioStats.enviados}/${relatorioStats.total}` : '—'}
+              sub={
+                relatorioStats
+                  ? relatorioStats.atrasados
+                    ? `${relatorioStats.enviados} de ${relatorioStats.total} enviados · ${relatorioStats.atrasados} atrasado(s)`
+                    : `${relatorioStats.enviados} de ${relatorioStats.total} membros entregaram este mês`
+                  : undefined
+              }
+              color="bg-green-50"
+            />
+          </div>
         </div>
       )}
 
@@ -747,7 +760,7 @@ export function DashboardPage() {
           </div>
         </div>
       )}
-      </>
+      </div>
       )}
 
       {aba === 'avaliacoes' && (
