@@ -72,7 +72,7 @@ export default function App() {
                 <Route path="/protocolo-geral/ttd" element={<TtdPage />} />
                 <Route path="/protocolo-geral/revisao" element={<RevisaoManualPage />} />
               </Route>
-              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_confirmar_eliminacoes === true} />}>
                 <Route path="/confirmar-eliminacoes" element={<ConfirmarEliminacoesPage />} />
               </Route>
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_criar_requisicoes === true} />}>

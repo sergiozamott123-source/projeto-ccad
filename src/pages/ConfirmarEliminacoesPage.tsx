@@ -27,10 +27,15 @@ export function ConfirmarEliminacoesPage() {
   const [motivo, setMotivo] = useState('')
   const [expandidoId, setExpandidoId] = useState<string | null>(null)
 
+  // Quem tem a permissão individual `pode_confirmar_eliminacoes` (ex.: Ariadne)
+  // vê e confirma a fila inteira, de todos os pilares — igual ao Coordenador —
+  // porque faz essa conferência em nome dele, não só pela própria área.
+  const podeVerTudo = isCoord || profile?.pode_confirmar_eliminacoes === true
+
   const hoje = startOfDay(new Date()).toISOString()
 
   const { data: pendentes, isLoading } = useQuery({
-    queryKey: ['confirmar-eliminacoes', profile?.id, profile?.pilar_id, isCoord],
+    queryKey: ['confirmar-eliminacoes', profile?.id, profile?.pilar_id, podeVerTudo],
     queryFn: async () => {
       let query = supabase
         .from('avaliacoes')
@@ -38,7 +43,7 @@ export function ConfirmarEliminacoesPage() {
         .eq('status', 'aguardando_confirmacao')
         .order('created_at', { ascending: true })
 
-      if (!isCoord) query = query.eq('pilar_id', profile!.pilar_id)
+      if (!podeVerTudo) query = query.eq('pilar_id', profile!.pilar_id)
 
       const { data } = await query
       return (data ?? []) as AvaliacaoFila[]
@@ -98,7 +103,7 @@ export function ConfirmarEliminacoesPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Confirmar Eliminações</h1>
         <p className="text-gray-500 text-sm mt-0.5">
-          {isCoord ? 'Todas as eliminações pendentes de conferência.' : 'Eliminações pendentes da sua equipe.'}
+          {podeVerTudo ? 'Todas as eliminações pendentes de conferência.' : 'Eliminações pendentes da sua equipe.'}
         </p>
       </div>
 

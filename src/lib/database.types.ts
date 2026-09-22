@@ -25,6 +25,7 @@ export interface Usuario {
   pode_avaliar_processos: boolean
   pode_criar_requisicoes: boolean
   acesso_busca_emprestimos: boolean
+  pode_confirmar_eliminacoes: boolean
 }
 
 export interface Pilar {

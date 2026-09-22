@@ -32,7 +32,7 @@ const NAV: NavItem[] = [
     roles: ['coordenador', 'coordenador_substituto'], flag: 'acesso_busca_emprestimos', novo: true,
   },
   { to: '/minha-parte', label: 'Minhas Atribuições',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar','coordenador','coordenador_substituto'] },
-  { to: '/confirmar-eliminacoes', label: 'Confirmar Eliminações', icon: <CheckSquare size={18} />, roles: ['coordenador','coordenador_substituto'] },
+  { to: '/confirmar-eliminacoes', label: 'Confirmar Eliminações', icon: <CheckSquare size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_confirmar_eliminacoes' },
   { to: '/requisicoes-avaliacao', label: 'Requisições de Avaliação', icon: <Send size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes' },
   { to: '/conferencia-caixas', label: 'Conferência de Caixas', icon: <PackageCheck size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
   { to: '/demandas',    label: 'Demandas',     icon: <ClipboardList size={18} /> },
@@ -73,6 +73,11 @@ export function AppLayout() {
 
   const papel = profile?.papel ?? ''
   const isCoord = papel === 'coordenador' || papel === 'coordenador_substituto'
+  // Quem tem a permissão individual `pode_confirmar_eliminacoes` (ex.: Ariadne)
+  // enxerga a fila de eliminações inteira, igual ao Coordenador — não só a do
+  // próprio pilar — porque ela faz essa conferência para o Coordenador, não
+  // só pela sua própria área.
+  const podeConfirmarEliminacoes = isCoord || profile?.pode_confirmar_eliminacoes === true
 
   const { data: demandasPendentesCount } = useQuery({
     queryKey: ['demandas-pendentes-count', profile?.id],
@@ -88,17 +93,17 @@ export function AppLayout() {
   })
 
   const { data: eliminacoesPendentesCount } = useQuery({
-    queryKey: ['eliminacoes-pendentes-count', profile?.id, profile?.pilar_id, isCoord],
+    queryKey: ['eliminacoes-pendentes-count', profile?.id, profile?.pilar_id, podeConfirmarEliminacoes],
     queryFn: async () => {
       let query = supabase
         .from('avaliacoes')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'aguardando_confirmacao')
-      if (!isCoord) query = query.eq('pilar_id', profile!.pilar_id)
+      if (!podeConfirmarEliminacoes) query = query.eq('pilar_id', profile!.pilar_id)
       const { count } = await query
       return count ?? 0
     },
-    enabled: !!profile?.id && isCoord,
+    enabled: !!profile?.id && podeConfirmarEliminacoes,
   })
 
   const { data: caixasConferenciaPendentesCount } = useQuery({
