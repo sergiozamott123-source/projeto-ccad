@@ -326,32 +326,45 @@ export function DashboardPage() {
       const requisicoes = requisicoesData ?? []
 
       const caixasPorAvaliador = new Map<string, Set<string>>()
+      const avaliadorDaCaixa = new Map<string, string>()
       for (const r of requisicoes) {
         if (!caixasPorAvaliador.has(r.avaliador_id)) caixasPorAvaliador.set(r.avaliador_id, new Set())
         caixasPorAvaliador.get(r.avaliador_id)!.add(r.caixa_id)
+        avaliadorDaCaixa.set(r.caixa_id, r.avaliador_id)
       }
 
-      // Quantos processos existem em cada uma dessas caixas (uma consulta só,
-      // agrupada depois no navegador) — evita uma consulta por avaliador.
+      // Quantos processos existem em cada uma dessas caixas — e de quem é
+      // cada processo (via a caixa) — numa consulta só, cruzada depois no
+      // navegador. Evita uma consulta por avaliador.
       const todasCaixaIds = Array.from(new Set(requisicoes.map(r => r.caixa_id)))
       const processosPorCaixa = new Map<string, number>()
+      const avaliadorDoProcesso = new Map<string, string>()
       if (todasCaixaIds.length > 0) {
-        const { data: processosData } = await supabase.from('processos').select('caixa_id').in('caixa_id', todasCaixaIds)
+        const { data: processosData } = await supabase.from('processos').select('id, caixa_id').in('caixa_id', todasCaixaIds)
         for (const p of processosData ?? []) {
           processosPorCaixa.set(p.caixa_id, (processosPorCaixa.get(p.caixa_id) ?? 0) + 1)
+          const dono = avaliadorDaCaixa.get(p.caixa_id)
+          if (dono) avaliadorDoProcesso.set(p.id, dono)
         }
       }
 
-      // Quantos processos cada avaliador já avaliou de fato (avaliação
-      // confirmada ou aguardando confirmação — nunca uma devolvida, mesma
-      // regra da Etapa 2).
+      // Quantos desses processos (só os que estão em caixa hoje sob
+      // responsabilidade de alguém) cada avaliador já avaliou de fato
+      // (confirmada ou aguardando confirmação — nunca devolvida). Importante:
+      // isso NÃO é "quantas avaliações esse avaliador já fez na vida" — é só
+      // o progresso dele nas caixas que estão com ele *agora*. Avaliadores
+      // com trabalho antigo (de antes das Requisições digitais, ou de caixas
+      // já reatribuídas/canceladas) não entram aqui, senão o % ficaria sem
+      // sentido (visto na prática: alguém aparecendo com mais "avaliado" do
+      // que "atribuído").
       const { data: avaliacoesData } = await supabase
         .from('avaliacoes')
-        .select('avaliado_por')
+        .select('avaliado_por, processo_id')
         .in('avaliado_por', avaliadorIds)
         .in('status', ['confirmada', 'aguardando_confirmacao'])
       const avaliadosPorAvaliador = new Map<string, number>()
       for (const a of avaliacoesData ?? []) {
+        if (avaliadorDoProcesso.get(a.processo_id) !== a.avaliado_por) continue
         avaliadosPorAvaliador.set(a.avaliado_por, (avaliadosPorAvaliador.get(a.avaliado_por) ?? 0) + 1)
       }
 
@@ -359,14 +372,9 @@ export function DashboardPage() {
         const caixaIdsDele = Array.from(caixasPorAvaliador.get(a.id) ?? [])
         const processosAtribuidos = caixaIdsDele.reduce((soma, cid) => soma + (processosPorCaixa.get(cid) ?? 0), 0)
         const processosAvaliados = avaliadosPorAvaliador.get(a.id) ?? 0
-        // Em tese, um avaliador só avalia processos de caixas que recebeu
-        // (a permissão do banco já garante isso) — mas se uma requisição foi
-        // cancelada depois de já avaliada, ou o histórico antigo entrou por
-        // outra via, o "avaliado" pode passar do "atribuído" ainda vigente.
-        // Trava em 100% para não mostrar um percentual estranho na tela.
-        const percentual = processosAtribuidos > 0
-          ? Math.min(100, Math.round((processosAvaliados / processosAtribuidos) * 100))
-          : processosAvaliados > 0 ? 100 : 0
+        // null = sem nenhuma caixa sob responsabilidade agora, então não há
+        // "progresso" para calcular (evita mostrar 0% ou 100% sem sentido).
+        const percentual = processosAtribuidos > 0 ? Math.min(100, Math.round((processosAvaliados / processosAtribuidos) * 100)) : null
         return {
           id: a.id,
           nome: a.nome,
@@ -377,7 +385,7 @@ export function DashboardPage() {
         }
       })
 
-      return linhas.sort((a, b) => a.percentual - b.percentual)
+      return linhas.sort((a, b) => (a.percentual ?? 101) - (b.percentual ?? 101))
     },
     enabled: isCoord && aba === 'avaliacoes',
   })
@@ -766,12 +774,21 @@ export function DashboardPage() {
                     <p className="text-center py-8 text-gray-400 text-sm">Nenhum avaliador habilitado ainda.</p>
                   ) : (
                     <>
-                      <HorizontalProgressChart
-                        ariaLabel={`Percentual avaliado por avaliador: ${(desempenhoAvaliadores ?? [])
-                          .map(d => `${d.nome} ${d.percentual}%`)
-                          .join(', ')}`}
-                        data={(desempenhoAvaliadores ?? []).map(d => ({ label: d.nome, value: d.percentual, color: corDesempenho(d.percentual) }))}
-                      />
+                      {(() => {
+                        // O gráfico só faz sentido para quem tem caixa sob
+                        // responsabilidade agora (percentual != null) — sem
+                        // isso não há "progresso" nenhum para desenhar uma
+                        // barra. Quem está sem caixa aparece só na tabela.
+                        const comProgresso = (desempenhoAvaliadores ?? []).filter(d => d.percentual !== null)
+                        return comProgresso.length > 0 ? (
+                          <HorizontalProgressChart
+                            ariaLabel={`Percentual avaliado por avaliador: ${comProgresso.map(d => `${d.nome} ${d.percentual}%`).join(', ')}`}
+                            data={comProgresso.map(d => ({ label: d.nome, value: d.percentual as number, color: corDesempenho(d.percentual as number) }))}
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-400">Nenhum avaliador com caixa sob responsabilidade no momento.</p>
+                        )
+                      })()}
 
                       <div className="mt-5 pt-4 border-t border-gray-100 overflow-x-auto">
                         <table className="w-full text-xs">
@@ -791,7 +808,11 @@ export function DashboardPage() {
                                 <td className="py-2 pr-3 text-gray-600">{d.caixas}</td>
                                 <td className="py-2 pr-3 text-gray-600">{d.processosAtribuidos}</td>
                                 <td className="py-2 pr-3 text-gray-600">{d.processosAvaliados}</td>
-                                <td className="py-2 font-semibold" style={{ color: corDesempenho(d.percentual) }}>{d.percentual}%</td>
+                                {d.percentual === null ? (
+                                  <td className="py-2 text-gray-400" title="Sem caixa sob responsabilidade no momento">—</td>
+                                ) : (
+                                  <td className="py-2 font-semibold" style={{ color: corDesempenho(d.percentual) }}>{d.percentual}%</td>
+                                )}
                               </tr>
                             ))}
                           </tbody>
