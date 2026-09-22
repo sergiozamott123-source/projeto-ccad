@@ -343,12 +343,10 @@ export function DashboardPage() {
       // navegador. Evita uma consulta por avaliador.
       const todasCaixaIds = Array.from(new Set(requisicoes.map(r => r.caixa_id)))
       const processosPorCaixa = new Map<string, number>()
-      const caixaDoProcesso = new Map<string, string>()
       if (todasCaixaIds.length > 0) {
         const { data: processosData } = await supabase.from('processos').select('id, caixa_id').in('caixa_id', todasCaixaIds)
         for (const p of processosData ?? []) {
           processosPorCaixa.set(p.caixa_id, (processosPorCaixa.get(p.caixa_id) ?? 0) + 1)
-          caixaDoProcesso.set(p.id, p.caixa_id)
         }
       }
 
@@ -363,16 +361,30 @@ export function DashboardPage() {
       // que "atribuído"). A checagem é pelo PAR (quem avaliou, caixa do
       // processo) — não por "dono único da caixa" — para não sumir com o
       // trabalho de quem dividiu ou sucedeu outra pessoa na mesma caixa.
-      const { data: avaliacoesData } = await supabase
-        .from('avaliacoes')
-        .select('avaliado_por, processo_id')
-        .in('avaliado_por', avaliadorIds)
-        .in('status', ['confirmada', 'aguardando_confirmacao'])
+      //
+      // IMPORTANTE: filtramos aqui também por `todasCaixaIds` direto na
+      // consulta ao banco (com o mesmo padrão !inner já usado na Etapa 2),
+      // em vez de trazer TODAS as avaliações do sistema e filtrar só depois
+      // no navegador. A tabela `avaliacoes` já tem milhares de linhas
+      // (inclusive histórico migrado desde 2005) — sem esse filtro, o
+      // Supabase devolve no máximo as primeiras 1000 linhas (limite padrão
+      // de segurança da ferramenta) e pode cortar justamente as avaliações
+      // mais recentes, fazendo um avaliador que avaliou algo há pouco tempo
+      // aparecer com zero mesmo tendo avaliado de verdade (foi exatamente o
+      // caso do David Thofoli).
       const avaliadosPorAvaliador = new Map<string, number>()
-      for (const a of avaliacoesData ?? []) {
-        const caixaId = caixaDoProcesso.get(a.processo_id)
-        if (!caixaId || !paresAtivos.has(`${a.avaliado_por}::${caixaId}`)) continue
-        avaliadosPorAvaliador.set(a.avaliado_por, (avaliadosPorAvaliador.get(a.avaliado_por) ?? 0) + 1)
+      if (todasCaixaIds.length > 0) {
+        const { data: avaliacoesData } = await supabase
+          .from('avaliacoes')
+          .select('avaliado_por, processo:processo_id!inner(caixa_id)')
+          .in('avaliado_por', avaliadorIds)
+          .in('status', ['confirmada', 'aguardando_confirmacao'])
+          .in('processo.caixa_id', todasCaixaIds)
+        for (const a of (avaliacoesData ?? []) as unknown as { avaliado_por: string; processo: { caixa_id: string } | null }[]) {
+          const caixaId = a.processo?.caixa_id
+          if (!caixaId || !paresAtivos.has(`${a.avaliado_por}::${caixaId}`)) continue
+          avaliadosPorAvaliador.set(a.avaliado_por, (avaliadosPorAvaliador.get(a.avaliado_por) ?? 0) + 1)
+        }
       }
 
       const linhas = avaliadores.map(a => {
