@@ -11,6 +11,7 @@ import clsx from 'clsx'
 import { PILAR_NOMES, pilarColor } from '@/lib/pilarColors'
 import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressChart'
 import { GroupedVerticalBarChart } from '@/components/charts/GroupedVerticalBarChart'
+import { DonutChart } from '@/components/charts/DonutChart'
 
 const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
@@ -767,6 +768,36 @@ export function DashboardPage() {
                     color="bg-green-50"
                   />
                 </div>
+
+                {/* Etapa 3 do plano: gráfico de rosca com o % geral avaliado
+                    (processos avaliados vs. ainda pendentes), para dar o
+                    efeito visual "bonito com percentual" pedido pelo
+                    Sérgio. Os dois números somados aqui já vêm calculados
+                    acima, então não precisa de nenhuma consulta nova. */}
+                {resumoAvaliacoes && resumoAvaliacoes.totalProcessos > 0 && (
+                  <div className="card p-5">
+                    <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Progresso geral de avaliação</h3>
+                    <p className="text-xs text-gray-400 mb-4">
+                      Percentual de processos já avaliados, considerando todas as caixas distribuídas.
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                      <DonutChart
+                        ariaLabel={`${Math.round((resumoAvaliacoes.processosAvaliados / resumoAvaliacoes.totalProcessos) * 100)}% dos processos já avaliados, ${resumoAvaliacoes.processosAvaliados} de ${resumoAvaliacoes.totalProcessos}`}
+                        centerLabel="processos no total"
+                        data={[
+                          { label: 'Avaliados', value: resumoAvaliacoes.processosAvaliados, color: '#16a34a' },
+                          { label: 'Pendentes', value: resumoAvaliacoes.totalProcessos - resumoAvaliacoes.processosAvaliados, color: '#d1d5db' },
+                        ]}
+                      />
+                      <div className="text-center sm:text-left">
+                        <p className="text-4xl font-bold text-green-600 leading-none">
+                          {Math.round((resumoAvaliacoes.processosAvaliados / resumoAvaliacoes.totalProcessos) * 100)}%
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1.5">já avaliado, do total distribuído pelo Protocolo</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="card p-5">
                   <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Caixas por etapa do ciclo</h3>
