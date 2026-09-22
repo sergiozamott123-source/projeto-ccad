@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, formatDistanceToNow, startOfMonth, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { Pilar, Risco, ReuniaoAta, MuralEvento, TipoMuralEvento } from '@/lib/database.types'
+import type { Pilar, Risco, ReuniaoAta, MuralEvento, TipoMuralEvento, StatusCaixa } from '@/lib/database.types'
 import clsx from 'clsx'
 import { PILAR_NOMES, pilarColor } from '@/lib/pilarColors'
 import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressChart'
@@ -16,6 +16,16 @@ const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
   [PILAR_NOMES.MEMORIA]: '/pilares/memoria',
   [PILAR_NOMES.DIGITALIZACAO]: '/pilares/digitalizacao',
+}
+
+// Ordem e rótulo de cada etapa do ciclo de vida de uma caixa — ver
+// ciclo-avaliacao-caixas-fase14.md no projeto Claude.
+const CAIXA_STATUS_ORDEM: StatusCaixa[] = ['catalogada', 'em_avaliacao', 'aguardando_conferencia', 'arquivada']
+const CAIXA_STATUS_LABEL: Record<StatusCaixa, string> = {
+  catalogada: 'Catalogada',
+  em_avaliacao: 'Em avaliação',
+  aguardando_conferencia: 'Aguardando conferência',
+  arquivada: 'Arquivada',
 }
 
 const REUNIAO_TIPO_LABEL: Record<string, string> = {
@@ -222,6 +232,65 @@ export function DashboardPage() {
   })
 
   const qc = useQueryClient()
+
+  // Aba "Avaliações" — Etapa 2 do plano (ver
+  // plano-dashboard-acompanhamento-avaliacoes.md): resumo geral de quantas
+  // caixas o Protocolo já distribuiu para avaliação e como está o andamento.
+  // Só carrega quando a aba está aberta e só para quem já vê o Dashboard
+  // completo (Coordenação) — mesma regra combinada com o Sérgio.
+  const { data: resumoAvaliacoes, isLoading: carregandoResumoAvaliacoes } = useQuery({
+    queryKey: ['dashboard-avaliacoes-resumo'],
+    queryFn: async () => {
+      // 1) Cada requisição de avaliação não cancelada é uma caixa que o
+      // Protocolo efetivamente entregou a um avaliador.
+      const { data: requisicoes } = await supabase
+        .from('requisicoes_avaliacao')
+        .select('status, caixa_id')
+        .in('status', ['pendente', 'concluida'])
+
+      const listaRequisicoes = requisicoes ?? []
+      const caixaIds = Array.from(new Set(listaRequisicoes.map(r => r.caixa_id)))
+      const pendentes = listaRequisicoes.filter(r => r.status === 'pendente').length
+      const concluidas = listaRequisicoes.filter(r => r.status === 'concluida').length
+
+      // 2) Quantos processos existem, ao todo, nessas caixas.
+      let totalProcessos = 0
+      if (caixaIds.length > 0) {
+        const { count } = await supabase
+          .from('processos')
+          .select('*', { count: 'exact', head: true })
+          .in('caixa_id', caixaIds)
+        totalProcessos = count ?? 0
+      }
+
+      // 3) Quantos desses processos já têm uma avaliação válida registrada
+      // (confirmada ou aguardando confirmação) — avaliação devolvida e
+      // ainda não corrigida não conta como concluída (decisão registrada
+      // no plano: reflete o trabalho realmente já fechado).
+      let processosAvaliados = 0
+      if (caixaIds.length > 0) {
+        const { count } = await supabase
+          .from('avaliacoes')
+          .select('processo:processo_id!inner(caixa_id)', { count: 'exact', head: true })
+          .in('processo.caixa_id', caixaIds)
+          .in('status', ['confirmada', 'aguardando_confirmacao'])
+        processosAvaliados = count ?? 0
+      }
+
+      // 4) Panorama de todas as caixas do sistema por etapa do ciclo
+      // (independente de terem ou não requisição de avaliação digital —
+      // inclui também o acervo histórico já migrado).
+      const porStatus = await Promise.all(
+        CAIXA_STATUS_ORDEM.map(async status => {
+          const { count } = await supabase.from('caixas').select('*', { count: 'exact', head: true }).eq('status', status)
+          return { status, count: count ?? 0 }
+        })
+      )
+
+      return { caixasDistribuidas: caixaIds.length, pendentes, concluidas, totalProcessos, processosAvaliados, porStatus }
+    },
+    enabled: isCoord && aba === 'avaliacoes',
+  })
 
   const { data: totalMembros } = useQuery({
     queryKey: ['total-membros'],
@@ -534,17 +603,77 @@ export function DashboardPage() {
       )}
 
       {aba === 'avaliacoes' && (
-        <div className="card p-10 flex flex-col items-center text-center gap-2">
-          <div className="p-3 rounded-full bg-teal-50 text-teal-600 mb-1">
-            <Construction size={24} />
+        !isCoord ? (
+          <div className="card p-8 text-center text-sm text-gray-500">
+            Painel de acompanhamento de avaliações disponível para a Coordenação.
           </div>
-          <h2 className="font-semibold text-gray-900">Acompanhamento de Avaliações — em construção</h2>
-          <p className="text-sm text-gray-500 max-w-md">
-            Aqui vão aparecer, nas próximas etapas: quantas caixas o Protocolo já distribuiu, quantas cada
-            membro tem sob responsabilidade e quantos processos cada um já avaliou — com gráficos e
-            percentuais. Combinado com o Sérgio em <span className="font-mono text-xs">plano-dashboard-acompanhamento-avaliacoes.md</span>.
-          </p>
-        </div>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900 mb-1">Acompanhamento de Avaliações</h2>
+              <p className="text-xs text-gray-400">
+                Caixas distribuídas pelo Protocolo para avaliação e o andamento da classificação dos processos.
+              </p>
+            </div>
+
+            {carregandoResumoAvaliacoes ? (
+              <p className="text-center py-10 text-gray-400 text-sm">Carregando…</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <MetricCard
+                    icon={<PackageCheck size={20} className="text-navy-600" />}
+                    label="Caixas distribuídas"
+                    value={(resumoAvaliacoes?.caixasDistribuidas ?? 0).toLocaleString('pt-BR')}
+                    sub={
+                      resumoAvaliacoes
+                        ? `${resumoAvaliacoes.pendentes} em avaliação · ${resumoAvaliacoes.concluidas} concluída(s)`
+                        : undefined
+                    }
+                    color="bg-navy-50"
+                  />
+                  <MetricCard
+                    icon={<Archive size={20} className="text-teal-600" />}
+                    label="Processos nessas caixas"
+                    value={(resumoAvaliacoes?.totalProcessos ?? 0).toLocaleString('pt-BR')}
+                    color="bg-teal-50"
+                  />
+                  <MetricCard
+                    icon={<CheckCircle size={20} className="text-green-600" />}
+                    label="Processos já avaliados"
+                    value={(resumoAvaliacoes?.processosAvaliados ?? 0).toLocaleString('pt-BR')}
+                    sub={
+                      resumoAvaliacoes && resumoAvaliacoes.totalProcessos > 0
+                        ? `${Math.round((resumoAvaliacoes.processosAvaliados / resumoAvaliacoes.totalProcessos) * 100)}% do total distribuído`
+                        : undefined
+                    }
+                    color="bg-green-50"
+                  />
+                </div>
+
+                <div className="card p-5">
+                  <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Caixas por etapa do ciclo</h3>
+                  <p className="text-xs text-gray-400 mb-3">Todas as caixas do sistema, incluindo o acervo histórico já migrado.</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {(resumoAvaliacoes?.porStatus ?? []).map(s => (
+                      <div key={s.status} className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-3 text-center">
+                        <p className="text-xl font-bold text-gray-900">{s.count.toLocaleString('pt-BR')}</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">{CAIXA_STATUS_LABEL[s.status]}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 flex items-start gap-2.5">
+                  <Construction size={16} className="text-gray-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-gray-500">
+                    Em construção — os gráficos, o desempenho por avaliador e o filtro de período chegam nas próximas etapas.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        )
       )}
     </div>
   )
