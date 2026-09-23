@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { Download, FileSpreadsheet, Save, Trash2, ChevronLeft, ChevronRight, FolderOpen } from 'lucide-react'
+import { Download, FileSpreadsheet, Save, Trash2, ChevronLeft, ChevronRight, FolderOpen, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Processo, RelatorioSalvo } from '@/lib/database.types'
@@ -180,6 +180,14 @@ export function RelatoriosDiversosTab() {
     setPage(1)
   }
 
+  // Atalhos de um clique (Etapa 3 do plano): limpam todos os filtros e
+  // aplicam de uma vez a combinação que representa o recorte pedido, em vez
+  // do usuário montar isso manualmente toda vez.
+  function aplicarAtalho(patch: Partial<FiltrosState>) {
+    setFiltros({ ...FILTROS_INICIAIS, ...patch })
+    setPage(1)
+  }
+
   const { data: setores } = useQuery({
     queryKey: ['setores-distintos'],
     queryFn: async () => {
@@ -329,6 +337,33 @@ export function RelatoriosDiversosTab() {
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Relatórios Diversos</h2>
         <p className="text-gray-500 text-sm mt-0.5">Monte relatórios personalizados sobre a base de processos do acervo.</p>
+      </div>
+
+      {/* Atalhos rápidos */}
+      <div className="card p-5">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Zap size={15} className="text-teal-600" />
+          <h2 className="font-semibold text-gray-900 text-sm">Atalhos rápidos</h2>
+        </div>
+        <p className="text-xs text-gray-400 mb-3">
+          Aplica de uma vez a combinação de filtros do recorte, substituindo os filtros atuais.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={() => aplicarAtalho({ destinacaoFinal: 'Eliminação' })}
+          >
+            Processos já elimináveis
+          </button>
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={() => aplicarAtalho({ classificacao: 'sim' })}
+          >
+            Processos já classificados
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}
