@@ -62,6 +62,52 @@ const COLUNAS_PADRAO = [
 
 const PAGE_SIZE = 50
 
+// Agrupamento de "Setor de origem" para o relatório de produção/avaliação
+// por setor (Etapa 4). O campo já teve texto livre por muito tempo (a lista
+// oficial só existe desde a Fase 17), então o mesmo setor real aparece hoje
+// gravado de formas diferentes — ex.: "GECON", "GECON - PROCESSO ELIMINADO"
+// e "Gecon" são o mesmo setor. Isso só agrupa a EXIBIÇÃO deste relatório;
+// não muda nada gravado nos processos nem na lista de setores do sistema.
+// Sérgio confirmou essa normalização em 23/09/2026.
+interface GrupoSetor { nome: string; variantes: string[] }
+
+const GRUPOS_SETOR: GrupoSetor[] = [
+  { nome: 'GECON', variantes: ['GECON', 'GECON - PROCESSO ELIMINADO', 'Gecon'] },
+  { nome: 'NFC', variantes: ['NFC', 'NFC - PROCESSO ELIMINADO', 'NFC - PROC. ELIMINADO'] },
+  { nome: 'DAF', variantes: ['DAF', 'DAF - PROCESSO ELIMINADO'] },
+  { nome: 'NRH', variantes: ['NRH', 'NRH - PROCESSO ELIMINADO'] },
+  { nome: 'NPA', variantes: ['NPA', 'NPA - PROCESSO ELIMINADO'] },
+  { nome: 'DDN', variantes: ['DDN', 'DDN - PROCESSO ELIMINADO'] },
+  { nome: 'FACITEC', variantes: ['FACITEC', 'FACITEC - PROCESSO ELIMINADO'] },
+  { nome: 'DTUR', variantes: ['DTUR', 'DTUR - PROCESSO ELIMINADO'] },
+  { nome: 'NCC', variantes: ['NCC', 'NCC - PROCESSO ELIMINADO'] },
+  { nome: 'ASJUR', variantes: ['ASJUR', 'ASJUR - PROCESSO ELIMINADO', 'ASSJUR'] },
+  { nome: 'NSP', variantes: ['NSP', 'NSP - PROCESSO ELIMINADO'] },
+  { nome: 'NMS', variantes: ['NMS', 'NMS - PROCESSO ELIMINADO', 'NMS - PEOCESSO'] },
+  { nome: 'GAF', variantes: ['GAF', 'GAF - PROCESSO ELIMINADO', 'GAF - PROC. ELIMINADO'] },
+  { nome: 'DINOV', variantes: ['DINOV', 'DINOV - PROCESSO ELIMINADO', 'DINOV - PROCESSO ELIMNADO'] },
+  { nome: 'PRE', variantes: ['PRE', 'PRE - PROCESSO ELIMINADO'] },
+  { nome: 'Departamento Pessoal', variantes: ['Departº Pessoal', 'Depart.Pessoal', 'Dep. Pessoal', 'Dep.Pessoal', 'DP'] },
+  { nome: 'NTI', variantes: ['NTI'] },
+  { nome: 'GECOM', variantes: ['GECOM'] },
+  { nome: 'GCON', variantes: ['GCON'] },
+  { nome: 'GINOV', variantes: ['GINOV'] },
+  { nome: 'DIN', variantes: ['DIN'] },
+  { nome: 'Contabilidade', variantes: ['Contabilidade'] },
+  { nome: 'UECI', variantes: ['UECI'] },
+  { nome: 'SUPTUR', variantes: ['SUPTUR'] },
+  { nome: 'GEPED', variantes: ['GEPED'] },
+  { nome: 'SUPCOM', variantes: ['SUPCOM'] },
+  { nome: 'SUPDEC', variantes: ['SUPDEC'] },
+  { nome: 'SCTI', variantes: ['SCTI'] },
+]
+
+interface LinhaProducaoSetor {
+  setor: string
+  total: number
+  avaliados: number
+}
+
 // A consulta traz todas as avaliações do processo (pode ter mais de uma se
 // alguma foi devolvida e reavaliada depois), ordenadas da mais recente para
 // a mais antiga — a mais recente é a que representa a situação atual dele.
@@ -161,6 +207,83 @@ function buildQuery(filtros: FiltrosState) {
   query = query.order(ordenarPorAno ? 'ano_producao' : 'created_at', { ascending: ordenarPorAno })
 
   return query
+}
+
+const STATUS_JA_AVALIADO = ['confirmada', 'aguardando_confirmacao']
+
+// Conta processos usando `head: true` (só pede o total, nunca as linhas) —
+// o resultado é exato mesmo quando o grupo tem milhares de processos,
+// nunca esbarra no corte de 1.000 linhas do Supabase (mesma lição da
+// Correção 3 do Dashboard, que só apareceu por buscar linhas de verdade
+// em vez de só contar).
+async function contarProcessos(
+  aplicarFiltroSetor: (q: any) => any,
+  soAvaliados: boolean,
+  anoDe: string,
+  anoAte: string,
+): Promise<number> {
+  let query: any = soAvaliados
+    ? supabase
+        .from('processos')
+        .select('*, avaliacoes!inner(status)', { count: 'exact', head: true })
+        .in('avaliacoes.status', STATUS_JA_AVALIADO)
+    : supabase.from('processos').select('*', { count: 'exact', head: true })
+  query = aplicarFiltroSetor(query)
+  if (anoDe) query = query.gte('ano_producao', Number(anoDe))
+  if (anoAte) query = query.lte('ano_producao', Number(anoAte))
+  const { count, error } = await query
+  if (error) throw error
+  return count ?? 0
+}
+
+// Relatório de produção/avaliação por setor (Etapa 4 do plano em
+// claude/plano-central-relatorios.md). "Outros / não identificado" é
+// calculado por SUBTRAÇÃO do total geral, em vez de uma consulta "não está
+// em nenhum grupo conhecido" — assim os números sempre batem exatamente
+// com o total real de processos, mesmo que apareça no futuro um valor de
+// setor que ainda não está mapeado em GRUPOS_SETOR.
+async function buscarProducaoPorSetor(anoDe: string, anoAte: string): Promise<LinhaProducaoSetor[]> {
+  const [totalGeral, avaliadosGeral] = await Promise.all([
+    contarProcessos(q => q, false, anoDe, anoAte),
+    contarProcessos(q => q, true, anoDe, anoAte),
+  ])
+
+  const gruposComContagem = await Promise.all(
+    GRUPOS_SETOR.map(async (grupo): Promise<LinhaProducaoSetor> => {
+      const [total, avaliados] = await Promise.all([
+        contarProcessos(q => q.in('setor_origem', grupo.variantes), false, anoDe, anoAte),
+        contarProcessos(q => q.in('setor_origem', grupo.variantes), true, anoDe, anoAte),
+      ])
+      return { setor: grupo.nome, total, avaliados }
+    }),
+  )
+
+  // "Não informado" cobre tanto setor_origem nulo quanto texto vazio — duas
+  // consultas simples (.is / .eq) em vez de um filtro OR em texto, mais
+  // fácil de conferir que está correto.
+  const [nuloTotal, nuloAvaliados, vazioTotal, vazioAvaliados] = await Promise.all([
+    contarProcessos(q => q.is('setor_origem', null), false, anoDe, anoAte),
+    contarProcessos(q => q.is('setor_origem', null), true, anoDe, anoAte),
+    contarProcessos(q => q.eq('setor_origem', ''), false, anoDe, anoAte),
+    contarProcessos(q => q.eq('setor_origem', ''), true, anoDe, anoAte),
+  ])
+  const naoInformadoTotal = nuloTotal + vazioTotal
+  const naoInformadoAvaliados = nuloAvaliados + vazioAvaliados
+
+  const linhas = gruposComContagem.filter(l => l.total > 0)
+  if (naoInformadoTotal > 0) {
+    linhas.push({ setor: 'Não informado', total: naoInformadoTotal, avaliados: naoInformadoAvaliados })
+  }
+
+  const somaConhecidaTotal = gruposComContagem.reduce((s, l) => s + l.total, 0) + naoInformadoTotal
+  const somaConhecidaAvaliados = gruposComContagem.reduce((s, l) => s + l.avaliados, 0) + naoInformadoAvaliados
+  const outrosTotal = Math.max(0, totalGeral - somaConhecidaTotal)
+  const outrosAvaliados = Math.max(0, avaliadosGeral - somaConhecidaAvaliados)
+  if (outrosTotal > 0) {
+    linhas.push({ setor: 'Outros / não identificado', total: outrosTotal, avaliados: outrosAvaliados })
+  }
+
+  return linhas.sort((a, b) => b.total - a.total)
 }
 
 export function RelatoriosDiversosTab() {
@@ -266,6 +389,18 @@ export function RelatoriosDiversosTab() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['relatorios-salvos'] }),
   })
 
+  // Relatório de produção/avaliação por setor (Etapa 4). "Ano de produção"
+  // é o mesmo período usado nos filtros acima, aqui isolado porque este é
+  // um relatório agregado à parte, não uma lista de processos.
+  const [anoSetorDe, setAnoSetorDe] = useState('')
+  const [anoSetorAte, setAnoSetorAte] = useState('')
+  const [exportandoSetor, setExportandoSetor] = useState<'excel' | 'pdf' | null>(null)
+
+  const { data: producaoPorSetor, isLoading: carregandoProducaoSetor } = useQuery({
+    queryKey: ['relatorios-diversos-producao-setor', anoSetorDe, anoSetorAte],
+    queryFn: () => buscarProducaoPorSetor(anoSetorDe, anoSetorAte),
+  })
+
   function abrirSalvo(r: RelatorioSalvo) {
     setFiltros({ ...FILTROS_INICIAIS, ...(r.filtros as Partial<FiltrosState>) })
     setColunasSelecionadas(r.colunas)
@@ -324,6 +459,60 @@ export function RelatoriosDiversosTab() {
       doc.save(`relatorio-acervo-${new Date().toISOString().slice(0, 10)}.pdf`)
     } finally {
       setExportando(null)
+    }
+  }
+
+  function descreverPeriodoSetor() {
+    if (!anoSetorDe && !anoSetorAte) return 'Todos os anos de produção'
+    return `Ano de produção: ${anoSetorDe || '—'}–${anoSetorAte || '—'}`
+  }
+
+  function exportarProducaoSetorExcel() {
+    if (!producaoPorSetor?.length) return
+    setExportandoSetor('excel')
+    try {
+      const linhas = producaoPorSetor.map(l => ({
+        Setor: l.setor,
+        'Processos produzidos': l.total,
+        'Processos avaliados': l.avaliados,
+        '% avaliado': l.total > 0 ? `${Math.round((l.avaliados / l.total) * 100)}%` : '—',
+      }))
+      const ws = XLSX.utils.json_to_sheet(linhas)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Por setor')
+      XLSX.writeFile(wb, `relatorio-producao-setor-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    } finally {
+      setExportandoSetor(null)
+    }
+  }
+
+  function exportarProducaoSetorPdf() {
+    if (!producaoPorSetor?.length) return
+    setExportandoSetor('pdf')
+    try {
+      const doc = new jsPDF()
+      const pageWidth = doc.internal.pageSize.getWidth()
+      const logoW = 30
+      const logoH = logoW / (256 / 124)
+      doc.addImage(CDTIV_LOGO_LIGHTBG, 'JPEG', pageWidth - 14 - logoW, 8, logoW, logoH)
+      doc.setFontSize(14)
+      doc.text('Produção e avaliação por setor — CCAD/CDTIV', 14, 15)
+      doc.setFontSize(9)
+      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} — ${descreverPeriodoSetor()}`, 14, 21)
+      autoTable(doc, {
+        startY: 26,
+        head: [['Setor', 'Processos produzidos', 'Processos avaliados', '% avaliado']],
+        body: producaoPorSetor.map(l => [
+          l.setor,
+          String(l.total),
+          String(l.avaliados),
+          l.total > 0 ? `${Math.round((l.avaliados / l.total) * 100)}%` : '—',
+        ]),
+        styles: { fontSize: 9 },
+      })
+      doc.save(`relatorio-producao-setor-${new Date().toISOString().slice(0, 10)}.pdf`)
+    } finally {
+      setExportandoSetor(null)
     }
   }
 
@@ -619,6 +808,90 @@ export function RelatoriosDiversosTab() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Produção e avaliação por setor — Etapa 4 */}
+      <div className="card p-5">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
+          <div>
+            <h2 className="font-semibold text-gray-900">Produção e avaliação por setor</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Quantos processos cada setor produziu e quantos já foram avaliados, com o percentual.
+            </p>
+          </div>
+          <div className="flex items-end gap-2">
+            <div>
+              <label className="label">Ano de produção — de</label>
+              <input
+                type="number"
+                className="input w-28"
+                value={anoSetorDe}
+                onChange={e => setAnoSetorDe(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="label">até</label>
+              <input
+                type="number"
+                className="input w-28"
+                value={anoSetorAte}
+                onChange={e => setAnoSetorAte(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        {carregandoProducaoSetor ? (
+          <p className="text-center py-10 text-gray-400">Calculando…</p>
+        ) : !producaoPorSetor?.length ? (
+          <p className="text-center py-10 text-gray-400">Nenhum processo encontrado nesse período.</p>
+        ) : (
+          <div className="overflow-x-auto mt-3">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-gray-400">
+                  <th className="py-2 pr-4 font-medium">Setor</th>
+                  <th className="py-2 pr-4 font-medium">Processos produzidos</th>
+                  <th className="py-2 pr-4 font-medium">Processos avaliados</th>
+                  <th className="py-2 pr-4 font-medium">% avaliado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {producaoPorSetor.map(l => (
+                  <tr key={l.setor} className="border-b last:border-0">
+                    <td className="py-2 pr-4 text-gray-800 font-medium">{l.setor}</td>
+                    <td className="py-2 pr-4 text-gray-700">{l.total.toLocaleString('pt-BR')}</td>
+                    <td className="py-2 pr-4 text-gray-700">{l.avaliados.toLocaleString('pt-BR')}</td>
+                    <td className="py-2 pr-4 text-gray-700">
+                      {l.total > 0 ? `${Math.round((l.avaliados / l.total) * 100)}%` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2 pt-4 mt-1 border-t">
+          <button
+            className="btn-secondary text-sm"
+            disabled={exportandoSetor !== null || !producaoPorSetor?.length}
+            onClick={exportarProducaoSetorExcel}
+          >
+            <FileSpreadsheet size={16} /> {exportandoSetor === 'excel' ? 'Exportando…' : 'Exportar Excel'}
+          </button>
+          <button
+            className="btn-secondary text-sm"
+            disabled={exportandoSetor !== null || !producaoPorSetor?.length}
+            onClick={exportarProducaoSetorPdf}
+          >
+            <Download size={16} /> {exportandoSetor === 'pdf' ? 'Exportando…' : 'Exportar PDF'}
+          </button>
+        </div>
+
+        <p className="text-xs text-gray-400 mt-3 border-t pt-3">
+          "Setor" agrupa variações de digitação do mesmo setor (ex.: siglas seguidas de "- PROCESSO ELIMINADO") registradas antes da lista oficial de setores existir no sistema — não altera nenhum processo, só a forma como este relatório soma os números. "Outros / não identificado" reúne registros raros que não puderam ser agrupados com confiança.
+        </p>
       </div>
     </div>
   )
