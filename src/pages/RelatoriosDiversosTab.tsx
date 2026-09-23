@@ -306,6 +306,12 @@ export function RelatoriosDiversosTab() {
   // Atalhos de um clique (Etapa 3 do plano): limpam todos os filtros e
   // aplicam de uma vez a combinação que representa o recorte pedido, em vez
   // do usuário montar isso manualmente toda vez.
+  //
+  // "Processos em avaliação" (definido pelo Sérgio em 23/09/2026) = status
+  // "Aguardando confirmação": já foram analisados por um avaliador, mas
+  // ainda esperam a confirmação da Coordenação. Não inclui os processos
+  // ainda sem nenhuma avaliação (esses ficam no filtro "Status da avaliação
+  // = Não avaliado", que já existe separadamente).
   function aplicarAtalho(patch: Partial<FiltrosState>) {
     setFiltros({ ...FILTROS_INICIAIS, ...patch })
     setPage(1)
@@ -551,6 +557,13 @@ export function RelatoriosDiversosTab() {
             onClick={() => aplicarAtalho({ classificacao: 'sim' })}
           >
             Processos já classificados
+          </button>
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={() => aplicarAtalho({ statusAvaliacao: 'aguardando_confirmacao' })}
+          >
+            Processos em avaliação
           </button>
         </div>
       </div>
