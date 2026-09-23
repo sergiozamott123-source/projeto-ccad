@@ -354,7 +354,7 @@ export function RelatoriosEquipePage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Relatórios da Equipe</h1>
+          <h2 className="text-lg font-semibold text-gray-900">Relatórios da Equipe</h2>
           <p className="text-gray-500 text-sm mt-0.5">
             Acompanhe os relatórios mensais enviados por cada membro da Comissão.
           </p>

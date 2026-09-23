@@ -184,7 +184,7 @@ export function RelatoriosPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Relatórios Mensais</h1>
+          <h2 className="text-lg font-semibold text-gray-900">Meus Relatórios Mensais</h2>
           <p className="text-gray-500 text-sm mt-0.5">Obrigatório até o dia 20 de cada mês.</p>
         </div>
         <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
