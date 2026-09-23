@@ -17,6 +17,7 @@ interface FiltrosState {
   anoDe: string
   anoAte: string
   requerRevisao: 'qualquer' | 'sim' | 'nao'
+  classificacao: 'qualquer' | 'sim' | 'nao'
   busca: string
   avaliadorId: string
   statusAvaliacao: 'qualquer' | 'sem_avaliacao' | 'aguardando_confirmacao' | 'confirmada' | 'devolvida'
@@ -25,7 +26,7 @@ interface FiltrosState {
 }
 
 const FILTROS_INICIAIS: FiltrosState = {
-  setor: '', classe: '', destinacaoFinal: '', anoDe: '', anoAte: '', requerRevisao: 'qualquer', busca: '',
+  setor: '', classe: '', destinacaoFinal: '', anoDe: '', anoAte: '', requerRevisao: 'qualquer', classificacao: 'qualquer', busca: '',
   avaliadorId: '', statusAvaliacao: 'qualquer', avaliacaoDe: '', avaliacaoAte: '',
 }
 
@@ -98,6 +99,7 @@ function descreverFiltros(f: FiltrosState): string {
   if (f.destinacaoFinal) partes.push(`Destinação: ${f.destinacaoFinal}`)
   if (f.anoDe || f.anoAte) partes.push(`Ano: ${f.anoDe || '—'}–${f.anoAte || '—'}`)
   if (f.requerRevisao !== 'qualquer') partes.push(`Requer revisão: ${f.requerRevisao === 'sim' ? 'Sim' : 'Não'}`)
+  if (f.classificacao !== 'qualquer') partes.push(`Classificação: ${f.classificacao === 'sim' ? 'Já classificado' : 'Ainda não classificado'}`)
   if (f.busca) partes.push(`Busca: "${f.busca}"`)
   if (f.statusAvaliacao === 'sem_avaliacao') partes.push('Status da avaliação: Não avaliado')
   else if (f.statusAvaliacao !== 'qualquer') partes.push(`Status da avaliação: ${STATUS_AVALIACAO_LABEL[f.statusAvaliacao]}`)
@@ -139,6 +141,11 @@ function buildQuery(filtros: FiltrosState) {
   if (filtros.anoAte) query = query.lte('ano_producao', Number(filtros.anoAte))
   if (filtros.requerRevisao === 'sim') query = query.eq('requer_revisao_manual', true)
   if (filtros.requerRevisao === 'nao') query = query.eq('requer_revisao_manual', false)
+  // "Classificação" pergunta se o processo já tem um código do TTD associado
+  // (ttd_codigo_id preenchido), diferente dos filtros de classe/destinação
+  // acima, que perguntam QUAL classe/destinação ele tem.
+  if (filtros.classificacao === 'sim') query = query.not('ttd_codigo_id', 'is', null)
+  if (filtros.classificacao === 'nao') query = query.is('ttd_codigo_id', null)
   if (filtros.busca) {
     query = query.or(`numero_documento.ilike.%${filtros.busca}%,interessado.ilike.%${filtros.busca}%,assunto_processo.ilike.%${filtros.busca}%`)
   }
@@ -366,6 +373,18 @@ export function RelatoriosDiversosTab() {
               <option value="qualquer">Qualquer</option>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Classificação</label>
+            <select
+              className="input"
+              value={filtros.classificacao}
+              onChange={e => atualizarFiltro({ classificacao: e.target.value as FiltrosState['classificacao'] })}
+            >
+              <option value="qualquer">Qualquer</option>
+              <option value="sim">Já classificado</option>
+              <option value="nao">Ainda não classificado</option>
             </select>
           </div>
           <div className="sm:col-span-2 lg:col-span-3">
