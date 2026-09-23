@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import type { Usuario } from '@/lib/database.types'
 import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
+import { AlertaRitmoAvaliacao } from '@/components/AlertaRitmoAvaliacao'
 import clsx from 'clsx'
 
 interface NavItem {
@@ -284,6 +285,12 @@ export function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {/* Alerta de Ritmo de Avaliação (claude/plano-alerta-ritmo-avaliacoes.md)
+              — fica aqui, acima de qualquer página, para aparecer "toda vez
+              que o Sérgio abrir o sistema" como ele pediu, e não só dentro
+              do Dashboard. Só ele decide se aparece (isCoord, dentro do
+              próprio componente) e se já foi visto hoje. */}
+          <AlertaRitmoAvaliacao />
           <Outlet />
         </main>
       </div>
