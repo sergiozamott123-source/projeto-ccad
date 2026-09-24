@@ -26,8 +26,6 @@ const STATUS_LICITACAO_COLOR: Record<StatusLicitacaoDigitalizacao, string> = {
   em_execucao: 'bg-green-100 text-green-700',
 }
 
-const ANOS = [1, 2, 3, 4, 5]
-
 const INDICADORES: {
   metaField: keyof DigitalizacaoMetaAnual
   label: string
@@ -77,6 +75,11 @@ export function DigitalizacaoPilarPage() {
       return data as (Pilar & { fases: Fase[] }) | null
     },
   })
+
+  // Número de "Anos" da tabela de marcos deriva do prazo real do pilar (não é
+  // mais fixo em 5) — evita mostrar colunas de anos que não existem no contrato.
+  const anosPrazo = pilar ? Math.max(1, Math.round(pilar.prazo_meses / 12)) : 1
+  const ANOS = Array.from({ length: anosPrazo }, (_, i) => i + 1)
 
   const { data: demandas } = useQuery({
     queryKey: ['demandas-digitalizacao', pilar?.id],
@@ -237,7 +240,6 @@ export function DigitalizacaoPilarPage() {
   if (!podeVer) return <p className="text-gray-500">Acesso restrito ao Coordenador e à equipe deste pilar.</p>
 
   const fasesOrdenadas = [...(pilar.fases ?? [])].sort((a, b) => a.ordem - b.ordem)
-  const anosPrazo = Math.round(pilar.prazo_meses / 12)
 
   const metasPorAno = Object.fromEntries((metas ?? []).map(m => [m.ano_execucao, m])) as Record<number, DigitalizacaoMetaAnual | undefined>
 
@@ -425,7 +427,9 @@ export function DigitalizacaoPilarPage() {
               { label: 'Restante até a meta', value: restantePaginas, color: '#e5e7eb' },
             ]}
           />
-          <p className="text-xs text-gray-400 mt-3">Meta acumulada (5 anos): {metaAcumuladaPaginas.toLocaleString('pt-BR')} páginas</p>
+          <p className="text-xs text-gray-400 mt-3">
+            Meta acumulada ({anosPrazo} {anosPrazo === 1 ? 'ano' : 'anos'}): {metaAcumuladaPaginas.toLocaleString('pt-BR')} páginas
+          </p>
         </div>
       </div>
 
