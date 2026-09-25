@@ -1,21 +1,41 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
-import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
+import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy, PackageCheck, ClipboardList, LayoutGrid, Construction } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, formatDistanceToNow, startOfMonth, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import type { Pilar, Risco, ReuniaoAta, MuralEvento, TipoMuralEvento } from '@/lib/database.types'
+import type { Pilar, Risco, ReuniaoAta, MuralEvento, TipoMuralEvento, StatusCaixa } from '@/lib/database.types'
 import clsx from 'clsx'
 import { PILAR_NOMES, pilarColor } from '@/lib/pilarColors'
 import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressChart'
 import { GroupedVerticalBarChart } from '@/components/charts/GroupedVerticalBarChart'
+import { DonutChart } from '@/components/charts/DonutChart'
+import { buscarDesempenhoAvaliadores } from '@/lib/desempenhoAvaliadores'
 
 const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
   [PILAR_NOMES.MEMORIA]: '/pilares/memoria',
   [PILAR_NOMES.DIGITALIZACAO]: '/pilares/digitalizacao',
+}
+
+// Ordem e rótulo de cada etapa do ciclo de vida de uma caixa — ver
+// ciclo-avaliacao-caixas-fase14.md no projeto Claude.
+const CAIXA_STATUS_ORDEM: StatusCaixa[] = ['catalogada', 'em_avaliacao', 'aguardando_conferencia', 'arquivada']
+const CAIXA_STATUS_LABEL: Record<StatusCaixa, string> = {
+  catalogada: 'Catalogada',
+  em_avaliacao: 'Em avaliação',
+  aguardando_conferencia: 'Aguardando conferência',
+  arquivada: 'Arquivada',
+}
+
+// Cor da barra de progresso por avaliador, de acordo com o % concluído —
+// só um sinal visual rápido de quem precisa de mais atenção da Coordenação.
+function corDesempenho(percentual: number) {
+  if (percentual < 40) return '#ef4444' // vermelho
+  if (percentual < 75) return '#f59e0b' // âmbar
+  return '#14b8a6' // teal
 }
 
 const REUNIAO_TIPO_LABEL: Record<string, string> = {
@@ -30,6 +50,7 @@ const MURAL_ICON: Record<TipoMuralEvento, React.ReactNode> = {
   indicador_lancado: <TrendingUp size={16} className="text-accent-600" />,
   demanda_concluida: <Flag size={16} className="text-purple-600" />,
   fase_concluida: <Trophy size={16} className="text-yellow-600" />,
+  caixa_arquivada: <PackageCheck size={16} className="text-navy-600" />,
 }
 
 function muralTexto(e: MuralEvento) {
@@ -39,6 +60,7 @@ function muralTexto(e: MuralEvento) {
     case 'indicador_lancado': return `${e.usuario?.nome ?? '—'} lançou os indicadores do mês`
     case 'demanda_concluida': return `${e.usuario?.nome ?? '—'} concluiu a demanda "${e.descricao}"`
     case 'fase_concluida': return `Fase "${e.descricao}" concluída pela equipe`
+    case 'caixa_arquivada': return `${e.usuario?.nome ?? 'Protocolo'} conferiu e arquivou a caixa ${e.descricao} no Arquivo Geral`
   }
 }
 
@@ -128,9 +150,42 @@ function RiscoRow({ risco }: { risco: Risco }) {
   )
 }
 
+// Abas do Dashboard — Etapa 1 do plano "Acompanhamento de Avaliações no
+// Dashboard" (ver claude/plano-dashboard-acompanhamento-avaliacoes.md no
+// projeto Claude). Por enquanto só reorganiza o que já existia em "Visão
+// Geral" e abre espaço para a aba "Avaliações", preenchida nas próximas
+// etapas. Nenhum dado ou comportamento da Visão Geral muda nesta etapa.
+type AbaDashboard = 'geral' | 'avaliacoes'
+
 export function DashboardPage() {
   const { profile, isCoord } = useAuth()
+  const location = useLocation()
+  // Permite abrir direto na aba "Avaliações" vindo de outro lugar do
+  // sistema (ex.: o Alerta de Ritmo de Avaliação no topo das páginas —
+  // claude/plano-alerta-ritmo-avaliacoes.md), sem o Sérgio precisar clicar
+  // na aba manualmente. Mesmo padrão já usado em CentralRelatoriosPage.tsx.
+  const abaInicial = (location.state as { aba?: AbaDashboard } | null)?.aba
+  const [aba, setAba] = useState<AbaDashboard>(abaInicial === 'avaliacoes' ? 'avaliacoes' : 'geral')
   const mesAtual = format(startOfMonth(new Date()), 'yyyy-MM-dd')
+
+  // Etapa 5 do plano de Acompanhamento de Avaliações: filtro de período
+  // para a aba "Avaliações". Por padrão mostra o acumulado desde o início
+  // (sem filtro nenhum — igual ao que já existia nas Etapas 2 e 4). O
+  // filtro atua sobre `data_entrega` de `requisicoes_avaliacao` (a data em
+  // que a caixa chegou fisicamente e foi enviada para avaliação) — ou
+  // seja, "período" aqui significa "caixas entregues nesse intervalo", e
+  // os números de processos/avaliações seguem naturalmente essas caixas,
+  // reaproveitando toda a lógica que já existe nas Etapas 2 e 4.
+  type PeriodoFiltro = 'total' | 'mes' | 'personalizado'
+  const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>('total')
+  const [periodoInicio, setPeriodoInicio] = useState('')
+  const [periodoFim, setPeriodoFim] = useState('')
+  const periodoRange: { inicio: string; fim: string | null } | null =
+    periodoFiltro === 'mes'
+      ? { inicio: mesAtual, fim: null }
+      : periodoFiltro === 'personalizado' && periodoInicio && periodoFim
+      ? { inicio: periodoInicio, fim: periodoFim }
+      : null
 
   const { data: indicadores } = useQuery({
     queryKey: ['indicadores-totais'],
@@ -212,6 +267,87 @@ export function DashboardPage() {
   })
 
   const qc = useQueryClient()
+
+  // Aba "Avaliações" — Etapa 2 do plano (ver
+  // plano-dashboard-acompanhamento-avaliacoes.md): resumo geral de quantas
+  // caixas o Protocolo já distribuiu para avaliação e como está o andamento.
+  // Só carrega quando a aba está aberta e só para quem já vê o Dashboard
+  // completo (Coordenação) — mesma regra combinada com o Sérgio.
+  const { data: resumoAvaliacoes, isLoading: carregandoResumoAvaliacoes } = useQuery({
+    queryKey: ['dashboard-avaliacoes-resumo', periodoRange],
+    queryFn: async () => {
+      // 1) Cada requisição de avaliação não cancelada é uma caixa que o
+      // Protocolo efetivamente entregou a um avaliador. Quando há um
+      // período selecionado (Etapa 5), restringimos pela data de entrega
+      // da caixa — o resto da consulta (processos, avaliações, %) segue
+      // naturalmente essas mesmas caixas, sem precisar mudar mais nada.
+      let requisicoesQuery = supabase
+        .from('requisicoes_avaliacao')
+        .select('status, caixa_id')
+        .in('status', ['pendente', 'concluida'])
+      if (periodoRange) requisicoesQuery = requisicoesQuery.gte('data_entrega', periodoRange.inicio)
+      if (periodoRange?.fim) requisicoesQuery = requisicoesQuery.lte('data_entrega', periodoRange.fim)
+      const { data: requisicoes } = await requisicoesQuery
+
+      const listaRequisicoes = requisicoes ?? []
+      const caixaIds = Array.from(new Set(listaRequisicoes.map(r => r.caixa_id)))
+      const pendentes = listaRequisicoes.filter(r => r.status === 'pendente').length
+      const concluidas = listaRequisicoes.filter(r => r.status === 'concluida').length
+
+      // 2) Quantos processos existem, ao todo, nessas caixas.
+      let totalProcessos = 0
+      if (caixaIds.length > 0) {
+        const { count } = await supabase
+          .from('processos')
+          .select('*', { count: 'exact', head: true })
+          .in('caixa_id', caixaIds)
+        totalProcessos = count ?? 0
+      }
+
+      // 3) Quantos desses processos já têm uma avaliação válida registrada
+      // (confirmada ou aguardando confirmação) — avaliação devolvida e
+      // ainda não corrigida não conta como concluída (decisão registrada
+      // no plano: reflete o trabalho realmente já fechado).
+      let processosAvaliados = 0
+      if (caixaIds.length > 0) {
+        const { count } = await supabase
+          .from('avaliacoes')
+          .select('processo:processo_id!inner(caixa_id)', { count: 'exact', head: true })
+          .in('processo.caixa_id', caixaIds)
+          .in('status', ['confirmada', 'aguardando_confirmacao'])
+        processosAvaliados = count ?? 0
+      }
+
+      // 4) Panorama de todas as caixas do sistema por etapa do ciclo
+      // (independente de terem ou não requisição de avaliação digital —
+      // inclui também o acervo histórico já migrado).
+      const porStatus = await Promise.all(
+        CAIXA_STATUS_ORDEM.map(async status => {
+          const { count } = await supabase.from('caixas').select('*', { count: 'exact', head: true }).eq('status', status)
+          return { status, count: count ?? 0 }
+        })
+      )
+
+      return { caixasDistribuidas: caixaIds.length, pendentes, concluidas, totalProcessos, processosAvaliados, porStatus }
+    },
+    enabled: isCoord && aba === 'avaliacoes',
+  })
+
+  // Aba "Avaliações" — Etapa 4 do plano: quanto cada avaliador habilitado
+  // tem sob responsabilidade e quanto já avaliou. Só para Coordenação (ver
+  // decisão de visibilidade no plano) — é dado de desempenho individual.
+  //
+  // A conta em si (pares avaliador/caixa, contagem sem corte de 1.000 linhas
+  // etc.) foi extraída para `buscarDesempenhoAvaliadores`
+  // (src/lib/desempenhoAvaliadores.ts) na Etapa 1 do plano em
+  // claude/plano-alerta-ritmo-avaliacoes.md, para ser reaproveitada também
+  // pelo Alerta de Ritmo de Avaliação, sem duplicar essa lógica sensível a
+  // bugs em dois lugares.
+  const { data: desempenhoAvaliadores, isLoading: carregandoDesempenho } = useQuery({
+    queryKey: ['dashboard-desempenho-avaliadores', periodoRange],
+    queryFn: () => buscarDesempenhoAvaliadores(periodoRange),
+    enabled: isCoord && aba === 'avaliacoes',
+  })
 
   const { data: totalMembros } = useQuery({
     queryKey: ['total-membros'],
@@ -307,34 +443,73 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {/* Metric cards */}
+      {/* Abas */}
+      <div className="flex gap-1 border-b border-gray-200">
+        <button
+          type="button"
+          onClick={() => setAba('geral')}
+          className={clsx(
+            'flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            aba === 'geral' ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+          )}
+        >
+          <LayoutGrid size={15} /> Visão Geral
+        </button>
+        <button
+          type="button"
+          onClick={() => setAba('avaliacoes')}
+          className={clsx(
+            'flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+            aba === 'avaliacoes' ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+          )}
+        >
+          <ClipboardList size={15} /> Avaliações
+        </button>
+      </div>
+
+      {aba === 'geral' && (
+      <div className="space-y-8">
+      {/* Metric cards — Etapa 6 do plano: antes esse bloco não tinha
+          nenhum título, ficando "solto" no topo da página (era um dos
+          motivos da sensação de "poluído" que o Sérgio apontou). Agora
+          tem cabeçalho e legenda, igual aos demais blocos da página. */}
       {isCoord && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            icon={<Archive size={20} className="text-teal-600" />}
-            label="Caixas catalogadas"
-            value={totalCaixas.toLocaleString('pt-BR')}
-            color="bg-teal-50"
-          />
-          <MetricCard
-            icon={<TrendingUp size={20} className="text-accent-600" />}
-            label="Páginas digitalizadas"
-            value={totalPaginas.toLocaleString('pt-BR')}
-            color="bg-orange-50"
-          />
-          <MetricCard
-            icon={<MapPin size={20} className="text-blue-600" />}
-            label="Documentos indexados"
-            value={totalIndexados.toLocaleString('pt-BR')}
-            color="bg-blue-50"
-          />
-          <MetricCard
-            icon={<CheckCircle size={20} className="text-green-600" />}
-            label="Relatórios em dia"
-            value={relatorioStats ? `${relatorioStats.enviados}/${relatorioStats.total}` : '—'}
-            sub={relatorioStats?.atrasados ? `${relatorioStats.atrasados} atrasado(s)` : undefined}
-            color="bg-green-50"
-          />
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 mb-1">Indicadores Institucionais</h2>
+          <p className="text-xs text-gray-400 mb-3">Totais combinados dos três pilares (Digitalização, Boas Práticas e Memória).</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <MetricCard
+              icon={<Archive size={20} className="text-teal-600" />}
+              label="Caixas catalogadas"
+              value={totalCaixas.toLocaleString('pt-BR')}
+              color="bg-teal-50"
+            />
+            <MetricCard
+              icon={<TrendingUp size={20} className="text-accent-600" />}
+              label="Páginas digitalizadas"
+              value={totalPaginas.toLocaleString('pt-BR')}
+              color="bg-orange-50"
+            />
+            <MetricCard
+              icon={<MapPin size={20} className="text-blue-600" />}
+              label="Documentos indexados"
+              value={totalIndexados.toLocaleString('pt-BR')}
+              color="bg-blue-50"
+            />
+            <MetricCard
+              icon={<CheckCircle size={20} className="text-green-600" />}
+              label="Relatórios em dia"
+              value={relatorioStats ? `${relatorioStats.enviados}/${relatorioStats.total}` : '—'}
+              sub={
+                relatorioStats
+                  ? relatorioStats.atrasados
+                    ? `${relatorioStats.enviados} de ${relatorioStats.total} enviados · ${relatorioStats.atrasados} atrasado(s)`
+                    : `${relatorioStats.enviados} de ${relatorioStats.total} membros entregaram este mês`
+                  : undefined
+              }
+              color="bg-green-50"
+            />
+          </div>
         </div>
       )}
 
@@ -493,6 +668,233 @@ export function DashboardPage() {
             <a href="/conformidade" className="text-sm text-red-600 hover:underline">Ver painel de conformidade →</a>
           </div>
         </div>
+      )}
+      </div>
+      )}
+
+      {aba === 'avaliacoes' && (
+        !isCoord ? (
+          <div className="card p-8 text-center text-sm text-gray-500">
+            Painel de acompanhamento de avaliações disponível para a Coordenação.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900 mb-1">Acompanhamento de Avaliações</h2>
+                <p className="text-xs text-gray-400">
+                  Caixas distribuídas pelo Protocolo para avaliação e o andamento da classificação dos processos.
+                </p>
+                {periodoRange && (
+                  <p className="text-xs text-teal-700 font-medium mt-1">
+                    Período: {format(new Date(`${periodoRange.inicio}T00:00:00`), "dd/MM/yyyy", { locale: ptBR })}
+                    {' '}até{' '}
+                    {periodoRange.fim
+                      ? format(new Date(`${periodoRange.fim}T00:00:00`), 'dd/MM/yyyy', { locale: ptBR })
+                      : 'hoje'}
+                  </p>
+                )}
+              </div>
+
+              {/* Etapa 5 do plano: filtro de período. Por padrão mostra o
+                  acumulado desde o início (sem filtro); "Este mês" e
+                  "Período" recalculam os números considerando só as caixas
+                  entregues naquele intervalo. */}
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-0.5 text-xs">
+                  {([
+                    { key: 'total', label: 'Desde o início' },
+                    { key: 'mes', label: 'Este mês' },
+                    { key: 'personalizado', label: 'Período' },
+                  ] as { key: PeriodoFiltro; label: string }[]).map(opcao => (
+                    <button
+                      key={opcao.key}
+                      type="button"
+                      onClick={() => setPeriodoFiltro(opcao.key)}
+                      className={clsx(
+                        'flex items-center gap-1 px-2.5 py-1.5 rounded-md font-medium transition-colors',
+                        periodoFiltro === opcao.key ? 'bg-white text-teal-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                      )}
+                    >
+                      {opcao.key === 'personalizado' && <Calendar size={13} />}
+                      {opcao.label}
+                    </button>
+                  ))}
+                </div>
+                {periodoFiltro === 'personalizado' && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <input
+                      type="date"
+                      value={periodoInicio}
+                      onChange={e => setPeriodoInicio(e.target.value)}
+                      className="border border-gray-200 rounded-md px-2 py-1 text-xs"
+                      aria-label="Data inicial do período"
+                    />
+                    <span>até</span>
+                    <input
+                      type="date"
+                      value={periodoFim}
+                      onChange={e => setPeriodoFim(e.target.value)}
+                      min={periodoInicio || undefined}
+                      className="border border-gray-200 rounded-md px-2 py-1 text-xs"
+                      aria-label="Data final do período"
+                    />
+                    {!(periodoInicio && periodoFim) && (
+                      <span className="text-gray-400 italic">escolha as duas datas</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {carregandoResumoAvaliacoes ? (
+              <p className="text-center py-10 text-gray-400 text-sm">Carregando…</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <MetricCard
+                    icon={<PackageCheck size={20} className="text-navy-600" />}
+                    label="Caixas distribuídas"
+                    value={(resumoAvaliacoes?.caixasDistribuidas ?? 0).toLocaleString('pt-BR')}
+                    sub={
+                      resumoAvaliacoes
+                        ? `${resumoAvaliacoes.pendentes} em avaliação · ${resumoAvaliacoes.concluidas} concluída(s)`
+                        : undefined
+                    }
+                    color="bg-navy-50"
+                  />
+                  <MetricCard
+                    icon={<Archive size={20} className="text-teal-600" />}
+                    label="Processos nessas caixas"
+                    value={(resumoAvaliacoes?.totalProcessos ?? 0).toLocaleString('pt-BR')}
+                    color="bg-teal-50"
+                  />
+                  <MetricCard
+                    icon={<CheckCircle size={20} className="text-green-600" />}
+                    label="Processos já avaliados"
+                    value={(resumoAvaliacoes?.processosAvaliados ?? 0).toLocaleString('pt-BR')}
+                    sub={
+                      resumoAvaliacoes && resumoAvaliacoes.totalProcessos > 0
+                        ? `${Math.round((resumoAvaliacoes.processosAvaliados / resumoAvaliacoes.totalProcessos) * 100)}% do total distribuído`
+                        : undefined
+                    }
+                    color="bg-green-50"
+                  />
+                </div>
+
+                {/* Etapa 3 do plano: gráfico de rosca com o % geral avaliado
+                    (processos avaliados vs. ainda pendentes), para dar o
+                    efeito visual "bonito com percentual" pedido pelo
+                    Sérgio. Os dois números somados aqui já vêm calculados
+                    acima, então não precisa de nenhuma consulta nova. */}
+                {resumoAvaliacoes && resumoAvaliacoes.totalProcessos > 0 && (
+                  <div className="card p-5">
+                    <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Progresso geral de avaliação</h3>
+                    <p className="text-xs text-gray-400 mb-4">
+                      Percentual de processos já avaliados, considerando todas as caixas distribuídas.
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                      <DonutChart
+                        ariaLabel={`${Math.round((resumoAvaliacoes.processosAvaliados / resumoAvaliacoes.totalProcessos) * 100)}% dos processos já avaliados, ${resumoAvaliacoes.processosAvaliados} de ${resumoAvaliacoes.totalProcessos}`}
+                        centerLabel="processos no total"
+                        data={[
+                          { label: 'Avaliados', value: resumoAvaliacoes.processosAvaliados, color: '#16a34a' },
+                          { label: 'Pendentes', value: resumoAvaliacoes.totalProcessos - resumoAvaliacoes.processosAvaliados, color: '#d1d5db' },
+                        ]}
+                      />
+                      <div className="text-center sm:text-left">
+                        <p className="text-4xl font-bold text-green-600 leading-none">
+                          {Math.round((resumoAvaliacoes.processosAvaliados / resumoAvaliacoes.totalProcessos) * 100)}%
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1.5">já avaliado, do total distribuído pelo Protocolo</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="card p-5">
+                  <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Caixas por etapa do ciclo</h3>
+                  <p className="text-xs text-gray-400 mb-3">Todas as caixas do sistema, incluindo o acervo histórico já migrado.</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {(resumoAvaliacoes?.porStatus ?? []).map(s => (
+                      <div key={s.status} className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-3 text-center">
+                        <p className="text-xl font-bold text-gray-900">{s.count.toLocaleString('pt-BR')}</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">{CAIXA_STATUS_LABEL[s.status]}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="card p-5">
+                  <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Desempenho por avaliador</h3>
+                  <p className="text-xs text-gray-400 mb-4">
+                    % de processos já avaliados frente ao que está sob responsabilidade de cada um — do que mais precisa de atenção para o mais adiantado.
+                  </p>
+
+                  {carregandoDesempenho ? (
+                    <p className="text-center py-8 text-gray-400 text-sm">Carregando…</p>
+                  ) : (desempenhoAvaliadores ?? []).length === 0 ? (
+                    <p className="text-center py-8 text-gray-400 text-sm">Nenhum avaliador habilitado ainda.</p>
+                  ) : (
+                    <>
+                      {(() => {
+                        // O gráfico só faz sentido para quem tem caixa sob
+                        // responsabilidade agora (percentual != null) — sem
+                        // isso não há "progresso" nenhum para desenhar uma
+                        // barra. Quem está sem caixa aparece só na tabela.
+                        const comProgresso = (desempenhoAvaliadores ?? []).filter(d => d.percentual !== null)
+                        return comProgresso.length > 0 ? (
+                          <HorizontalProgressChart
+                            ariaLabel={`Percentual avaliado por avaliador: ${comProgresso.map(d => `${d.nome} ${d.percentual}%`).join(', ')}`}
+                            data={comProgresso.map(d => ({ label: d.nome, value: d.percentual as number, color: corDesempenho(d.percentual as number) }))}
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-400">Nenhum avaliador com caixa sob responsabilidade no momento.</p>
+                        )
+                      })()}
+
+                      <div className="mt-5 pt-4 border-t border-gray-100 overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-left text-gray-400">
+                              <th className="font-medium pb-2 pr-3">Avaliador</th>
+                              <th className="font-medium pb-2 pr-3">Caixas sob responsabilidade</th>
+                              <th className="font-medium pb-2 pr-3">Processos atribuídos</th>
+                              <th className="font-medium pb-2 pr-3">Processos avaliados</th>
+                              <th className="font-medium pb-2">% concluído</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(desempenhoAvaliadores ?? []).map(d => (
+                              <tr key={d.id} className="border-t border-gray-100">
+                                <td className="py-2 pr-3 font-medium text-gray-800">{d.nome}</td>
+                                <td className="py-2 pr-3 text-gray-600">{d.caixas}</td>
+                                <td className="py-2 pr-3 text-gray-600">{d.processosAtribuidos}</td>
+                                <td className="py-2 pr-3 text-gray-600">{d.processosAvaliados}</td>
+                                {d.percentual === null ? (
+                                  <td className="py-2 text-gray-400" title="Sem caixa sob responsabilidade no momento">—</td>
+                                ) : (
+                                  <td className="py-2 font-semibold" style={{ color: corDesempenho(d.percentual) }}>{d.percentual}%</td>
+                                )}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="rounded-xl bg-gray-50 border border-gray-100 p-4 flex items-start gap-2.5">
+                  <Construction size={16} className="text-gray-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-gray-500">
+                    Em construção — o gráfico de rosca do percentual geral e o filtro de período chegam nas próximas etapas.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        )
       )}
     </div>
   )

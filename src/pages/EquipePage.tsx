@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserPlus, Mail } from 'lucide-react'
+import { UserPlus, Mail, Plus, Building2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Usuario, Pilar } from '@/lib/database.types'
+import type { Usuario, Pilar, SetorCdtiv } from '@/lib/database.types'
 import clsx from 'clsx'
 
 const PAPEL_LABELS: Record<string, string> = {
@@ -24,6 +24,7 @@ export function EquipePage() {
   const qc = useQueryClient()
   const [showConvite, setShowConvite] = useState(false)
   const [convite, setConvite] = useState({ nome: '', email: '', papel: 'membro', pilar_id: '' })
+  const [novoSetor, setNovoSetor] = useState('')
 
   const { data: usuarios } = useQuery({
     queryKey: ['usuarios'],
@@ -60,6 +61,45 @@ export function EquipePage() {
       qc.invalidateQueries({ queryKey: ['pilares'] })
       qc.invalidateQueries({ queryKey: ['usuarios'] })
     },
+  })
+
+  // Lista oficial de Setores da CDTIV — usada nas telas de Requisições e
+  // Catalogação para que o usuário escolha o setor de origem de uma
+  // lista, em vez de digitar (só digita quando o setor for realmente
+  // novo, o que já o cadastra aqui automaticamente).
+  const { data: setores } = useQuery({
+    queryKey: ['setores-cdtiv-gerenciar'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('setores_cdtiv').select('*').order('sigla')
+      if (error) throw error
+      return (data ?? []) as SetorCdtiv[]
+    },
+  })
+
+  function invalidarSetores() {
+    qc.invalidateQueries({ queryKey: ['setores-cdtiv-gerenciar'] })
+    qc.invalidateQueries({ queryKey: ['setores-disponiveis'] })
+  }
+
+  const adicionarSetor = useMutation({
+    mutationFn: async () => {
+      const sigla = novoSetor.trim().toUpperCase()
+      if (!sigla) return
+      const { error } = await supabase.from('setores_cdtiv').upsert({ sigla, ativo: true }, { onConflict: 'sigla' })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      invalidarSetores()
+      setNovoSetor('')
+    },
+  })
+
+  const alternarSetorAtivo = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase.from('setores_cdtiv').update({ ativo }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: invalidarSetores,
   })
 
   const sendConvite = useMutation({
@@ -120,6 +160,63 @@ export function EquipePage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Setores da CDTIV */}
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Building2 size={18} className="text-gray-400" />
+          <h2 className="font-semibold text-gray-900">Setores da CDTIV</h2>
+        </div>
+        <p className="text-gray-500 text-xs mb-4">
+          Esta é a lista oficial que aparece para escolher em "Setor de origem" nas telas de Requisições e Catalogação. Um setor desativado aqui deixa de aparecer para seleção, mas os processos já cadastrados com ele continuam normalmente.
+        </p>
+
+        {isCoord && (
+          <div className="flex gap-2 mb-4">
+            <input
+              className="input sm:w-56"
+              placeholder="Sigla do novo setor (ex.: NSP)"
+              value={novoSetor}
+              onChange={e => setNovoSetor(e.target.value.toUpperCase())}
+            />
+            <button
+              className="btn-secondary text-sm"
+              onClick={() => adicionarSetor.mutate()}
+              disabled={!novoSetor.trim() || adicionarSetor.isPending}
+            >
+              <Plus size={15} /> Adicionar
+            </button>
+          </div>
+        )}
+
+        {(setores ?? []).length === 0 ? (
+          <p className="text-sm text-gray-400">Nenhum setor cadastrado ainda.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {(setores ?? []).map(s => (
+              <span
+                key={s.id}
+                className={clsx(
+                  'flex items-center gap-2 text-xs font-medium px-2.5 py-1 rounded-full',
+                  s.ativo ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-400 line-through',
+                )}
+              >
+                {s.sigla}
+                {isCoord && (
+                  <button
+                    type="button"
+                    className="no-underline font-normal text-[11px] underline decoration-dotted hover:opacity-70"
+                    onClick={() => alternarSetorAtivo.mutate({ id: s.id, ativo: !s.ativo })}
+                    disabled={alternarSetorAtivo.isPending}
+                  >
+                    {s.ativo ? 'desativar' : 'reativar'}
+                  </button>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Convite form */}

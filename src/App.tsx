@@ -9,7 +9,6 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { MinhaParte } from '@/pages/MinhaParte'
 import { DemandasPage } from '@/pages/DemandasPage'
 import { NovaDemandaPage } from '@/pages/NovaDemandaPage'
-import { RelatoriosPage } from '@/pages/RelatoriosPage'
 import { ConformidadePage } from '@/pages/ConformidadePage'
 import { RiscosPage } from '@/pages/RiscosPage'
 import { EquipePage } from '@/pages/EquipePage'
@@ -20,9 +19,15 @@ import { RevisaoManualPage } from '@/pages/RevisaoManualPage'
 import { BoasPraticasPilarPage } from '@/pages/BoasPraticasPilarPage'
 import { MemoriaPilarPage } from '@/pages/MemoriaPilarPage'
 import { DigitalizacaoPilarPage } from '@/pages/DigitalizacaoPilarPage'
+import { ConfirmarEliminacoesPage } from '@/pages/ConfirmarEliminacoesPage'
+import { RequisicoesAvaliacaoPage } from '@/pages/RequisicoesAvaliacaoPage'
+import { ConferenciaCaixasPage } from '@/pages/ConferenciaCaixasPage'
 import { WelcomePage } from '@/pages/WelcomePage'
 import { ProtocoloGeralPage } from '@/pages/ProtocoloGeralPage'
 import { CentralRelatoriosPage } from '@/pages/CentralRelatoriosPage'
+import { BuscaProcessosPage } from '@/pages/BuscaProcessosPage'
+import { PainelEmprestimosPage } from '@/pages/PainelEmprestimosPage'
+import { CepasCrpasPage } from '@/pages/CepasCrpasPage'
 
 export default function App() {
   return (
@@ -34,11 +39,21 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route index element={<WelcomePage />} />
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.papel === 'apoio_tecnico'} />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+              </Route>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.acesso_busca_emprestimos === true} />}>
+                <Route path="/busca-processos" element={<BuscaProcessosPage />} />
+                <Route path="/painel-emprestimos" element={<PainelEmprestimosPage />} />
+              </Route>
               <Route path="/minha-parte" element={<MinhaParte />} />
               <Route path="/demandas" element={<DemandasPage />} />
               <Route path="/demandas/nova" element={<NovaDemandaPage />} />
-              <Route path="/relatorios" element={<RelatoriosPage />} />
+              {/* /relatorios e /relatorios-equipe viraram abas de /central-relatorios
+                  (plano em claude/plano-central-relatorios.md, Etapa 1) — os
+                  redirecionamentos abaixo evitam quebrar links/favoritos antigos. */}
+              <Route path="/relatorios" element={<Navigate to="/central-relatorios" replace state={{ abaInicial: 'mensais' }} />} />
+              <Route path="/relatorios-equipe" element={<Navigate to="/central-relatorios" replace state={{ abaInicial: 'equipe' }} />} />
               <Route path="/conformidade" element={<ConformidadePage />} />
               <Route path="/riscos" element={<RiscosPage />} />
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
@@ -56,11 +71,21 @@ export default function App() {
                 <Route path="/protocolo-geral/ttd" element={<TtdPage />} />
                 <Route path="/protocolo-geral/revisao" element={<RevisaoManualPage />} />
               </Route>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_confirmar_eliminacoes === true} />}>
+                <Route path="/confirmar-eliminacoes" element={<ConfirmarEliminacoesPage />} />
+              </Route>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_criar_requisicoes === true} />}>
+                <Route path="/requisicoes-avaliacao" element={<RequisicoesAvaliacaoPage />} />
+                <Route path="/conferencia-caixas" element={<ConferenciaCaixasPage />} />
+              </Route>
               <Route path="/pilares/boas-praticas" element={<BoasPraticasPilarPage />} />
               <Route path="/pilares/memoria" element={<MemoriaPilarPage />} />
               <Route path="/pilares/digitalizacao" element={<DigitalizacaoPilarPage />} />
+              {/* Sem RequireAcesso: a página decide internamente o que cada
+                  papel vê (aba "Meus Relatórios Mensais" é aberta a todos). */}
+              <Route path="/central-relatorios" element={<CentralRelatoriosPage />} />
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
-                <Route path="/central-relatorios" element={<CentralRelatoriosPage />} />
+                <Route path="/cepas-crpas" element={<CepasCrpasPage />} />
               </Route>
             </Route>
           </Route>

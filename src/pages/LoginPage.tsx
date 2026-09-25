@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { BookOpen, Lock, Mail } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
 
 interface LoginForm { email: string; password: string }
 
@@ -159,9 +160,7 @@ export function LoginPage() {
           )}
         </div>
 
-        <p className="text-center text-white/30 text-xs mt-6">
-          CDTIV — Cia de Desenvolvimento, Turismo e Inovação de Vitória
-        </p>
+        <img src={CDTIV_LOGO_DARKBG} alt="CDTIV — Cia de Desenvolvimento, Turismo e Inovação de Vitória" className="h-8 w-auto mx-auto mt-6 opacity-70" />
       </div>
     </div>
   )

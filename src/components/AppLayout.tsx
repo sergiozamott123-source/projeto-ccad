@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
-  LayoutDashboard, ListTodo, ClipboardList, FileText, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart,
+  LayoutDashboard, ListTodo, ClipboardList, ShieldAlert,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import type { Usuario } from '@/lib/database.types'
+import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
+import { AlertaRitmoAvaliacao } from '@/components/AlertaRitmoAvaliacao'
 import clsx from 'clsx'
 
 interface NavItem {
@@ -16,18 +18,33 @@ interface NavItem {
   icon: React.ReactNode
   roles?: string[]
   flag?: keyof Usuario
+  novo?: boolean
   children?: { to: string; label: string }[]
 }
 
 const NAV: NavItem[] = [
-  { to: '/dashboard',   label: 'Dashboard',   icon: <LayoutDashboard size={18} /> },
-  { to: '/minha-parte', label: 'Minha Parte',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar'] },
+  { to: '/dashboard',   label: 'Dashboard',   icon: <LayoutDashboard size={18} />, roles: ['coordenador','coordenador_substituto','apoio_tecnico'] },
+  {
+    to: '/busca-processos', label: 'Buscar Processo', icon: <Search size={18} />,
+    roles: ['coordenador', 'coordenador_substituto'], flag: 'acesso_busca_emprestimos',
+  },
+  {
+    to: '/painel-emprestimos', label: 'Painel de Empréstimos', icon: <Clock size={18} />,
+    roles: ['coordenador', 'coordenador_substituto'], flag: 'acesso_busca_emprestimos', novo: true,
+  },
+  { to: '/minha-parte', label: 'Minhas Atribuições',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar','coordenador','coordenador_substituto'] },
+  { to: '/confirmar-eliminacoes', label: 'Confirmar Eliminações', icon: <CheckSquare size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_confirmar_eliminacoes' },
+  { to: '/requisicoes-avaliacao', label: 'Requisições de Avaliação', icon: <Send size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes' },
+  { to: '/conferencia-caixas', label: 'Conferência de Caixas', icon: <PackageCheck size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
   { to: '/demandas',    label: 'Demandas',     icon: <ClipboardList size={18} /> },
-  { to: '/relatorios',  label: 'Relatórios',   icon: <FileText size={18} /> },
+  // Sem "roles": item visível a todos — dentro dele, a aba "Meus Relatórios
+  // Mensais" é aberta a qualquer um, e "Relatórios da Equipe"/"Relatórios
+  // Diversos" só aparecem para quem já é Coordenação (lógica na própria página).
+  { to: '/central-relatorios', label: 'Central de Relatórios', icon: <FileBarChart size={18} /> },
   { to: '/conformidade',label: 'Conformidade', icon: <ShieldAlert size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/riscos',      label: 'Riscos',       icon: <AlertCircle size={18} /> },
   { to: '/equipe',      label: 'Equipe',       icon: <Users size={18} />, roles: ['coordenador','coordenador_substituto'] },
-  { to: '/central-relatorios', label: 'Central de Relatórios', icon: <FileBarChart size={18} />, roles: ['coordenador','coordenador_substituto'] },
+  { to: '/cepas-crpas', label: 'CEPAs e CRPAs', icon: <FileSignature size={18} />, roles: ['coordenador','coordenador_substituto'], novo: true },
   {
     to: '/acervo', label: 'Acervo', icon: <Archive size={18} />,
     roles: ['coordenador', 'coordenador_substituto'],
@@ -57,6 +74,12 @@ export function AppLayout() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   const papel = profile?.papel ?? ''
+  const isCoord = papel === 'coordenador' || papel === 'coordenador_substituto'
+  // Quem tem a permissão individual `pode_confirmar_eliminacoes` (ex.: Ariadne)
+  // enxerga a fila de eliminações inteira, igual ao Coordenador — não só a do
+  // próprio pilar — porque ela faz essa conferência para o Coordenador, não
+  // só pela sua própria área.
+  const podeConfirmarEliminacoes = isCoord || profile?.pode_confirmar_eliminacoes === true
 
   const { data: demandasPendentesCount } = useQuery({
     queryKey: ['demandas-pendentes-count', profile?.id],
@@ -71,10 +94,39 @@ export function AppLayout() {
     enabled: !!profile?.id,
   })
 
+  const { data: eliminacoesPendentesCount } = useQuery({
+    queryKey: ['eliminacoes-pendentes-count', profile?.id, profile?.pilar_id, podeConfirmarEliminacoes],
+    queryFn: async () => {
+      let query = supabase
+        .from('avaliacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'aguardando_confirmacao')
+      if (!podeConfirmarEliminacoes) query = query.eq('pilar_id', profile!.pilar_id)
+      const { count } = await query
+      return count ?? 0
+    },
+    enabled: !!profile?.id && podeConfirmarEliminacoes,
+  })
+
+  const { data: caixasConferenciaPendentesCount } = useQuery({
+    queryKey: ['caixas-conferencia-pendentes-count', profile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('caixas')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'aguardando_conferencia')
+      return count ?? 0
+    },
+    enabled: !!profile?.id && (isCoord || profile?.pode_criar_requisicoes === true),
+  })
+
   function isVisible(item: NavItem) {
-    if (item.flag) return profile?.[item.flag] === true
-    if (!item.roles) return true
-    return item.roles.includes(papel)
+    const roleOk = item.roles ? item.roles.includes(papel) : false
+    const flagOk = item.flag ? profile?.[item.flag] === true : false
+    if (item.roles && item.flag) return roleOk || flagOk
+    if (item.flag) return flagOk
+    if (item.roles) return roleOk
+    return true
   }
 
   async function handleSignOut() {
@@ -100,12 +152,12 @@ export function AppLayout() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-white/10">
-        <BookOpen size={24} className="text-teal-400 shrink-0" />
-        <div>
+      <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-white/10">
+        <div className="flex items-center gap-3 min-w-0">
+          <BookOpen size={24} className="text-teal-400 shrink-0" />
           <p className="font-bold text-white leading-tight">CCAD</p>
-          <p className="text-xs text-white/50 leading-tight">CDTIV</p>
         </div>
+        <img src={CDTIV_LOGO_DARKBG} alt="CDTIV" className="h-7 w-auto shrink-0" />
       </div>
 
       {/* Nav */}
@@ -155,9 +207,24 @@ export function AppLayout() {
             >
               {item.icon}
               <span className="flex-1">{item.label}</span>
+              {item.novo && (
+                <span className="bg-teal-400 text-navy-700 text-[9px] font-bold tracking-wide rounded-full px-1.5 py-0.5">
+                  NOVO
+                </span>
+              )}
               {item.to === '/demandas' && (demandasPendentesCount ?? 0) > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                   {demandasPendentesCount}
+                </span>
+              )}
+              {item.to === '/confirmar-eliminacoes' && (eliminacoesPendentesCount ?? 0) > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {eliminacoesPendentesCount}
+                </span>
+              )}
+              {item.to === '/conferencia-caixas' && (caixasConferenciaPendentesCount ?? 0) > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {caixasConferenciaPendentesCount}
                 </span>
               )}
             </NavLink>
@@ -218,6 +285,12 @@ export function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {/* Alerta de Ritmo de Avaliação (claude/plano-alerta-ritmo-avaliacoes.md)
+              — fica aqui, acima de qualquer página, para aparecer "toda vez
+              que o Sérgio abrir o sistema" como ele pediu, e não só dentro
+              do Dashboard. Só ele decide se aparece (isCoord, dentro do
+              próprio componente) e se já foi visto hoje. */}
+          <AlertaRitmoAvaliacao />
           <Outlet />
         </main>
       </div>

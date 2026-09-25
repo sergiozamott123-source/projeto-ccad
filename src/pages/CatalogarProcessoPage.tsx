@@ -4,11 +4,13 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { ArrowLeft, Search, Star } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { TtdCodigo, Caixa } from '@/lib/database.types'
+import { correspondeBusca } from '@/lib/textSearch'
 import clsx from 'clsx'
 
 interface ProcessoForm {
   caixa_numero: string
   setor: string
+  setorNovo: string
   ano_producao: string
   numero_documento: string
   interessado: string
@@ -19,7 +21,7 @@ interface ProcessoForm {
 export function CatalogarProcessoPage() {
   const navigate = useNavigate()
   const [form, setForm] = useState<ProcessoForm>({
-    caixa_numero: '', setor: '', ano_producao: '',
+    caixa_numero: '', setor: '', setorNovo: '', ano_producao: '',
     numero_documento: '', interessado: '', assunto_processo: '',
     ttd_codigo_id: '',
   })
@@ -29,20 +31,40 @@ export function CatalogarProcessoPage() {
   const [potencialExpositivo, setPotencialExpositivo] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const { data: ttdResults } = useQuery({
-    queryKey: ['ttd-search', ttdSearch],
+  const setorEfetivo = (form.setor === '__novo__' ? form.setorNovo : form.setor).trim()
+
+  // Lista oficial de setores da CDTIV — cadastrada em Equipe & Responsáveis.
+  const { data: setoresExistentes } = useQuery({
+    queryKey: ['setores-disponiveis'],
     queryFn: async () => {
-      if (ttdSearch.length < 2) return []
+      const { data, error } = await supabase.from('setores_cdtiv').select('sigla').eq('ativo', true).order('sigla')
+      if (error) throw error
+      return (data ?? []).map(s => s.sigla)
+    },
+  })
+
+  // Busca a tabela vigente inteira uma única vez e filtra no navegador —
+  // isso permite uma busca tolerante a acento e à ordem das palavras
+  // (ver src/lib/textSearch.ts), o que a busca "ilike" direto no banco
+  // não conseguia fazer (por isso vários assuntos conhecidos não
+  // apareciam nas buscas).
+  const { data: ttdTodos } = useQuery({
+    queryKey: ['ttd-codigos-vigentes'],
+    queryFn: async () => {
       const { data } = await supabase
         .from('ttd_codigos')
         .select('*')
-        .or(`codigo.ilike.%${ttdSearch}%,assunto.ilike.%${ttdSearch}%,serie.ilike.%${ttdSearch}%`)
-        .in('status', ['vigente', 'proposta'])
-        .limit(12)
+        .eq('status', 'vigente') // só código já em vigor pode classificar processo — "proposta" ainda não foi aprovado
+        .order('codigo')
       return (data ?? []) as TtdCodigo[]
     },
-    enabled: ttdSearch.length >= 2,
   })
+
+  const ttdResults = ttdSearch.length >= 2
+    ? (ttdTodos ?? [])
+        .filter(t => correspondeBusca(`${t.codigo} ${t.serie} ${t.assunto}`, ttdSearch))
+        .slice(0, 12)
+    : []
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -63,6 +85,15 @@ export function CatalogarProcessoPage() {
 
   const save = useMutation({
     mutationFn: async () => {
+      // Se o setor escolhido for realmente novo, registra na lista
+      // oficial agora, para já aparecer pronto para seleção depois.
+      if (setorEfetivo) {
+        const { error: eSetor } = await supabase
+          .from('setores_cdtiv')
+          .upsert({ sigla: setorEfetivo }, { onConflict: 'sigla', ignoreDuplicates: true })
+        if (eSetor) throw eSetor
+      }
+
       // Upsert caixa
       let caixaId: string
       const { data: existing } = await supabase
@@ -76,7 +107,7 @@ export function CatalogarProcessoPage() {
       } else {
         const { data: newCaixa, error } = await supabase
           .from('caixas')
-          .insert({ numero: form.caixa_numero, setor: form.setor } as Partial<Caixa>)
+          .insert({ numero: form.caixa_numero, setor: setorEfetivo || null } as Partial<Caixa>)
           .select('id')
           .single()
         if (error) throw error
@@ -89,6 +120,7 @@ export function CatalogarProcessoPage() {
         numero_documento: form.numero_documento,
         interessado: form.interessado,
         assunto_processo: form.assunto_processo,
+        setor_origem: setorEfetivo || null,
         ano_producao: form.ano_producao ? +form.ano_producao : null,
         requer_revisao_manual: !form.ttd_codigo_id,
         potencial_expositivo: potencialExpositivo,
@@ -120,7 +152,21 @@ export function CatalogarProcessoPage() {
           </div>
           <div>
             <label className="label">Setor</label>
-            <input className="input" value={form.setor} onChange={e => setForm(v => ({ ...v, setor: e.target.value }))} />
+            <select className="input" value={form.setor} onChange={e => setForm(v => ({ ...v, setor: e.target.value }))}>
+              <option value="">Selecione…</option>
+              {(setoresExistentes ?? []).map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+              <option value="__novo__">+ Novo setor…</option>
+            </select>
+            {form.setor === '__novo__' && (
+              <input
+                className="input mt-1.5"
+                placeholder="Sigla do setor (ex.: NSP)"
+                value={form.setorNovo}
+                onChange={e => setForm(v => ({ ...v, setorNovo: e.target.value.toUpperCase() }))}
+              />
+            )}
           </div>
           <div>
             <label className="label">Ano de produção</label>

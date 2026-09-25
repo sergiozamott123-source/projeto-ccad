@@ -12,7 +12,7 @@ export type StatusConsultoriaMemorial = 'a_contratar' | 'contratado' | 'concluid
 export type StatusLicitacaoDigitalizacao =
   | 'a_iniciar' | 'tr_em_validacao' | 'licitacao_aberta' | 'contratado' | 'em_execucao'
 export type TipoMuralEvento =
-  | 'atividade_concluida' | 'ata_registrada' | 'indicador_lancado' | 'demanda_concluida' | 'fase_concluida'
+  | 'atividade_concluida' | 'ata_registrada' | 'indicador_lancado' | 'demanda_concluida' | 'fase_concluida' | 'caixa_arquivada'
 
 export interface Usuario {
   id: string
@@ -22,6 +22,10 @@ export interface Usuario {
   pilar_id: string | null
   status: StatusUsuario
   acesso_protocolo_geral: boolean
+  pode_avaliar_processos: boolean
+  pode_criar_requisicoes: boolean
+  acesso_busca_emprestimos: boolean
+  pode_confirmar_eliminacoes: boolean
 }
 
 export interface Pilar {
@@ -83,6 +87,10 @@ export interface RelatorioMensal {
   status: StatusRelatorio
   enviado_em: string | null
   demandas_relacionadas: string[]
+  processos_avaliados_qtd: number
+  processos_avaliados_numeros: string[]
+  requisicoes_emitidas_qtd: number
+  requisicoes_emitidas_caixas: string[]
   usuario?: Usuario
   pilar?: Pilar
 }
@@ -116,12 +124,28 @@ export interface TtdCodigo {
   vigente_desde: string | null
 }
 
+export type StatusCaixa = 'catalogada' | 'em_avaliacao' | 'aguardando_conferencia' | 'arquivada'
+
 export interface Caixa {
   id: string
   numero: string
+  // Número físico da caixa (o escrito na etiqueta dela e usado no
+  // controle do Protocolo, ex.: "280") — distinto de `numero`, que é o
+  // código interno gerado pelo sistema (ex.: "CX003"). Adicionado na
+  // Fase 20; fica `null` para caixas sem planilha de origem.
+  // Ver migracao_fase20_numero_fisico_caixa.sql.
+  numero_fisico?: string | null
   setor: string
-  status: string
+  status: StatusCaixa
+  quantidade_declarada: number | null
+  conferido_por: string | null
+  conferido_em: string | null
+  conferidor?: Usuario
 }
+
+export type Interessado = 'CDTIV' | 'PMV'
+
+export type StatusEmprestimoProcesso = 'arquivado' | 'emprestado'
 
 export interface Processo {
   id: string
@@ -130,21 +154,119 @@ export interface Processo {
   numero_documento: string
   interessado: string
   assunto_processo: string
+  setor_origem: string | null
   ano_producao: number
+  ano_producao_complemento: string | null
+  observacao_intake: string | null
+  data_ultima_movimentacao: string | null
+  sem_data_ultima_movimentacao: boolean
   requer_revisao_manual: boolean
   potencial_expositivo: boolean
+  status_emprestimo: StatusEmprestimoProcesso
   created_at: string
   caixa?: Caixa
   ttd?: TtdCodigo
+  avaliacoes?: Avaliacao[]
+  emprestimos?: Emprestimo[]
 }
+
+export type StatusAvaliacao = 'aguardando_confirmacao' | 'confirmada' | 'devolvida'
 
 export interface Avaliacao {
   id: string
   processo_id: string
   avaliado_por: string
   decisao: string
-  ata_referencia: string
+  ata_referencia: string | null
+  status: StatusAvaliacao
+  motivo_devolucao: string | null
+  confirmado_por: string | null
+  confirmado_em: string | null
+  pilar_id: string | null
+  codigo_original_id: string | null
   created_at: string
+  processo?: Processo
+  avaliador?: Usuario
+  confirmador?: Usuario
+}
+
+export type StatusRequisicaoAvaliacao = 'pendente' | 'concluida' | 'cancelada'
+
+export interface RequisicaoAvaliacao {
+  id: string
+  caixa_id: string
+  avaliador_id: string
+  criado_por: string
+  status: StatusRequisicaoAvaliacao
+  data_entrega: string
+  created_at: string
+  concluida_em: string | null
+  caixa?: Caixa
+  avaliador?: Usuario
+  criador?: Usuario
+}
+
+// CEPA/CRPA (Fase 21) — ver migracao_fase21_cepa_crpa.sql.
+// numero_sequencial e ano são preenchidos sozinhos pelo banco (gatilho
+// no INSERT) — a tela nunca informa esses dois campos.
+export interface Cepa {
+  id: string
+  numero_sequencial: number
+  ano: number
+  requisicao_avaliacao_id: string
+  caixa_id: string
+  avaliador_id: string
+  gerado_por: string
+  gerado_em: string
+  declaracao: string
+  created_at: string
+  caixa?: Caixa
+  avaliador?: Usuario
+  gerador?: Usuario
+  crpa?: Crpa | null
+}
+
+export interface Crpa {
+  id: string
+  numero_sequencial: number
+  ano: number
+  cepa_id: string
+  avaliador_id: string
+  confirmado_em: string
+  declaracao: string
+  created_at: string
+  cepa?: Cepa
+  avaliador?: Usuario
+}
+
+export interface Emprestimo {
+  id: string
+  processo_id: string
+  solicitante_nome: string
+  solicitante_matricula: string
+  protocolista_id: string
+  desarquivado_em: string
+  prazo_previsto: string
+  devolvido_em: string | null
+  recebido_por_id: string | null
+  declaracao_retirada_url: string | null
+  declaracao_devolucao_url: string | null
+  created_at: string
+  processo?: Processo
+  protocolista?: Usuario
+  recebido_por?: Usuario
+  prorrogacoes?: EmprestimoProrrogacao[]
+}
+
+export interface EmprestimoProrrogacao {
+  id: string
+  emprestimo_id: string
+  prazo_anterior: string
+  prazo_novo: string
+  motivo: string | null
+  autorizado_por_id: string
+  created_at: string
+  autorizado_por?: Usuario
 }
 
 export interface PropostaRevisaoTtd {
@@ -269,6 +391,13 @@ export interface RelatorioSalvo {
   created_at: string
 }
 
+export interface SetorCdtiv {
+  id: string
+  sigla: string
+  ativo: boolean
+  criado_em: string
+}
+
 // Supabase DB type wrapper (for createClient generic)
 export interface Database {
   public: {
@@ -284,6 +413,11 @@ export interface Database {
       caixas: { Row: Caixa; Insert: Partial<Caixa>; Update: Partial<Caixa> }
       processos: { Row: Processo; Insert: Partial<Processo>; Update: Partial<Processo> }
       avaliacoes: { Row: Avaliacao; Insert: Partial<Avaliacao>; Update: Partial<Avaliacao> }
+      emprestimos: { Row: Emprestimo; Insert: Partial<Emprestimo>; Update: Partial<Emprestimo> }
+      emprestimo_prorrogacoes: { Row: EmprestimoProrrogacao; Insert: Partial<EmprestimoProrrogacao>; Update: Partial<EmprestimoProrrogacao> }
+      requisicoes_avaliacao: { Row: RequisicaoAvaliacao; Insert: Partial<RequisicaoAvaliacao>; Update: Partial<RequisicaoAvaliacao> }
+      cepas: { Row: Cepa; Insert: Partial<Cepa>; Update: Partial<Cepa> }
+      crpas: { Row: Crpa; Insert: Partial<Crpa>; Update: Partial<Crpa> }
       propostas_revisao_ttd: { Row: PropostaRevisaoTtd; Insert: Partial<PropostaRevisaoTtd>; Update: Partial<PropostaRevisaoTtd> }
       reunioes_atas: { Row: ReuniaoAta; Insert: Partial<ReuniaoAta>; Update: Partial<ReuniaoAta> }
       departamentos_mapeados: { Row: DepartamentoMapeado; Insert: Partial<DepartamentoMapeado>; Update: Partial<DepartamentoMapeado> }

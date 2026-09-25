@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import type { Processo, TtdCodigo } from '@/lib/database.types'
 import { correspondeBusca } from '@/lib/textSearch'
 
+
 // Busca/seleção de um código TTD vigente — reaproveitada tanto na
 // classificação de um processo por vez quanto na classificação em lote
 // (várias caixas de "Avulsos" recebem sempre o mesmo código, então repetir
@@ -62,6 +63,8 @@ function TtdBusca({
   )
 }
 
+
+
 export function RevisaoManualPage() {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
@@ -102,6 +105,12 @@ export function RevisaoManualPage() {
       return (data ?? []) as TtdCodigo[]
     },
   })
+
+  const ttdResults = ttdSearch.length >= 2
+    ? (ttdTodos ?? [])
+        .filter(t => correspondeBusca(`${t.codigo} ${t.assunto}`, ttdSearch))
+        .slice(0, 8)
+    : []
 
   const classify = useMutation({
     mutationFn: async ({ processoId, ttdId }: { processoId: string; ttdId: string }) => {
