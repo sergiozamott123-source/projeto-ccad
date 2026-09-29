@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, Undo2, ChevronDown, ChevronUp, PencilLine, History } from 'lucide-react'
+import { CheckCircle, Undo2, ChevronDown, ChevronUp, PencilLine, History, CheckSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
@@ -43,6 +43,24 @@ export function ConfirmarEliminacoesPage() {
   const [corrigindoId, setCorrigindoId] = useState<string | null>(null)
   const [novoTtd, setNovoTtd] = useState<TtdCodigo | null>(null)
   const [mostrarHistorico, setMostrarHistorico] = useState(false)
+
+  // Seleção em lote — mesmo padrão já usado na Fila de Revisão Manual:
+  // marca vários itens pendentes (ex.: todos do mesmo assunto/tema) e
+  // confirma todos de uma vez, em vez de um por um.
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+
+  function alternarSelecionado(id: string, marcar: boolean) {
+    setSelecionados(prev => {
+      const novo = new Set(prev)
+      if (marcar) novo.add(id)
+      else novo.delete(id)
+      return novo
+    })
+  }
+
+  function alternarSelecionarTodos(marcar: boolean) {
+    setSelecionados(marcar ? new Set((pendentes ?? []).map(p => p.id)) : new Set())
+  }
 
   function abrirDevolver(id: string) {
     setDevolvendoId(devolvendoId === id ? null : id)
@@ -154,7 +172,27 @@ export function ConfirmarEliminacoesPage() {
         .eq('id', id)
       if (error) throw error
     },
-    onSuccess: invalidar,
+    onSuccess: (_data, id) => {
+      invalidar()
+      alternarSelecionado(id, false)
+    },
+  })
+
+  // Confirma em lote — mesma ação de "Confirmar" de cada item, aplicada de
+  // uma vez a todos os ids marcados (não muda código nem grava motivo,
+  // é só a confirmação "como está", igual à individual).
+  const confirmarLote = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase
+        .from('avaliacoes')
+        .update({ status: 'confirmada', confirmado_por: profile!.id, confirmado_em: new Date().toISOString() })
+        .in('id', ids)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      invalidar()
+      setSelecionados(new Set())
+    },
   })
 
   const devolver = useMutation({
@@ -165,10 +203,11 @@ export function ConfirmarEliminacoesPage() {
         .eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => {
+    onSuccess: (_data, { id }) => {
       invalidar()
       setDevolvendoId(null)
       setMotivo('')
+      alternarSelecionado(id, false)
     },
   })
 
@@ -198,10 +237,11 @@ export function ConfirmarEliminacoesPage() {
         .eq('id', avaliacao.id)
       if (e2) throw e2
     },
-    onSuccess: () => {
+    onSuccess: (_data, { avaliacao }) => {
       invalidar()
       setCorrigindoId(null)
       setNovoTtd(null)
+      alternarSelecionado(avaliacao.id, false)
     },
   })
 
@@ -231,6 +271,34 @@ export function ConfirmarEliminacoesPage() {
         </div>
       </div>
 
+      {/* Barra de confirmação em lote — aparece assim que algum item é marcado */}
+      {selecionados.size > 0 && (
+        <div className="card p-3 sm:p-4 bg-teal-50 border-teal-200 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-teal-800 font-medium">
+            {selecionados.size} eliminação(ões) selecionada(s) para confirmar como estão
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn-secondary text-xs py-1.5 px-3"
+              onClick={() => setSelecionados(new Set())}
+            >
+              Limpar seleção
+            </button>
+            <button
+              className="btn-primary text-xs py-1.5 px-3"
+              disabled={confirmarLote.isPending}
+              onClick={() => confirmarLote.mutate(Array.from(selecionados))}
+            >
+              <CheckSquare size={13} />
+              {confirmarLote.isPending
+                ? 'Confirmando…'
+                : `Confirmar ${selecionados.size} eliminação(ões)`}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="card p-2 sm:p-4">
         {isLoading ? (
           <p className="text-center py-10 text-gray-400">Carregando…</p>
@@ -241,10 +309,26 @@ export function ConfirmarEliminacoesPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
+            <label className="flex items-center gap-2 py-2 px-2 text-xs text-gray-500 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selecionados.size > 0 && selecionados.size === (pendentes ?? []).length}
+                onChange={e => alternarSelecionarTodos(e.target.checked)}
+              />
+              Selecionar todos os {(pendentes ?? []).length} pendente(s)
+            </label>
             {(pendentes ?? []).map(p => (
               <div key={p.id} className="py-4 px-2">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      className="mt-1 shrink-0"
+                      checked={selecionados.has(p.id)}
+                      onChange={e => alternarSelecionado(p.id, e.target.checked)}
+                      aria-label={`Selecionar eliminação ${p.processo?.numero_documento ?? p.id}`}
+                    />
+                    <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
                       <span className="font-mono font-semibold text-gray-900 text-sm">{p.processo?.numero_documento}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Eliminação</span>
@@ -256,6 +340,7 @@ export function ConfirmarEliminacoesPage() {
                     <p className="text-xs text-gray-400 mt-0.5">
                       Avaliado por {p.avaliador?.nome ?? '—'} · {format(new Date(p.created_at), 'dd/MM HH:mm')}
                     </p>
+                    </div>
                   </div>
                   <div className="flex gap-2 shrink-0">
                     <button
