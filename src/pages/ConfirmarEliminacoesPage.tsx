@@ -44,6 +44,10 @@ export function ConfirmarEliminacoesPage() {
   const [novoTtd, setNovoTtd] = useState<TtdCodigo | null>(null)
   const [mostrarHistorico, setMostrarHistorico] = useState(false)
 
+  // Código escolhido para a correção em lote (quando várias eliminações
+  // selecionadas devem receber o mesmo código novo de uma vez).
+  const [ttdLote, setTtdLote] = useState<TtdCodigo | null>(null)
+
   // Seleção em lote — mesmo padrão já usado na Fila de Revisão Manual:
   // marca vários itens pendentes (ex.: todos do mesmo assunto/tema) e
   // confirma todos de uma vez, em vez de um por um.
@@ -245,6 +249,48 @@ export function ConfirmarEliminacoesPage() {
     },
   })
 
+  // Corrige em lote — mesma lógica da correção individual (troca o código do
+  // processo, ajusta a decisão e confirma), só que aplicada de uma vez a
+  // todas as eliminações marcadas que vão receber o MESMO código novo. Cada
+  // avaliação guarda o próprio código original em `codigo_original_id` (pode
+  // ser um código diferente para cada uma), por isso a parte de `avaliacoes`
+  // é feita item a item, em paralelo — só a atualização do código do
+  // processo é que sai numa única chamada, porque aí o valor novo é igual
+  // para todos.
+  const corrigirLote = useMutation({
+    mutationFn: async ({ avaliacoes, ttd }: { avaliacoes: AvaliacaoFila[]; ttd: TtdCodigo }) => {
+      const processoIds = Array.from(new Set(
+        avaliacoes.filter(a => a.processo?.ttd?.id !== ttd.id).map(a => a.processo_id)
+      ))
+      if (processoIds.length > 0) {
+        const { error: e1 } = await supabase
+          .from('processos')
+          .update({ ttd_codigo_id: ttd.id })
+          .in('id', processoIds)
+        if (e1) throw e1
+      }
+      const resultados = await Promise.all(avaliacoes.map(avaliacao =>
+        supabase
+          .from('avaliacoes')
+          .update({
+            status: 'confirmada',
+            decisao: ttd.destinacao_final,
+            confirmado_por: profile!.id,
+            confirmado_em: new Date().toISOString(),
+            codigo_original_id: avaliacao.processo?.ttd?.id ?? null,
+          })
+          .eq('id', avaliacao.id)
+      ))
+      const comErro = resultados.find(r => r.error)
+      if (comErro?.error) throw comErro.error
+    },
+    onSuccess: () => {
+      invalidar()
+      setSelecionados(new Set())
+      setTtdLote(null)
+    },
+  })
+
   if (!profile) return null
 
   return (
@@ -271,30 +317,57 @@ export function ConfirmarEliminacoesPage() {
         </div>
       </div>
 
-      {/* Barra de confirmação em lote — aparece assim que algum item é marcado */}
+      {/* Barra de ações em lote — aparece assim que algum item é marcado.
+          Duas opções: confirmar todas "como estão" (mesmo código de cada
+          uma), ou corrigir todas de uma vez para um único código novo
+          (quando os selecionados são do mesmo assunto/tema). */}
       {selecionados.size > 0 && (
-        <div className="card p-3 sm:p-4 bg-teal-50 border-teal-200 flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-sm text-teal-800 font-medium">
-            {selecionados.size} eliminação(ões) selecionada(s) para confirmar como estão
-          </p>
-          <div className="flex items-center gap-2">
+        <div className="card p-3 sm:p-4 bg-teal-50 border-teal-200 space-y-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <p className="text-sm text-teal-800 font-medium">
+              {selecionados.size} eliminação(ões) selecionada(s)
+            </p>
             <button
               type="button"
               className="btn-secondary text-xs py-1.5 px-3"
-              onClick={() => setSelecionados(new Set())}
+              onClick={() => { setSelecionados(new Set()); setTtdLote(null) }}
             >
               Limpar seleção
             </button>
+          </div>
+
+          <button
+            className="btn-primary text-xs py-1.5 px-3"
+            disabled={confirmarLote.isPending}
+            onClick={() => confirmarLote.mutate(Array.from(selecionados))}
+          >
+            <CheckSquare size={13} />
+            {confirmarLote.isPending
+              ? 'Confirmando…'
+              : `Confirmar ${selecionados.size} eliminação(ões) como estão`}
+          </button>
+
+          <div className="pt-3 border-t border-teal-200">
+            <label className="label text-teal-800">
+              Ou corrigir todas as {selecionados.size} selecionadas para o mesmo código:
+            </label>
+            <TtdCodigoPicker value={ttdLote} onSelect={setTtdLote} />
             <button
-              className="btn-primary text-xs py-1.5 px-3"
-              disabled={confirmarLote.isPending}
-              onClick={() => confirmarLote.mutate(Array.from(selecionados))}
+              className="btn-primary text-xs py-1.5 px-3 mt-2"
+              disabled={!ttdLote || corrigirLote.isPending}
+              onClick={() => {
+                const avaliacoesSelecionadas = (pendentes ?? []).filter(p => selecionados.has(p.id))
+                corrigirLote.mutate({ avaliacoes: avaliacoesSelecionadas, ttd: ttdLote! })
+              }}
             >
-              <CheckSquare size={13} />
-              {confirmarLote.isPending
-                ? 'Confirmando…'
-                : `Confirmar ${selecionados.size} eliminação(ões)`}
+              <PencilLine size={13} />
+              {corrigirLote.isPending
+                ? 'Corrigindo…'
+                : `Corrigir ${selecionados.size} eliminação(ões) para este código`}
             </button>
+            {corrigirLote.isError && (
+              <p className="mt-2 text-xs text-red-600">Não foi possível salvar a correção em lote. Tente novamente.</p>
+            )}
           </div>
         </div>
       )}
