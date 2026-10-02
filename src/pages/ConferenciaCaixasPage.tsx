@@ -54,34 +54,97 @@ export function ConferenciaCaixasPage() {
     },
   })
 
-  const { data: sugestoes } = useQuery({
-    queryKey: ['numeros-sugeridos', (caixas ?? []).length],
+  // Segurança na numeração (pedido do Sérgio, 02/10/2026): antes, cada
+  // caixa pendente chamava sugerir_numero_caixa_final() por conta própria
+  // e todas recebiam a MESMA resposta (porque nenhuma tinha sido
+  // confirmada ainda, então o "maior número já usado" no banco não mudava
+  // entre uma chamada e outra) — risco real de duas caixas serem
+  // arquivadas com o mesmo número final.
+  //
+  // Agora a sugestão do banco é buscada só uma vez (uma única base), e a
+  // partir dela cada caixa pendente na tela recebe um número sequencial
+  // diferente (base, base+1, base+2, ...). Além disso, ao calcular a
+  // próxima sugestão nunca ignoramos os números que JÁ estão sendo
+  // mostrados na tela para outras caixas ainda não confirmadas — isso
+  // evita repetir um número mesmo que o banco ainda não saiba dele.
+  const { data: sugestaoBase } = useQuery({
+    queryKey: ['numero-sugerido-base', (caixas ?? []).map(c => c.id).join(',')],
     queryFn: async () => {
-      const resultados: Record<string, string> = {}
-      for (const c of caixas ?? []) {
-        if (numeroFinal[c.id]) continue
-        const { data } = await supabase.rpc('sugerir_numero_caixa_final')
-        if (data) resultados[c.id] = data as string
-      }
-      return resultados
+      const { data } = await supabase.rpc('sugerir_numero_caixa_final')
+      return (data as string | null) ?? null
     },
     enabled: (caixas ?? []).length > 0,
   })
 
   useEffect(() => {
-    if (!sugestoes) return
-    setNumeroFinal(prev => ({ ...sugestoes, ...prev }))
-  }, [sugestoes])
+    if (!caixas || sugestaoBase === undefined) return
+    setNumeroFinal(prev => {
+      const faltantes = caixas.filter(c => !prev[c.id])
+      if (faltantes.length === 0) return prev
+
+      const numerosNaTela = Object.values(prev)
+        .map(Number)
+        .filter(n => Number.isFinite(n))
+      const baseRpc = sugestaoBase != null ? Number(sugestaoBase) : NaN
+      // Começa do maior entre: o que o banco sugeriu, e "1 a mais" que
+      // qualquer número já exibido na tela (ainda não salvo).
+      const candidatos = [baseRpc, ...numerosNaTela.map(n => n + 1)].filter(Number.isFinite)
+      let proximo = candidatos.length > 0 ? Math.max(...candidatos) : null
+
+      const atualizado = { ...prev }
+      for (const c of faltantes) {
+        if (proximo !== null) {
+          atualizado[c.id] = String(proximo)
+          proximo += 1
+        } else if (sugestaoBase) {
+          // Sugestão do banco não é um número puro (caso raro) — não dá
+          // para somar sequencialmente; preenche só com o valor bruto e
+          // deixa o Protocolo ajustar à mão se precisar repetir.
+          atualizado[c.id] = sugestaoBase
+        }
+      }
+      return atualizado
+    })
+  }, [sugestaoBase, caixas])
 
   const confirmar = useMutation({
     mutationFn: async (caixaId: string) => {
       const numero = (numeroFinal[caixaId] ?? '').trim()
       if (!numero || !profile) throw new Error('Informe o número da caixa no Arquivo Geral.')
+
+      // 1ª camada de segurança: confere ANTES de salvar se esse número já
+      // não está em uso por outra caixa já arquivada — cobre o caso de
+      // alguém digitar um número manualmente por engano, mesmo com a
+      // sugestão automática já sendo sequencial.
+      const { data: existente, error: erroConsulta } = await supabase
+        .from('caixas')
+        .select('id')
+        .eq('numero', numero)
+        .eq('status', 'arquivada')
+        .neq('id', caixaId)
+        .maybeSingle()
+      if (erroConsulta) throw erroConsulta
+      if (existente) {
+        throw new Error(`O número ${numero} já está sendo usado por outra caixa arquivada. Escolha outro número.`)
+      }
+
       const { error } = await supabase
         .from('caixas')
         .update({ numero, status: 'arquivada', conferido_por: profile.id })
         .eq('id', caixaId)
-      if (error) throw error
+      if (error) {
+        // 2ª camada de segurança (trava do próprio banco, ver
+        // migracao_trava_numero_caixa_unico.sql): código 23505 é a
+        // recusa por violação de unicidade — acontece no caso raro de
+        // duas pessoas confirmarem o mesmo número quase ao mesmo tempo,
+        // que a checagem acima sozinha não consegue pegar.
+        if ((error as any).code === '23505') {
+          throw new Error(
+            `O número ${numero} acabou de ser usado por outra caixa (confirmada agora mesmo por outra pessoa). Escolha outro número.`,
+          )
+        }
+        throw error
+      }
     },
     onSuccess: (_data, caixaId) => {
       qc.invalidateQueries({ queryKey: ['caixas-aguardando-conferencia'] })
