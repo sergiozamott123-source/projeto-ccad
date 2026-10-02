@@ -22,6 +22,7 @@ import { DigitalizacaoPilarPage } from '@/pages/DigitalizacaoPilarPage'
 import { ConfirmarEliminacoesPage } from '@/pages/ConfirmarEliminacoesPage'
 import { RequisicoesAvaliacaoPage } from '@/pages/RequisicoesAvaliacaoPage'
 import { ConferenciaCaixasPage } from '@/pages/ConferenciaCaixasPage'
+import { FluxoCaixasPage } from '@/pages/FluxoCaixasPage'
 import { WelcomePage } from '@/pages/WelcomePage'
 import { ProtocoloGeralPage } from '@/pages/ProtocoloGeralPage'
 import { CentralRelatoriosPage } from '@/pages/CentralRelatoriosPage'
@@ -77,6 +78,7 @@ export default function App() {
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_criar_requisicoes === true} />}>
                 <Route path="/requisicoes-avaliacao" element={<RequisicoesAvaliacaoPage />} />
                 <Route path="/conferencia-caixas" element={<ConferenciaCaixasPage />} />
+                <Route path="/fluxo-caixas" element={<FluxoCaixasPage />} />
               </Route>
               <Route path="/pilares/boas-praticas" element={<BoasPraticasPilarPage />} />
               <Route path="/pilares/memoria" element={<MemoriaPilarPage />} />
