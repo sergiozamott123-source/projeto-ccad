@@ -30,7 +30,7 @@ export function ConferenciaCaixasPage() {
   const [numeroFinal, setNumeroFinal] = useState<Record<string, string>>({})
   const [erro, setErro] = useState<Record<string, string>>({})
 
-  const { data: caixas, isLoading } = useQuery({
+  const { data: caixas, isLoading, isError, error: erroCaixas } = useQuery({
     queryKey: ['caixas-aguardando-conferencia'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -100,6 +100,14 @@ export function ConferenciaCaixasPage() {
       <div className="card p-2 sm:p-4">
         {isLoading ? (
           <p className="text-center py-10 text-gray-400">Carregando…</p>
+        ) : isError ? (
+          <div className="text-center py-10">
+            <AlertTriangle size={36} className="text-red-400 mx-auto mb-2" />
+            <p className="text-red-600 text-sm font-medium">Não foi possível carregar as caixas.</p>
+            <p className="text-gray-400 text-xs mt-1">
+              {(erroCaixas as any)?.message || 'Erro desconhecido ao consultar o banco de dados.'}
+            </p>
+          </div>
         ) : (caixas ?? []).length === 0 ? (
           <div className="text-center py-10">
             <PackageCheck size={36} className="text-teal-400 mx-auto mb-2" />
