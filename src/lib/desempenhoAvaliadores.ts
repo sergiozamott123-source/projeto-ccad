@@ -162,7 +162,10 @@ const META_POR_CICLO = 20 // pontos percentuais esperados a cada ciclo de DIAS_P
 // urgente que um simples "abaixo do ritmo", e que motivou tanto o destaque
 // reforçado no Alerta de Ritmo (para o Coordenador) quanto o lembrete
 // pessoal mostrado ao próprio avaliador (AlertaAvaliacaoPessoal.tsx).
-const DIAS_ALERTA_ZERADO = 15
+// Ajustado de 15 para 10 dias a pedido do Sérgio (02/10/2026, mesmo dia),
+// depois de ver a tela em produção — fácil de ajustar de novo se ele
+// preferir outro número.
+const DIAS_ALERTA_ZERADO = 10
 
 export interface StatusRitmoAvaliador extends DesempenhoAvaliador {
   /** Dias corridos desde a caixa mais antiga ativa; null se não há caixa ativa. */
