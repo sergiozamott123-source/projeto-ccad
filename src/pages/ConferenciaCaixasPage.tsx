@@ -11,7 +11,16 @@ type ProcessoConferencia = {
   numero_documento: string
   assunto_processo: string | null
   setor_origem: string | null
-  avaliacoes: { decisao: string; status: string; ttd: { codigo: string; assunto: string } | null }[]
+  // ttd_codigo_id é coluna de `processos`, não de `avaliacoes` (ver
+  // database.types.ts) — por isso o ttd é embedado aqui, como irmão de
+  // `avaliacoes`, e não dentro dela. Corrigido em 02/10/2026: a consulta
+  // antiga pedia `avaliacoes(... ttd:ttd_codigo_id(...))`, uma relação que
+  // nunca existiu, e por isso o PostgREST sempre recusava essa consulta —
+  // para QUALQUER usuário, não só a Ariadne. Esse erro, antes, ficava
+  // escondido porque a tela só verificava "lista vazia", nunca "deu erro"
+  // (ver isError abaixo), então aparentava só "nenhuma caixa pendente".
+  ttd: { codigo: string; assunto: string } | null
+  avaliacoes: { decisao: string; status: string }[]
 }
 
 type CaixaConferencia = Caixa & {
@@ -36,7 +45,7 @@ export function ConferenciaCaixasPage() {
       const { data, error } = await supabase
         .from('caixas')
         .select(
-          '*, requisicoes_avaliacao(*, avaliador:avaliador_id(nome)), processos(id, numero_documento, assunto_processo, setor_origem, avaliacoes(decisao, status, ttd:ttd_codigo_id(codigo, assunto)))',
+          '*, requisicoes_avaliacao(*, avaliador:avaliador_id(nome)), processos(id, numero_documento, assunto_processo, setor_origem, ttd:ttd_codigo_id(codigo, assunto), avaliacoes(decisao, status))',
         )
         .eq('status', 'aguardando_conferencia')
         .order('created_at', { ascending: true, referencedTable: 'requisicoes_avaliacao' })
@@ -184,7 +193,7 @@ export function ConferenciaCaixasPage() {
                               {p.assunto_processo && <span className="text-gray-500 ml-2 truncate">{p.assunto_processo}</span>}
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className="font-mono text-gray-700">{aval?.ttd?.codigo ?? '—'}</span>
+                              <span className="font-mono text-gray-700">{p.ttd?.codigo ?? '—'}</span>
                               <span
                                 className={
                                   'px-2 py-0.5 rounded-full font-medium ' +
