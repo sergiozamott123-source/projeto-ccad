@@ -62,34 +62,78 @@ export function AlertaRitmoAvaliacao() {
 
   if (!isCoord || !visivel || !atrasados || atrasados.length === 0) return null
 
+  // Destaque reforçado (pedido do Sérgio, 02/10/2026) para quem está há 15
+  // dias ou mais com caixa ativa e NENHUMA avaliação feita — é um caso mais
+  // urgente do que simplesmente "abaixo do ritmo", então ganha um bloco
+  // visualmente mais forte (vermelho) e separado, em vez de ficar misturado
+  // igual aos demais atrasados (âmbar). Quem já aparece no bloco vermelho
+  // não se repete no bloco âmbar logo abaixo.
+  const zerados = atrasados.filter(a => a.zerado)
+  const demaisAtrasados = atrasados.filter(a => !a.zerado)
+
   return (
-    <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 flex items-start gap-3">
-      <AlertTriangle size={18} className="text-amber-600 mt-0.5 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-amber-900">
-          {atrasados.length === 1
-            ? '1 avaliador está abaixo do ritmo esperado de avaliação'
-            : `${atrasados.length} avaliadores estão abaixo do ritmo esperado de avaliação`}
-        </p>
-        <ul className="mt-1.5 space-y-0.5">
-          {atrasados.map(a => (
-            <li key={a.id} className="text-xs text-amber-800">
-              <span className="font-medium">{a.nome}</span> — {a.percentual}% avaliado (esperado pelo menos {a.metaEsperada}%, há {a.diasDesdeEntrega} dias)
-            </li>
-          ))}
-        </ul>
-        <Link to="/dashboard" state={{ aba: 'avaliacoes' }} className="inline-block mt-2 text-xs font-medium text-amber-900 underline underline-offset-2">
-          Ver detalhes no Dashboard
-        </Link>
-      </div>
-      <button
-        type="button"
-        onClick={dispensar}
-        className="text-amber-600 hover:text-amber-800 shrink-0"
-        title="Dispensar por hoje"
-      >
-        <X size={16} />
-      </button>
+    <div className="mb-4 space-y-3">
+      {zerados.length > 0 && (
+        <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle size={18} className="text-red-600 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-900">
+              Atenção redobrada: {zerados.length === 1
+                ? '1 membro está sem nenhuma avaliação feita há mais de 15 dias'
+                : `${zerados.length} membros estão sem nenhuma avaliação feita há mais de 15 dias`}
+            </p>
+            <ul className="mt-1.5 space-y-0.5">
+              {zerados.map(a => (
+                <li key={a.id} className="text-xs text-red-800">
+                  <span className="font-medium">{a.nome}</span> — recebeu processos há {a.diasDesdeEntrega} dias e ainda não avaliou nenhum
+                </li>
+              ))}
+            </ul>
+            <Link to="/dashboard" state={{ aba: 'avaliacoes' }} className="inline-block mt-2 text-xs font-medium text-red-900 underline underline-offset-2">
+              Ver detalhes no Dashboard
+            </Link>
+          </div>
+          <button
+            type="button"
+            onClick={dispensar}
+            className="text-red-600 hover:text-red-800 shrink-0"
+            title="Dispensar por hoje"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {demaisAtrasados.length > 0 && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle size={18} className="text-amber-600 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900">
+              {demaisAtrasados.length === 1
+                ? '1 avaliador está abaixo do ritmo esperado de avaliação'
+                : `${demaisAtrasados.length} avaliadores estão abaixo do ritmo esperado de avaliação`}
+            </p>
+            <ul className="mt-1.5 space-y-0.5">
+              {demaisAtrasados.map(a => (
+                <li key={a.id} className="text-xs text-amber-800">
+                  <span className="font-medium">{a.nome}</span> — {a.percentual}% avaliado (esperado pelo menos {a.metaEsperada}%, há {a.diasDesdeEntrega} dias)
+                </li>
+              ))}
+            </ul>
+            <Link to="/dashboard" state={{ aba: 'avaliacoes' }} className="inline-block mt-2 text-xs font-medium text-amber-900 underline underline-offset-2">
+              Ver detalhes no Dashboard
+            </Link>
+          </div>
+          <button
+            type="button"
+            onClick={dispensar}
+            className="text-amber-600 hover:text-amber-800 shrink-0"
+            title="Dispensar por hoje"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
