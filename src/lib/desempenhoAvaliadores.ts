@@ -157,6 +157,13 @@ export async function buscarDesempenhoAvaliadores(periodoRange?: PeriodoRange | 
 const DIAS_POR_CICLO = 7
 const META_POR_CICLO = 20 // pontos percentuais esperados a cada ciclo de DIAS_POR_CICLO dias
 
+// "Zerado" (pedido do Sérgio, 02/10/2026): destaque especial para quem está
+// há muitos dias com caixa ativa e NENHUMA avaliação feita — caso mais
+// urgente que um simples "abaixo do ritmo", e que motivou tanto o destaque
+// reforçado no Alerta de Ritmo (para o Coordenador) quanto o lembrete
+// pessoal mostrado ao próprio avaliador (AlertaAvaliacaoPessoal.tsx).
+const DIAS_ALERTA_ZERADO = 15
+
 export interface StatusRitmoAvaliador extends DesempenhoAvaliador {
   /** Dias corridos desde a caixa mais antiga ativa; null se não há caixa ativa. */
   diasDesdeEntrega: number | null
@@ -164,6 +171,8 @@ export interface StatusRitmoAvaliador extends DesempenhoAvaliador {
   metaEsperada: number | null
   /** true quando o percentual real está abaixo da meta esperada. */
   atrasado: boolean
+  /** true quando há 15 dias ou mais de caixa ativa e zero processos avaliados até agora. */
+  zerado: boolean
 }
 
 /**
@@ -174,7 +183,7 @@ export interface StatusRitmoAvaliador extends DesempenhoAvaliador {
  */
 export function calcularRitmo(d: DesempenhoAvaliador, hoje: Date = new Date()): StatusRitmoAvaliador {
   if (!d.dataEntregaMaisAntiga || d.percentual === null) {
-    return { ...d, diasDesdeEntrega: null, metaEsperada: null, atrasado: false }
+    return { ...d, diasDesdeEntrega: null, metaEsperada: null, atrasado: false, zerado: false }
   }
   const dataEntrega = new Date(`${d.dataEntregaMaisAntiga}T00:00:00`)
   const hojeSemHora = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
@@ -183,14 +192,15 @@ export function calcularRitmo(d: DesempenhoAvaliador, hoje: Date = new Date()): 
   if (diasDesdeEntrega < DIAS_POR_CICLO) {
     // Ainda dentro do primeiro ciclo: sem cobrança, mas já mostramos os
     // dias decorridos (útil de exibir, mesmo sem gerar alerta).
-    return { ...d, diasDesdeEntrega, metaEsperada: 0, atrasado: false }
+    return { ...d, diasDesdeEntrega, metaEsperada: 0, atrasado: false, zerado: false }
   }
 
   const ciclosCompletos = Math.floor(diasDesdeEntrega / DIAS_POR_CICLO)
   const metaEsperada = Math.min(100, ciclosCompletos * META_POR_CICLO)
   const atrasado = d.percentual < metaEsperada
+  const zerado = diasDesdeEntrega >= DIAS_ALERTA_ZERADO && d.processosAvaliados === 0
 
-  return { ...d, diasDesdeEntrega, metaEsperada, atrasado }
+  return { ...d, diasDesdeEntrega, metaEsperada, atrasado, zerado }
 }
 
 /**
@@ -205,4 +215,57 @@ export async function buscarAvaliadoresAtrasados(hoje: Date = new Date()): Promi
     .map(d => calcularRitmo(d, hoje))
     .filter(d => d.atrasado)
     .sort((a, b) => (a.percentual ?? 0) - (b.percentual ?? 0))
+}
+
+/**
+ * Mesma lógica de `buscarDesempenhoAvaliadores`, mas calculada só para UM
+ * avaliador (o próprio usuário logado) — usada pelo lembrete pessoal
+ * (AlertaAvaliacaoPessoal.tsx, pedido do Sérgio em 02/10/2026). Feita como
+ * consulta separada (em vez de reaproveitar `buscarDesempenhoAvaliadores`
+ * filtrando o resultado) por dois motivos: evita que um membro comum
+ * precise de permissão para ler os dados de TODOS os avaliadores só para
+ * saber o status dele mesmo, e evita buscar/calcular o sistema inteiro toda
+ * vez que qualquer pessoa abre uma tela. Retorna null quando o avaliador não
+ * tem nenhuma caixa ativa sob responsabilidade (nada a avaliar, nada a
+ * alertar).
+ */
+export async function buscarStatusAvaliadorAtual(avaliadorId: string, hoje: Date = new Date()): Promise<StatusRitmoAvaliador | null> {
+  const { data: requisicoesData } = await supabase
+    .from('requisicoes_avaliacao')
+    .select('caixa_id, data_entrega')
+    .eq('avaliador_id', avaliadorId)
+    .in('status', ['pendente', 'concluida'])
+  const requisicoes = requisicoesData ?? []
+  if (requisicoes.length === 0) return null
+
+  const caixaIds = Array.from(new Set(requisicoes.map(r => r.caixa_id)))
+  let dataEntregaMaisAntiga: string | null = null
+  for (const r of requisicoes) {
+    if (r.data_entrega && (!dataEntregaMaisAntiga || r.data_entrega < dataEntregaMaisAntiga)) {
+      dataEntregaMaisAntiga = r.data_entrega
+    }
+  }
+
+  const { data: processosData } = await supabase.from('processos').select('id').in('caixa_id', caixaIds)
+  const processosAtribuidos = (processosData ?? []).length
+
+  const { data: avaliacoesData } = await supabase
+    .from('avaliacoes')
+    .select('id, processo:processo_id!inner(caixa_id)')
+    .eq('avaliado_por', avaliadorId)
+    .in('status', ['confirmada', 'aguardando_confirmacao'])
+    .in('processo.caixa_id', caixaIds)
+  const processosAvaliados = (avaliacoesData ?? []).length
+
+  const percentual = processosAtribuidos > 0 ? Math.min(100, Math.round((processosAvaliados / processosAtribuidos) * 100)) : null
+
+  return calcularRitmo({
+    id: avaliadorId,
+    nome: '',
+    caixas: caixaIds.length,
+    processosAtribuidos,
+    processosAvaliados,
+    percentual,
+    dataEntregaMaisAntiga,
+  }, hoje)
 }

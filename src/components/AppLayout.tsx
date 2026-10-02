@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import type { Usuario } from '@/lib/database.types'
 import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
 import { AlertaRitmoAvaliacao } from '@/components/AlertaRitmoAvaliacao'
+import { AlertaAvaliacaoPessoal } from '@/components/AlertaAvaliacaoPessoal'
 import clsx from 'clsx'
 
 interface NavItem {
@@ -291,6 +292,11 @@ export function AppLayout() {
               do Dashboard. Só ele decide se aparece (isCoord, dentro do
               próprio componente) e se já foi visto hoje. */}
           <AlertaRitmoAvaliacao />
+          {/* Lembrete pessoal de avaliação (pedido do Sérgio, 02/10/2026) —
+              mostrado ao próprio membro avaliador (não ao Coordenador),
+              quando ele mesmo está há 15 dias ou mais sem avaliar nenhum
+              processo. Ver src/components/AlertaAvaliacaoPessoal.tsx. */}
+          <AlertaAvaliacaoPessoal />
           <Outlet />
         </main>
       </div>
