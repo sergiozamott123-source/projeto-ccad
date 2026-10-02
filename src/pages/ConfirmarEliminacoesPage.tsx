@@ -122,6 +122,11 @@ export function ConfirmarEliminacoesPage() {
     qc.invalidateQueries({ queryKey: ['confirmar-eliminacoes'] })
     qc.invalidateQueries({ queryKey: ['confirmar-eliminacoes-stats'] })
     qc.invalidateQueries({ queryKey: ['historico-devolucoes'] })
+    // Mesmo bug encontrado e corrigido em ConferenciaCaixasPage.tsx
+    // (02/10/2026): o contador da "bolinha" no menu (AppLayout.tsx) é uma
+    // consulta separada (`eliminacoes-pendentes-count`) — sem invalidar ela
+    // aqui, o número do menu ficaria desatualizado até a página recarregar.
+    qc.invalidateQueries({ queryKey: ['eliminacoes-pendentes-count'] })
   }
 
   // Histórico de devoluções — só carrega quando o painel é aberto, para não

@@ -76,6 +76,11 @@ export function ConferenciaCaixasPage() {
     },
     onSuccess: (_data, caixaId) => {
       qc.invalidateQueries({ queryKey: ['caixas-aguardando-conferencia'] })
+      // O contador da "bolinha" no menu (AppLayout.tsx) é uma consulta
+      // separada, com sua própria queryKey — sem invalidar ela aqui também,
+      // o número do menu fica "preso" no valor antigo até a página inteira
+      // ser recarregada, mesmo com a lista desta tela já atualizada.
+      qc.invalidateQueries({ queryKey: ['caixas-conferencia-pendentes-count'] })
       setErro(prev => ({ ...prev, [caixaId]: '' }))
     },
     onError: (e: any, caixaId) => {
