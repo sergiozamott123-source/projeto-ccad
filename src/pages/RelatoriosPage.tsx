@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FileText, Send, Save, Wand2, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -26,6 +26,9 @@ const ATIVIDADES_VAZIAS: AtividadesImportadas = {
 // requisições ele emitiu (se for do Protocolo) dentro do mês de
 // referência do relatório — para preencher automaticamente essa parte,
 // em vez do membro ter que lembrar e digitar esses números de cabeça.
+// Cada processo vem com número + ano de produção (ex.: "12345 (2023)"),
+// para o texto gerado já sair identificável, sem precisar o membro
+// consultar o número de cada um separadamente.
 async function buscarAtividadesDoMes(usuarioId: string, mesReferencia: string): Promise<AtividadesImportadas> {
   const inicio = mesReferencia
   const fim = format(addMonths(new Date(mesReferencia), 1), 'yyyy-MM-dd')
@@ -33,7 +36,7 @@ async function buscarAtividadesDoMes(usuarioId: string, mesReferencia: string): 
   const [avaliacoesRes, requisicoesRes] = await Promise.all([
     supabase
       .from('avaliacoes')
-      .select('processo:processo_id(numero_documento)')
+      .select('processo:processo_id(numero_documento, ano_producao)')
       .eq('avaliado_por', usuarioId)
       .gte('created_at', inicio)
       .lt('created_at', fim),
@@ -46,8 +49,9 @@ async function buscarAtividadesDoMes(usuarioId: string, mesReferencia: string): 
   ])
 
   const numerosProcessos = (avaliacoesRes.data ?? [])
-    .map(a => (a as unknown as { processo: { numero_documento: string | null } | null }).processo?.numero_documento)
-    .filter((n): n is string => !!n)
+    .map(a => (a as unknown as { processo: { numero_documento: string | null; ano_producao: number | null } | null }).processo)
+    .filter((p): p is { numero_documento: string; ano_producao: number | null } => !!p?.numero_documento)
+    .map(p => (p.ano_producao ? `${p.numero_documento} (${p.ano_producao})` : p.numero_documento))
     .sort()
 
   const numerosCaixas = (requisicoesRes.data ?? [])
@@ -61,6 +65,38 @@ async function buscarAtividadesDoMes(usuarioId: string, mesReferencia: string): 
     requisicoes_emitidas_qtd: numerosCaixas.length,
     requisicoes_emitidas_caixas: numerosCaixas,
   }
+}
+
+// Monta um texto já pronto para o campo "Atividades realizadas", a partir
+// das atividades importadas — o membro só precisa revisar/ajustar, em vez
+// de escrever do zero. Só menciona avaliação/requisição para quem tem a
+// permissão correspondente (mesma regra que já decide o que aparece na
+// caixinha de resumo).
+function montarTextoAtividades(
+  atividades: AtividadesImportadas,
+  mesReferencia: string,
+  permissoes: { avaliar: boolean; requisitar: boolean },
+): string {
+  const mesFormatado = format(new Date(mesReferencia), "MMMM 'de' yyyy", { locale: ptBR })
+  const blocos: string[] = []
+
+  if (permissoes.avaliar) {
+    blocos.push(
+      atividades.processos_avaliados_qtd > 0
+        ? `Avaliei ${atividades.processos_avaliados_qtd} processo(s) pelo sistema em ${mesFormatado}, referentes aos processos nº ${atividades.processos_avaliados_numeros.join(', ')}.`
+        : `Não avaliei processos pelo sistema em ${mesFormatado}.`
+    )
+  }
+
+  if (permissoes.requisitar) {
+    blocos.push(
+      atividades.requisicoes_emitidas_qtd > 0
+        ? `Emiti ${atividades.requisicoes_emitidas_qtd} requisição(ões) de avaliação em ${mesFormatado}, para as caixas ${atividades.requisicoes_emitidas_caixas.join(', ')}.`
+        : `Não emiti requisições de avaliação em ${mesFormatado}.`
+    )
+  }
+
+  return blocos.join('\n\n')
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -83,6 +119,11 @@ export function RelatoriosPage() {
   })
   const [importando, setImportando] = useState(false)
   const [importado, setImportado] = useState(false)
+  // Guarda o último texto que a própria importação escreveu, para saber se
+  // o membro editou algo depois — se não editou, uma nova importação
+  // substitui o texto (evita duplicar); se editou, só acrescenta por baixo,
+  // para nunca apagar o que a pessoa já escreveu com as próprias palavras.
+  const textoImportadoAnteriorRef = useRef('')
 
   const { data: relatorios } = useQuery({
     queryKey: ['meus-relatorios', profile?.id],
@@ -134,6 +175,7 @@ export function RelatoriosPage() {
     })
     setDemandasChecked(relatorioDoMes?.demandas_relacionadas ?? [])
     setImportado(false)
+    textoImportadoAnteriorRef.current = ''
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedMes, relatorioDoMes?.id])
 
@@ -142,7 +184,19 @@ export function RelatoriosPage() {
     setImportando(true)
     try {
       const atividades = await buscarAtividadesDoMes(profile.id, selectedMes)
-      setForm(v => ({ ...v, ...atividades }))
+      const textoGerado = montarTextoAtividades(atividades, selectedMes, {
+        avaliar: !!profile?.pode_avaliar_processos,
+        requisitar: !!profile?.pode_criar_requisicoes,
+      })
+      setForm(v => {
+        const atual = v.atividades_realizadas.trim()
+        const semEdicaoDesdeAUltimaImportacao = !atual || atual === textoImportadoAnteriorRef.current.trim()
+        const novoTexto = semEdicaoDesdeAUltimaImportacao
+          ? textoGerado
+          : `${v.atividades_realizadas}\n\n${textoGerado}`
+        return { ...v, ...atividades, atividades_realizadas: novoTexto }
+      })
+      textoImportadoAnteriorRef.current = textoGerado
       setImportado(true)
     } finally {
       setImportando(false)
@@ -225,7 +279,8 @@ export function RelatoriosPage() {
                   <p className="text-xs text-gray-500 mt-0.5">
                     Busca automaticamente, no próprio sistema, quantos processos você avaliou
                     {profile?.pode_criar_requisicoes ? ' e quantas requisições você emitiu' : ''} em{' '}
-                    {format(new Date(selectedMes), 'MMMM yyyy', { locale: ptBR })} — sem precisar contar de cabeça.
+                    {format(new Date(selectedMes), 'MMMM yyyy', { locale: ptBR })} e já escreve um texto pronto em
+                    "Atividades realizadas" — você só revisa e ajusta se quiser.
                   </p>
                 </div>
                 <button
@@ -240,7 +295,7 @@ export function RelatoriosPage() {
 
               {importado && (
                 <p className="text-xs text-green-700 flex items-center gap-1">
-                  <CheckCircle2 size={13} /> Atividades importadas — confira abaixo e clique em "Salvar rascunho" ou "Enviar relatório" para gravar.
+                  <CheckCircle2 size={13} /> Texto gerado e inserido em "Atividades realizadas" — revise, ajuste se quiser, e clique em "Salvar rascunho" ou "Enviar relatório" para gravar.
                 </p>
               )}
 
