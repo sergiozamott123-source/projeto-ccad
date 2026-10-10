@@ -124,11 +124,19 @@ export interface TtdCodigo {
   vigente_desde: string | null
 }
 
-export type StatusCaixa = 'catalogada' | 'em_avaliacao' | 'aguardando_conferencia' | 'arquivada'
+export type StatusCaixa =
+  | 'catalogada' | 'em_avaliacao' | 'aguardando_conferencia' | 'arquivada'
+  // 'em_construcao' e 'distribuida' são da feature de Caixas finais por
+  // setor (ver claude/plano-caixas-finais-poco-setor.md e
+  // migracao_pocos_arquivamento_final.sql).
+  | 'em_construcao' | 'distribuida'
+
+export type TipoCaixa = 'entrada' | 'final'
+export type DestinacaoPoco = 'eliminacao' | 'guarda_permanente'
 
 export interface Caixa {
   id: string
-  numero: string
+  numero: string | null
   // Número físico da caixa (o escrito na etiqueta dela e usado no
   // controle do Protocolo, ex.: "280") — distinto de `numero`, que é o
   // código interno gerado pelo sistema (ex.: "CX003"). Adicionado na
@@ -141,6 +149,15 @@ export interface Caixa {
   conferido_por: string | null
   conferido_em: string | null
   conferidor?: Usuario
+  // Caixas finais por setor (ver plano-caixas-finais-poco-setor.md):
+  // `tipo` distingue uma caixa de entrada (CX001, CX002... como sempre
+  // existiu) de um "poço" de arquivamento final (acumula processos de
+  // várias caixas de entrada, do mesmo setor+destinação, até juntar
+  // volume suficiente). `destinacao` só é preenchida nas caixas tipo
+  // 'final'. Ambos os campos são novos e, para qualquer caixa criada
+  // antes dessa feature, `tipo` já vem 'entrada' automaticamente.
+  tipo: TipoCaixa
+  destinacao: DestinacaoPoco | null
 }
 
 export type Interessado = 'CDTIV' | 'PMV'
@@ -164,7 +181,14 @@ export interface Processo {
   potencial_expositivo: boolean
   status_emprestimo: StatusEmprestimoProcesso
   created_at: string
+  // Caixa final (poço) para onde este processo foi distribuído, quando já
+  // processado — distinta de `caixa_id`, que continua sendo sempre a
+  // caixa de ENTRADA (de onde o processo veio, nunca muda). Fica em
+  // branco até a distribuição automática acontecer (ver
+  // migracao_pocos_arquivamento_final.sql).
+  caixa_final_id: string | null
   caixa?: Caixa
+  caixa_final?: Caixa
   ttd?: TtdCodigo
   avaliacoes?: Avaliacao[]
   emprestimos?: Emprestimo[]
@@ -398,6 +422,17 @@ export interface SetorCdtiv {
   criado_em: string
 }
 
+// Volume mínimo configurável para fechar um poço de arquivamento final
+// (ver claude/plano-caixas-finais-poco-setor.md). Tabela "singleton" — só
+// existe a linha com id = true.
+export interface ConfigArquivamentoFinal {
+  id: boolean
+  quantidade_minima_eliminacao: number
+  quantidade_minima_guarda_permanente: number
+  atualizado_por: string | null
+  atualizado_em: string
+}
+
 // Supabase DB type wrapper (for createClient generic)
 export interface Database {
   public: {
@@ -430,6 +465,8 @@ export interface Database {
       atividades_fase: { Row: AtividadeFase; Insert: Partial<AtividadeFase>; Update: Partial<AtividadeFase> }
       mural_eventos: { Row: MuralEvento; Insert: Partial<MuralEvento>; Update: Partial<MuralEvento> }
       relatorios_salvos: { Row: RelatorioSalvo; Insert: Partial<RelatorioSalvo>; Update: Partial<RelatorioSalvo> }
+      setores_cdtiv: { Row: SetorCdtiv; Insert: Partial<SetorCdtiv>; Update: Partial<SetorCdtiv> }
+      config_arquivamento_final: { Row: ConfigArquivamentoFinal; Insert: Partial<ConfigArquivamentoFinal>; Update: Partial<ConfigArquivamentoFinal> }
     }
     Views: Record<string, never>
     Functions: Record<string, never>

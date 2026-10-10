@@ -41,9 +41,16 @@ const COLUNAS: {
     corBadge: 'bg-sky-100 text-sky-800',
   },
   {
+    // Desde a feature de Caixas finais por setor (10/10/2026, ver
+    // claude/plano-caixas-finais-poco-setor.md), uma caixa de entrada não
+    // fica mais "esperando" nesta etapa — assim que termina a avaliação,
+    // ela já é distribuída sozinha para os poços certos (por setor +
+    // destinação). Esta coluna passou a mostrar isso: a distribuição já
+    // aconteceu, e quem precisa de atenção agora são os POÇOS (na tela de
+    // Conferência de Caixas), não mais a caixa de entrada em si.
     etapa: 'aguardando_conferencia',
-    titulo: 'Aguardando conferência final',
-    subtitulo: 'Ação do Protocolo: conferir códigos e definir o número de arquivo',
+    titulo: 'Processos distribuídos para os poços',
+    subtitulo: 'Veja os poços por setor em Conferência de Caixas',
     corBarra: 'bg-teal-400',
     corBadge: 'bg-teal-100 text-teal-800',
     linkPara: { to: '/conferencia-caixas', label: 'Ir para Conferência de Caixas' },

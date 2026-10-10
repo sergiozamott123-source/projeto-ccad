@@ -110,14 +110,30 @@ export function AppLayout() {
     enabled: !!profile?.id && podeConfirmarEliminacoes,
   })
 
-  const { data: caixasConferenciaPendentesCount } = useQuery({
-    queryKey: ['caixas-conferencia-pendentes-count', profile?.id],
+  // Caixas finais por setor (10/10/2026, ver
+  // claude/plano-caixas-finais-poco-setor.md): a bolinha do menu agora
+  // avisa quantos POÇOS de arquivamento já atingiram o volume mínimo
+  // configurado (não mais "quantas caixas de entrada estão esperando
+  // conferência" — isso deixou de existir como ação pendente, já que a
+  // distribuição para os poços acontece sozinha).
+  const { data: pocosArquivamentoProntosCount } = useQuery({
+    queryKey: ['pocos-arquivamento-prontos-count', profile?.id],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('caixas')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'aguardando_conferencia')
-      return count ?? 0
+      const [{ data: pocos }, { data: config }] = await Promise.all([
+        supabase
+          .from('caixas')
+          .select('destinacao, processos!caixa_final_id(id)')
+          .eq('tipo', 'final')
+          .eq('status', 'em_construcao'),
+        supabase.from('config_arquivamento_final').select('*').eq('id', true).maybeSingle(),
+      ])
+      if (!pocos || !config) return 0
+      return pocos.filter((p: any) => {
+        const total = p.processos?.length ?? 0
+        const minimo =
+          p.destinacao === 'eliminacao' ? config.quantidade_minima_eliminacao : config.quantidade_minima_guarda_permanente
+        return total >= minimo
+      }).length
     },
     enabled: !!profile?.id && (isCoord || profile?.pode_criar_requisicoes === true),
   })
@@ -224,9 +240,9 @@ export function AppLayout() {
                   {eliminacoesPendentesCount}
                 </span>
               )}
-              {item.to === '/conferencia-caixas' && (caixasConferenciaPendentesCount ?? 0) > 0 && (
+              {item.to === '/conferencia-caixas' && (pocosArquivamentoProntosCount ?? 0) > 0 && (
                 <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {caixasConferenciaPendentesCount}
+                  {pocosArquivamentoProntosCount}
                 </span>
               )}
             </NavLink>
