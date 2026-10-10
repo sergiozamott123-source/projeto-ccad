@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserPlus, Mail, Plus, Building2 } from 'lucide-react'
+import { UserPlus, Mail, Plus, Building2, Boxes } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Usuario, Pilar, SetorCdtiv } from '@/lib/database.types'
+import type { Usuario, Pilar, SetorCdtiv, ConfigArquivamentoFinal } from '@/lib/database.types'
 import clsx from 'clsx'
 
 const PAPEL_LABELS: Record<string, string> = {
@@ -20,7 +20,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export function EquipePage() {
-  const { isCoord } = useAuth()
+  const { isCoord, profile } = useAuth()
   const qc = useQueryClient()
   const [showConvite, setShowConvite] = useState(false)
   const [convite, setConvite] = useState({ nome: '', email: '', papel: 'membro', pilar_id: '' })
@@ -100,6 +100,49 @@ export function EquipePage() {
       if (error) throw error
     },
     onSuccess: invalidarSetores,
+  })
+
+  // Caixas finais por setor — volume mínimo para fechar um poço (ver
+  // claude/plano-caixas-finais-poco-setor.md). Tabela "singleton": só
+  // existe a linha com id = true.
+  const { data: configArquivamento } = useQuery({
+    queryKey: ['config-arquivamento-final'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('config_arquivamento_final').select('*').eq('id', true).maybeSingle()
+      if (error) throw error
+      return data as ConfigArquivamentoFinal | null
+    },
+  })
+  const [minimos, setMinimos] = useState<{ eliminacao: string; guarda_permanente: string } | null>(null)
+  const minimosEfetivos = minimos ?? {
+    eliminacao: String(configArquivamento?.quantidade_minima_eliminacao ?? ''),
+    guarda_permanente: String(configArquivamento?.quantidade_minima_guarda_permanente ?? ''),
+  }
+
+  const salvarMinimos = useMutation({
+    mutationFn: async () => {
+      if (!profile) return
+      const eliminacao = Number(minimosEfetivos.eliminacao)
+      const guardaPermanente = Number(minimosEfetivos.guarda_permanente)
+      if (!Number.isFinite(eliminacao) || eliminacao < 1 || !Number.isFinite(guardaPermanente) || guardaPermanente < 1) {
+        throw new Error('Informe números válidos (1 ou mais) para os dois volumes mínimos.')
+      }
+      const { error } = await supabase
+        .from('config_arquivamento_final')
+        .update({
+          quantidade_minima_eliminacao: eliminacao,
+          quantidade_minima_guarda_permanente: guardaPermanente,
+          atualizado_por: profile.id,
+          atualizado_em: new Date().toISOString(),
+        })
+        .eq('id', true)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['config-arquivamento-final'] })
+      qc.invalidateQueries({ queryKey: ['pocos-arquivamento-prontos-count'] })
+      setMinimos(null)
+    },
   })
 
   const sendConvite = useMutation({
@@ -216,6 +259,59 @@ export function EquipePage() {
               </span>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* Caixas finais por setor — volume mínimo */}
+      <div className="card p-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Boxes size={18} className="text-gray-400" />
+          <h2 className="font-semibold text-gray-900">Arquivamento Final — volume mínimo por caixa</h2>
+        </div>
+        <p className="text-gray-500 text-xs mb-4">
+          Em "Conferência de Caixas", os processos avaliados se acumulam em poços por setor + destinação até juntar
+          esse volume mínimo — só então o sistema avisa que já dá para montar uma caixa física para o Arquivo Geral
+          (o Protocolo pode fechar um poço manualmente antes disso, se preferir).
+        </p>
+
+        {isCoord ? (
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <label className="label">Eliminação</label>
+              <input
+                className="input w-28"
+                type="number"
+                min={1}
+                value={minimosEfetivos.eliminacao}
+                onChange={e => setMinimos({ ...minimosEfetivos, eliminacao: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="label">Guarda Permanente</label>
+              <input
+                className="input w-28"
+                type="number"
+                min={1}
+                value={minimosEfetivos.guarda_permanente}
+                onChange={e => setMinimos({ ...minimosEfetivos, guarda_permanente: e.target.value })}
+              />
+            </div>
+            <button
+              className="btn-secondary text-sm"
+              onClick={() => salvarMinimos.mutate()}
+              disabled={salvarMinimos.isPending}
+            >
+              Salvar
+            </button>
+            {salvarMinimos.isError && (
+              <p className="text-xs text-red-600 w-full">{(salvarMinimos.error as Error)?.message}</p>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-600">
+            Eliminação: {configArquivamento?.quantidade_minima_eliminacao ?? '—'} · Guarda Permanente:{' '}
+            {configArquivamento?.quantidade_minima_guarda_permanente ?? '—'}
+          </p>
         )}
       </div>
 

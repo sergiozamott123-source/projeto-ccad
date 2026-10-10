@@ -20,14 +20,23 @@ const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.DIGITALIZACAO]: '/pilares/digitalizacao',
 }
 
-// Ordem e rótulo de cada etapa do ciclo de vida de uma caixa — ver
-// ciclo-avaliacao-caixas-fase14.md no projeto Claude.
-const CAIXA_STATUS_ORDEM: StatusCaixa[] = ['catalogada', 'em_avaliacao', 'aguardando_conferencia', 'arquivada']
+// Ordem e rótulo de cada etapa do ciclo de vida de uma caixa de ENTRADA —
+// ver ciclo-avaliacao-caixas-fase14.md no projeto Claude. Desde a feature
+// de Caixas finais por setor (10/10/2026, ver
+// claude/plano-caixas-finais-poco-setor.md), uma caixa de entrada passa
+// por 'aguardando_conferencia' só brevemente (a distribuição para os
+// poços é automática) e termina em 'distribuida' — 'arquivada' continua
+// existindo aqui só para o histórico de caixas arquivadas do jeito antigo,
+// antes desta feature. Os poços em si ('em_construcao', tipo='final') não
+// entram neste panorama — por isso a consulta abaixo filtra tipo='entrada'.
+const CAIXA_STATUS_ORDEM: StatusCaixa[] = ['catalogada', 'em_avaliacao', 'aguardando_conferencia', 'distribuida', 'arquivada']
 const CAIXA_STATUS_LABEL: Record<StatusCaixa, string> = {
   catalogada: 'Catalogada',
   em_avaliacao: 'Em avaliação',
   aguardando_conferencia: 'Aguardando conferência',
+  distribuida: 'Distribuída para poços',
   arquivada: 'Arquivada',
+  em_construcao: 'Poço em construção',
 }
 
 // Cor da barra de progresso por avaliador, de acordo com o % concluído —
@@ -262,6 +271,7 @@ export function DashboardPage() {
       const { count } = await supabase
         .from('caixas')
         .select('*', { count: 'exact', head: true })
+        .eq('tipo', 'entrada')
       return count ?? 0
     },
   })
@@ -323,7 +333,11 @@ export function DashboardPage() {
       // inclui também o acervo histórico já migrado).
       const porStatus = await Promise.all(
         CAIXA_STATUS_ORDEM.map(async status => {
-          const { count } = await supabase.from('caixas').select('*', { count: 'exact', head: true }).eq('status', status)
+          const { count } = await supabase
+            .from('caixas')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', status)
+            .eq('tipo', 'entrada')
           return { status, count: count ?? 0 }
         })
       )

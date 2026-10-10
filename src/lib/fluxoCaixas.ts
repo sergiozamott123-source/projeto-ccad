@@ -16,9 +16,12 @@ import { supabase } from '@/lib/supabase'
 // 3. em_avaliacao               — CRPA confirmada; o avaliador está
 //    analisando os processos.
 // 4. aguardando_conferencia     — todos os processos da caixa já foram
-//    avaliados; falta o Protocolo conferir os códigos e definir o número
-//    final de arquivo (Fase 14) antes dela ir fisicamente para o Arquivo
-//    Geral.
+//    avaliados, e ela já foi distribuída sozinha para os poços certos (por
+//    setor + destinação — ver claude/plano-caixas-finais-poco-setor.md,
+//    10/10/2026). Mantém o mesmo nome de etapa por simplicidade, mas quem
+//    precisa de ação agora são os poços (tela Conferência de Caixas), não
+//    mais a caixa de entrada — por isso esta etapa agora busca caixas com
+//    status 'distribuida', não mais 'aguardando_conferencia'.
 //
 // Caixas já arquivadas (etapa seguinte a esta) não entram aqui — decisão
 // do Sérgio (02/10/2026): o quadro mostra só o que ainda precisa de ação.
@@ -132,7 +135,7 @@ export async function buscarFluxoCaixas(hoje: Date = new Date()): Promise<CaixaF
   const { data: aguardandoConferenciaData } = await supabase
     .from('caixas')
     .select('id, numero, setor, requisicoes_avaliacao!inner(avaliador:avaliador_id(nome), concluida_em)')
-    .eq('status', 'aguardando_conferencia')
+    .eq('status', 'distribuida')
     .eq('requisicoes_avaliacao.status', 'concluida')
   const cartoesConferencia: CaixaFluxo[] = (
     (aguardandoConferenciaData ?? []) as unknown as {
