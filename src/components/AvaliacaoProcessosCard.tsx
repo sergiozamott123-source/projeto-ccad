@@ -39,6 +39,13 @@ export function AvaliacaoProcessosCard() {
   const [caixaBusca, setCaixaBusca] = useState('') // valor efetivamente pesquisado
   const [toast, setToast] = useState<string | null>(null)
 
+  // Permite ao avaliador pular a ordem padrão (ordem de lançamento no
+  // sistema) e escolher manualmente qual processo pendente avaliar agora —
+  // útil quando a caixa física chega fora da ordem digital. `buscaProcesso`
+  // filtra a lista "Nesta caixa" por número ou assunto para achar rápido.
+  const [selecionadoId, setSelecionadoId] = useState<string | null>(null)
+  const [buscaProcesso, setBuscaProcesso] = useState('')
+
   // Quem não é Coordenação só pode avaliar caixas que constam numa
   // requisição pendente enviada a ele — não busca mais livremente.
   const { data: minhasRequisicoes } = useQuery({
@@ -199,6 +206,13 @@ export function AvaliacaoProcessosCard() {
     return () => clearTimeout(t)
   }, [toast])
 
+  // Troca de caixa (por qualquer caminho: campo de busca, chip de atalho ou
+  // depois de emitir uma CEPA) não deve carregar seleção/busca de outra caixa.
+  useEffect(() => {
+    setSelecionadoId(null)
+    setBuscaProcesso('')
+  }, [caixaBusca])
+
   const { data: caixaInfo, isFetching: buscandoCaixa } = useQuery({
     queryKey: ['avaliacao-caixa', caixaBusca],
     queryFn: async () => {
@@ -232,10 +246,15 @@ export function AvaliacaoProcessosCard() {
   const processos = caixaInfo?.processos ?? []
   const decisoes = caixaInfo?.decisoes ?? new Map<string, string | null>()
   const pendentes = processos.filter(p => !decisoes.has(p.id))
-  const atual = pendentes[0] ?? null
+  // Se o avaliador escolheu manualmente um processo pendente (clicando na
+  // lista "Nesta caixa" ou usando a busca), ele vira o atual — fora da
+  // ordem padrão. Se a seleção não existir mais (já foi avaliada por outra
+  // via, ou a caixa mudou), cai de volta no primeiro pendente da ordem.
+  const selecionado = selecionadoId ? pendentes.find(p => p.id === selecionadoId) ?? null : null
+  const atual = selecionado ?? pendentes[0] ?? null
   const totalNaCaixa = processos.length
   const concluidosNaCaixa = totalNaCaixa - pendentes.length
-  const posicaoAtual = concluidosNaCaixa + 1
+  const posicaoAtual = atual ? processos.findIndex(p => p.id === atual.id) + 1 : concluidosNaCaixa + 1
   const progressoPct = totalNaCaixa > 0 ? Math.round((concluidosNaCaixa / totalNaCaixa) * 100) : 0
 
   const resumoCaixa = useMemo(() => {
@@ -247,6 +266,18 @@ export function AvaliacaoProcessosCard() {
     }
     return { elim, perm }
   }, [decisoes])
+
+  // Lista "Nesta caixa" filtrada pela busca por número/assunto — é a mesma
+  // tolerância simples (sem acento, case-insensitive) usada em outras buscas
+  // do sistema, mas aqui comparando texto corrido (não é busca por TTD).
+  const processosFiltrados = useMemo(() => {
+    const termo = buscaProcesso.trim().toLowerCase()
+    if (!termo) return processos
+    return processos.filter(p =>
+      (p.numero_documento ?? '').toLowerCase().includes(termo) ||
+      (p.assunto_processo ?? '').toLowerCase().includes(termo),
+    )
+  }, [processos, buscaProcesso])
 
   // Última devolução (se houver) do processo atual, para mostrar o motivo ao avaliador
   const { data: devolucao } = useQuery({
@@ -344,6 +375,9 @@ export function AvaliacaoProcessosCard() {
       qc.invalidateQueries({ queryKey: ['minhas-requisicoes-pendentes'] })
       setSelectedTtd(null)
       setTtdSearch('')
+      // Depois de salvar, volta a sugerir o próximo da ordem padrão — o
+      // avaliador clica/busca de novo o próximo processo físico em mãos.
+      setSelecionadoId(null)
       if (resultado) {
         setToast(`Avaliação salva — processo ${resultado.numero} classificado como ${resultado.decisao || '—'}.`)
       }
@@ -707,20 +741,63 @@ export function AvaliacaoProcessosCard() {
           avaliador sempre saber quanto já fez e quanto falta. */}
       {caixaInfo?.caixa && totalNaCaixa > 0 && (
         <div className="border-t border-gray-100 pt-3 mt-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-            Nesta caixa · {totalNaCaixa} processo{totalNaCaixa === 1 ? '' : 's'}
+          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Nesta caixa · {totalNaCaixa} processo{totalNaCaixa === 1 ? '' : 's'}
+            </p>
+            {selecionado && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium border border-amber-200">
+                Fora da ordem padrão
+              </span>
+            )}
+          </div>
+          <div className="relative mb-2">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={buscaProcesso}
+              onChange={e => setBuscaProcesso(e.target.value)}
+              placeholder="Buscar processo por número ou assunto…"
+              className="w-full text-xs pl-8 pr-7 py-1.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-400/40 focus:border-teal-400"
+            />
+            {buscaProcesso && (
+              <button
+                onClick={() => setBuscaProcesso('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+                title="Limpar busca"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-gray-400 mb-1.5">
+            Clique em um processo pendente para avaliá-lo agora, fora da ordem da lista.
           </p>
           <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
-            {processos.map((p, i) => {
+            {processosFiltrados.length === 0 && (
+              <p className="text-xs text-gray-400 py-3 text-center">Nenhum processo encontrado para "{buscaProcesso}".</p>
+            )}
+            {processosFiltrados.map(p => {
+              const i = processos.findIndex(pr => pr.id === p.id)
               const decisao = decisoes.get(p.id)
               const isDone = decisoes.has(p.id)
               const isCurrent = atual?.id === p.id
               return (
                 <div
                   key={p.id}
+                  role={isDone ? undefined : 'button'}
+                  tabIndex={isDone ? undefined : 0}
+                  onClick={() => !isDone && setSelecionadoId(p.id)}
+                  onKeyDown={e => {
+                    if (!isDone && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault()
+                      setSelecionadoId(p.id)
+                    }
+                  }}
                   className={clsx(
-                    'flex items-center gap-3 py-2 text-xs',
-                    isCurrent && 'bg-teal-50/70 -mx-2 px-2 rounded-lg',
+                    'flex items-center gap-3 py-2 text-xs rounded-lg',
+                    isCurrent && 'bg-teal-50/70 -mx-2 px-2',
+                    !isDone && !isCurrent && 'cursor-pointer hover:bg-gray-50 -mx-2 px-2',
                   )}
                 >
                   <span
