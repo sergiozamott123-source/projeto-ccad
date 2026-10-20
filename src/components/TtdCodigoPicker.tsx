@@ -4,11 +4,7 @@ import { Search, List, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { correspondeBusca } from '@/lib/textSearch'
 import type { TtdCodigo } from '@/lib/database.types'
-import clsx from 'clsx'
-
-function isEliminacao(destino: string | null | undefined) {
-  return !!destino && destino.toLowerCase().includes('elimin')
-}
+import { DecisaoBadge } from '@/components/badges/DecisaoBadges'
 
 /**
  * Busca rápida de um código na Tabela de Temporalidade Documental (TTD),
@@ -117,9 +113,7 @@ export function TtdCodigoPicker({
                   <span className="font-mono font-semibold text-teal-600">{ttd.codigo}</span>
                   <span className="text-gray-700">{ttd.assunto}</span>
                 </div>
-                <span className={clsx('text-[11px] font-medium', isEliminacao(ttd.destinacao_final) ? 'text-red-500' : 'text-teal-600')}>
-                  {ttd.destinacao_final || '—'}
-                </span>
+                <DecisaoBadge destino={ttd.destinacao_final} />
               </button>
             ))
           ) : (
@@ -144,9 +138,7 @@ export function TtdCodigoPicker({
           </div>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <span className="text-gray-500">Destinação final</span>
-            <span className={clsx('font-semibold', isEliminacao(value.destinacao_final) ? 'text-red-600' : 'text-teal-700')}>
-              {value.destinacao_final || '—'}
-            </span>
+            <DecisaoBadge destino={value.destinacao_final} />
           </div>
           {(value.classe || value.serie) && (
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -207,9 +199,7 @@ export function TtdCodigoPicker({
                           </div>
                           <div className="text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
                             {ttd.serie && <span>Série: {ttd.serie}</span>}
-                            <span className={clsx('font-medium', isEliminacao(ttd.destinacao_final) ? 'text-red-500' : 'text-teal-600')}>
-                              {ttd.destinacao_final || '—'}
-                            </span>
+                            <DecisaoBadge destino={ttd.destinacao_final} />
                           </div>
                         </button>
                       ))}

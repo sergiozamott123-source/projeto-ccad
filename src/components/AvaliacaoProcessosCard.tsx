@@ -6,16 +6,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
 import type { Processo, TtdCodigo, Avaliacao, RequisicaoAvaliacao } from '@/lib/database.types'
 import { declaracaoCrpa, gerarCrpaPdf } from '@/lib/documentosCepaCrpa'
+import { isEliminacao, DecisaoBadge, AvaliacaoStatusBadge } from '@/components/badges/DecisaoBadges'
 import clsx from 'clsx'
 
 // Uma avaliação já "resolve" o processo (não precisa mais avaliar) se ela
 // ainda está válida — aguardando confirmação ou já confirmada. Se a única
 // avaliação existente foi devolvida, o processo volta para a fila.
 const STATUS_RESOLVE: Avaliacao['status'][] = ['confirmada', 'aguardando_confirmacao']
-
-function isEliminacao(destino: string | null | undefined) {
-  return !!destino && destino.toLowerCase().includes('elimin')
-}
 
 // ------------------------------------------------------------------
 // CRPA — Confirmação de Recebimento de Processos para Avaliação
@@ -388,12 +385,6 @@ export function AvaliacaoProcessosCard() {
     setCaixaBusca(caixaNumero.trim())
   }
 
-  const statusLabel: Record<Avaliacao['status'], { label: string; style: string }> = {
-    aguardando_confirmacao: { label: 'Aguardando confirmação', style: 'bg-amber-100 text-amber-700' },
-    confirmada: { label: 'Confirmada', style: 'bg-teal-100 text-teal-700' },
-    devolvida: { label: 'Devolvida', style: 'bg-red-100 text-red-700' },
-  }
-
   return (
     <div className="card p-5 relative">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -675,9 +666,7 @@ export function AvaliacaoProcessosCard() {
                   </div>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="text-gray-500">Destinação final</span>
-                    <span className={clsx('font-semibold', isEliminacao(selectedTtd.destinacao_final) ? 'text-red-600' : 'text-teal-700')}>
-                      {selectedTtd.destinacao_final || '—'}
-                    </span>
+                    <DecisaoBadge destino={selectedTtd.destinacao_final} />
                   </div>
                   {(selectedTtd.classe || selectedTtd.serie) && (
                     <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -814,11 +803,7 @@ export function AvaliacaoProcessosCard() {
                   </span>
                   <span className="font-mono text-gray-600 shrink-0">{p.numero_documento}</span>
                   <span className="text-gray-500 truncate flex-1">{p.assunto_processo || '—'}</span>
-                  {isDone && (
-                    <span className={clsx('font-semibold shrink-0', isEliminacao(decisao) ? 'text-red-600' : 'text-teal-600')}>
-                      {isEliminacao(decisao) ? 'Eliminação' : 'Guarda Perm.'}
-                    </span>
-                  )}
+                  {isDone && <DecisaoBadge destino={decisao} className="shrink-0" />}
                 </div>
               )
             })}
@@ -834,12 +819,8 @@ export function AvaliacaoProcessosCard() {
             {(avaliadosHoje ?? []).map(a => (
               <div key={a.id} className="flex items-center gap-3 text-xs">
                 <span className="font-mono text-gray-500 w-20 shrink-0">{a.processo?.numero_documento}</span>
-                <span className={clsx('font-medium w-32 shrink-0', isEliminacao(a.decisao) ? 'text-red-600' : 'text-teal-700')}>
-                  {a.decisao}
-                </span>
-                <span className={clsx('px-2 py-0.5 rounded-full font-medium shrink-0', statusLabel[a.status].style)}>
-                  {statusLabel[a.status].label}
-                </span>
+                <span className="w-32 shrink-0"><DecisaoBadge destino={a.decisao} /></span>
+                <AvaliacaoStatusBadge status={a.status} className="shrink-0" />
                 <span className="text-gray-400 ml-auto shrink-0">{format(new Date(a.created_at), 'HH:mm')}</span>
               </div>
             ))}
@@ -900,9 +881,7 @@ export function AvaliacaoProcessosCard() {
                           </div>
                           <div className="text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
                             {ttd.serie && <span>Série: {ttd.serie}</span>}
-                            <span className={clsx('font-medium', isEliminacao(ttd.destinacao_final) ? 'text-red-500' : 'text-teal-600')}>
-                              {ttd.destinacao_final || '—'}
-                            </span>
+                            <DecisaoBadge destino={ttd.destinacao_final} />
                           </div>
                         </button>
                       ))}

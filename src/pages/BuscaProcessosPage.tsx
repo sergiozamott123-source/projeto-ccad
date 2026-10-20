@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import jsPDF from 'jspdf'
-import { Search, Archive, AlertTriangle, Clock, X, FileSignature, Undo2, CheckCircle2, CalendarClock } from 'lucide-react'
+import { Search, Archive, AlertTriangle, Clock, X, FileSignature, Undo2, CheckCircle2, CalendarClock, MapPin } from 'lucide-react'
+import { DataIcon } from '@/components/badges/DecisaoBadges'
 import { format, addDays, isPast } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase'
@@ -777,7 +778,8 @@ export function BuscaProcessosPage() {
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span className="font-mono text-sm font-semibold text-gray-900">{p.numero_documento}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">{p.interessado}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 inline-flex items-center gap-1">
+                      <DataIcon />
                       {p.ano_producao}{p.ano_producao_complemento ? ` (${p.ano_producao_complemento})` : ''}
                     </span>
                     {eliminadoEm && (
@@ -810,7 +812,9 @@ export function BuscaProcessosPage() {
                   </p>
                   <p className="text-base font-bold text-amber-800">{p.caixa?.numero ?? '—'}</p>
                   {(p.setor_origem ?? p.caixa?.setor) && (
-                    <p className="text-[10px] text-amber-600 mt-0.5">{p.setor_origem ?? p.caixa?.setor}</p>
+                    <p className="text-[10px] text-amber-600 mt-0.5 inline-flex items-center gap-0.5">
+                      <MapPin size={10} /> {p.setor_origem ?? p.caixa?.setor}
+                    </p>
                   )}
                 </div>
 
