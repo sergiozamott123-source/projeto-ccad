@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import type { RequisicaoAvaliacao } from '@/lib/database.types'
 import { parsePlanilhaEmLotes, type LoteDetectado } from '@/lib/parsePlanilhaEmLotes'
 import { declaracaoCepa, gerarCepaPdf } from '@/lib/documentosCepaCrpa'
+import { RequisicaoStatusBadge } from '@/components/badges/DecisaoBadges'
 import clsx from 'clsx'
 
 type RequisicaoLista = RequisicaoAvaliacao & {
@@ -559,12 +560,6 @@ export function RequisicoesAvaliacaoPage() {
     },
   })
 
-  const statusLabel: Record<string, { label: string; style: string }> = {
-    pendente: { label: 'Pendente', style: 'bg-amber-100 text-amber-700' },
-    concluida: { label: 'Concluída', style: 'bg-teal-100 text-teal-700' },
-    cancelada: { label: 'Cancelada', style: 'bg-gray-100 text-gray-500' },
-  }
-
   const cancelar = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('requisicoes_avaliacao').update({ status: 'cancelada' }).eq('id', id)
@@ -1115,9 +1110,7 @@ export function RequisicoesAvaliacaoPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <span className="font-mono font-semibold text-gray-900 text-sm">Caixa {r.caixa?.numero ?? '—'}</span>
-                    <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', statusLabel[r.status]?.style)}>
-                      {statusLabel[r.status]?.label ?? r.status}
-                    </span>
+                    <RequisicaoStatusBadge status={r.status} />
                     {r.caixa?.status === 'aguardando_conferencia' && (
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-100 text-navy-700">
                         Aguardando conferência do Protocolo
