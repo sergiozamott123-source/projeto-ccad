@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Send, X, Plus, ClipboardPaste, UploadCloud, PackageSearch, FileSignature } from 'lucide-react'
+import { Send, X, Plus, ClipboardPaste, UploadCloud, PackageSearch, FileSignature, Clock, PackageCheck } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -1112,13 +1112,13 @@ export function RequisicoesAvaliacaoPage() {
                     <span className="font-mono font-semibold text-gray-900 text-sm">Caixa {r.caixa?.numero ?? '—'}</span>
                     <RequisicaoStatusBadge status={r.status} />
                     {r.caixa?.status === 'aguardando_conferencia' && (
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-100 text-navy-700">
-                        Aguardando conferência do Protocolo
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-navy-100 text-navy-700 inline-flex items-center gap-1">
+                        <Clock size={11} /> Aguardando conferência do Protocolo
                       </span>
                     )}
                     {r.caixa?.status === 'arquivada' && (
-                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-700">
-                        Arquivada
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-teal-100 text-teal-700 inline-flex items-center gap-1">
+                        <PackageCheck size={11} /> Arquivada
                       </span>
                     )}
                   </div>
