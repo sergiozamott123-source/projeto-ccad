@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, Undo2, ChevronDown, ChevronUp, PencilLine, History, CheckSquare } from 'lucide-react'
+import { CheckCircle, CheckCircle2, Clock, Undo2, ChevronDown, ChevronUp, PencilLine, History, CheckSquare } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
 import type { Avaliacao, TtdCodigo } from '@/lib/database.types'
 import { TtdCodigoPicker } from '@/components/TtdCodigoPicker'
+import { DecisaoBadge } from '@/components/badges/DecisaoBadges'
 import clsx from 'clsx'
 
 type HistoricoDevolucao = {
@@ -409,7 +410,7 @@ export function ConfirmarEliminacoesPage() {
                     <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
                       <span className="font-mono font-semibold text-gray-900 text-sm">{p.processo?.numero_documento}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Eliminação</span>
+                      <DecisaoBadge destino={p.processo?.ttd?.destinacao_final ?? 'Eliminação'} />
                       {p.processo?.caixa && <span className="text-xs text-gray-400">Caixa {p.processo.caixa.numero}</span>}
                     </div>
                     {p.processo?.assunto_processo && (
@@ -472,7 +473,7 @@ export function ConfirmarEliminacoesPage() {
                       </div>
                       <div>
                         <span className="text-gray-400">Destinação final na TTD: </span>
-                        <span className="text-red-600 font-medium">{p.processo?.ttd?.destinacao_final || '—'}</span>
+                        <DecisaoBadge destino={p.processo?.ttd?.destinacao_final} />
                       </div>
                       <div>
                         <span className="text-gray-400">Fase corrente/intermediária: </span>
@@ -594,19 +595,19 @@ export function ConfirmarEliminacoesPage() {
                       {h.proximo ? (
                         <span
                           className={clsx(
-                            'text-xs px-2 py-0.5 rounded-full font-medium shrink-0',
+                            'inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium shrink-0',
                             h.proximo.status === 'confirmada' && 'bg-teal-100 text-teal-700',
                             h.proximo.status === 'devolvida' && 'bg-red-100 text-red-700',
                             h.proximo.status === 'aguardando_confirmacao' && 'bg-amber-100 text-amber-700'
                           )}
                         >
-                          {h.proximo.status === 'confirmada' && 'Refeito e confirmado'}
-                          {h.proximo.status === 'devolvida' && 'Refeito e devolvido novamente'}
-                          {h.proximo.status === 'aguardando_confirmacao' && 'Refeito, aguardando nova confirmação'}
+                          {h.proximo.status === 'confirmada' && <><CheckCircle2 size={11} /> Refeito e confirmado</>}
+                          {h.proximo.status === 'devolvida' && <><Undo2 size={11} /> Refeito e devolvido novamente</>}
+                          {h.proximo.status === 'aguardando_confirmacao' && <><Clock size={11} /> Refeito, aguardando nova confirmação</>}
                         </span>
                       ) : (
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 shrink-0">
-                          Aguardando o avaliador refazer
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-amber-100 text-amber-700 shrink-0">
+                          <Clock size={11} /> Aguardando o avaliador refazer
                         </span>
                       )}
                     </div>
