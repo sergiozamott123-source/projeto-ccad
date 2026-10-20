@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { TtdCodigo } from '@/lib/database.types'
 import { correspondeBusca } from '@/lib/textSearch'
+import { DecisaoBadge, TtdStatusBadge } from '@/components/badges/DecisaoBadges'
 import clsx from 'clsx'
 
 export function TtdPage() {
@@ -152,18 +153,11 @@ export function TtdPage() {
                     <td className="px-3 py-2 text-gray-500">{t.especie}</td>
                     <td className="px-3 py-2 text-gray-600">{t.fase_corrente}</td>
                     <td className="px-3 py-2 text-gray-600">{t.fase_intermediaria}</td>
-                    <td className={clsx('px-3 py-2 font-medium',
-                      t.destinacao_final?.toLowerCase().includes('elimin') ? 'text-red-600' : 'text-teal-700'
-                    )}>
-                      {t.destinacao_final}
+                    <td className="px-3 py-2">
+                      <DecisaoBadge destino={t.destinacao_final} />
                     </td>
                     <td className="px-3 py-2">
-                      {t.status === 'vigente'
-                        ? <span className="badge-vigente">vigente</span>
-                        : t.status === 'proposta'
-                        ? <span className="badge-proposta">proposta</span>
-                        : <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500">descont.</span>
-                      }
+                      <TtdStatusBadge status={t.status} />
                     </td>
                   </tr>
                 ))}
