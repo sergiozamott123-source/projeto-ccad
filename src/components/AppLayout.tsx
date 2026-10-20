@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature, Workflow,
+  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature, Workflow, Star,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -11,6 +11,7 @@ import type { Usuario } from '@/lib/database.types'
 import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
 import { AlertaRitmoAvaliacao } from '@/components/AlertaRitmoAvaliacao'
 import { AlertaAvaliacaoPessoal } from '@/components/AlertaAvaliacaoPessoal'
+import { correspondeBusca } from '@/lib/textSearch'
 import clsx from 'clsx'
 
 interface NavItem {
@@ -21,6 +22,34 @@ interface NavItem {
   flag?: keyof Usuario
   novo?: boolean
   children?: { to: string; label: string }[]
+}
+
+// Item "achatado" do menu, usado na busca e nos favoritos — tanto itens de
+// primeiro nível quanto cada filho de um grupo (ex. "Tabela TTD" dentro de
+// "Acervo") viram um item navegável único, independente de onde estejam
+// aninhados. `group`/`groupTo` só existem para um item que é filho de um
+// grupo, e servem para mostrar "em Acervo" no resultado da busca e para
+// abrir automaticamente o grupo certo ao navegar por um favorito/resultado.
+interface FlatNavItem {
+  to: string
+  label: string
+  icon: React.ReactNode
+  group?: string
+  groupTo?: string
+}
+
+function buildFlatNav(visibleNav: NavItem[]): FlatNavItem[] {
+  const out: FlatNavItem[] = []
+  for (const item of visibleNav) {
+    if (item.children) {
+      for (const child of item.children) {
+        out.push({ to: child.to, label: child.label, icon: item.icon, group: item.label, groupTo: item.to })
+      }
+    } else {
+      out.push({ to: item.to, label: item.label, icon: item.icon })
+    }
+  }
+  return out
 }
 
 const NAV: NavItem[] = [
@@ -74,6 +103,37 @@ export function AppLayout() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [search, setSearch] = useState('')
+
+  // Favoritos do menu (pedido do Sérgio, 20/10/2026 — ver
+  // claude/portal-ccad-notas.md, seção "Design System do Portal"): cada
+  // pessoa fixa as telas que mais usa no topo do menu, mesmo as que ficam
+  // escondidas dentro de um submenu (ex. "Tabela TTD" dentro de "Acervo").
+  // Guardado no navegador (localStorage), por usuário — é só uma
+  // preferência pessoal de atalho, não precisa de tabela nova no banco.
+  const [favoritos, setFavoritos] = useState<string[]>([])
+  useEffect(() => {
+    if (!profile?.id) return
+    try {
+      const raw = localStorage.getItem(`ccad-favoritos-${profile.id}`)
+      setFavoritos(raw ? JSON.parse(raw) : [])
+    } catch {
+      setFavoritos([])
+    }
+  }, [profile?.id])
+
+  function toggleFavorito(to: string) {
+    setFavoritos(prev => {
+      const next = prev.includes(to) ? prev.filter(x => x !== to) : [...prev, to]
+      try {
+        if (profile?.id) localStorage.setItem(`ccad-favoritos-${profile.id}`, JSON.stringify(next))
+      } catch {
+        // localStorage pode falhar (navegação privada, bloqueio) — favoritos
+        // seguem funcionando só nesta sessão da página, sem persistir.
+      }
+      return next
+    })
+  }
 
   const papel = profile?.papel ?? ''
   const isCoord = papel === 'coordenador' || papel === 'coordenador_substituto'
@@ -147,6 +207,22 @@ export function AppLayout() {
     return true
   }
 
+  const visibleNav = NAV.filter(isVisible)
+  const flatNav = buildFlatNav(visibleNav)
+  // Busca tolerante a acento/plural (mesma lib usada na TTD e em outras
+  // buscas do sistema — ver src/lib/textSearch.ts). Também considera o
+  // nome do grupo ("Acervo"), então buscar "acervo" já lista tudo que mora
+  // lá dentro, não só o nome exato da tela.
+  const searchResults = search.trim()
+    ? flatNav.filter(i => correspondeBusca(`${i.label} ${i.group ?? ''}`, search))
+    : []
+
+  function abrirItem(i: FlatNavItem) {
+    setOpen(false)
+    setSearch('')
+    if (i.groupTo) setExpanded(v => ({ ...v, [i.groupTo as string]: true }))
+  }
+
   async function handleSignOut() {
     await signOut()
     navigate('/login')
@@ -178,76 +254,188 @@ export function AppLayout() {
         <img src={CDTIV_LOGO_DARKBG} alt="CDTIV" className="h-7 w-auto shrink-0" />
       </div>
 
+      {/* Busca de telas (pedido do Sérgio, 20/10/2026) — digite o nome de
+          qualquer tela e ela aparece na hora, mesmo escondida dentro de um
+          submenu como "Acervo". */}
+      <div className="px-3 pt-3 pb-1">
+        <div className="relative">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-navy-400 pointer-events-none" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar tela…"
+            className="w-full bg-white/95 border border-white/20 rounded-lg pl-8 pr-7 py-1.5 text-xs text-navy-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-navy-300 hover:text-navy-600"
+              title="Limpar busca"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        {NAV.filter(isVisible).map(item => (
-          item.children ? (
-            <div key={item.to}>
-              <button
-                onClick={() => setExpanded(v => ({ ...v, [item.to]: !v[item.to] }))}
-                className={clsx(
-                  'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  'text-white/70 hover:text-white hover:bg-white/10',
+      <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-0.5">
+        {search.trim() ? (
+          // Resultados da busca — lista achatada, mostra "em <grupo>" para
+          // os itens que moram dentro de um submenu.
+          searchResults.length === 0 ? (
+            <p className="px-3 py-3 text-xs text-white/40">Nenhuma tela encontrada para "{search}".</p>
+          ) : (
+            searchResults.map(i => (
+              <NavLink
+                key={i.to}
+                to={i.to}
+                end
+                onClick={() => abrirItem(i)}
+                className={({ isActive }) => clsx(
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors border',
+                  isActive
+                    ? 'bg-teal-500 text-white border-teal-400'
+                    : 'bg-teal-500/15 text-white border-teal-500/30 hover:bg-teal-500/25',
                 )}
               >
-                {item.icon}
-                <span className="flex-1 text-left">{item.label}</span>
-                <ChevronDown size={14} className={clsx('transition-transform', expanded[item.to] && 'rotate-180')} />
-              </button>
-              {expanded[item.to] && (
-                <div className="ml-6 mt-0.5 space-y-0.5">
-                  {item.children.map(child => (
-                    <NavLink
-                      key={child.to}
-                      to={child.to}
-                      end
-                      onClick={() => setOpen(false)}
-                      className={({ isActive }) => clsx(
-                        'block px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                        isActive ? 'bg-teal-500 text-white' : 'text-white/60 hover:text-white hover:bg-white/10',
-                      )}
-                    >
-                      {child.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) => clsx(
-                'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                isActive ? 'bg-teal-500 text-white' : 'text-white/70 hover:text-white hover:bg-white/10',
-              )}
-            >
-              {item.icon}
-              <span className="flex-1">{item.label}</span>
-              {item.novo && (
-                <span className="bg-teal-400 text-navy-700 text-[9px] font-bold tracking-wide rounded-full px-1.5 py-0.5">
-                  NOVO
+                {i.icon}
+                <span className="flex-1 min-w-0">
+                  <span className="block truncate">{i.label}</span>
+                  {i.group && <span className="block text-[10px] font-normal text-teal-300">em {i.group}</span>}
                 </span>
-              )}
-              {item.to === '/demandas' && (demandasPendentesCount ?? 0) > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {demandasPendentesCount}
-                </span>
-              )}
-              {item.to === '/confirmar-eliminacoes' && (eliminacoesPendentesCount ?? 0) > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {eliminacoesPendentesCount}
-                </span>
-              )}
-              {item.to === '/conferencia-caixas' && (pocosArquivamentoProntosCount ?? 0) > 0 && (
-                <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
-                  {pocosArquivamentoProntosCount}
-                </span>
-              )}
-            </NavLink>
+              </NavLink>
+            ))
           )
-        ))}
+        ) : (
+          <>
+            {/* Favoritos — telas fixadas pela própria pessoa, mesmo as que
+                moram dentro de um submenu. Guardado no navegador, por
+                usuário (ver toggleFavorito acima). */}
+            {favoritos.length > 0 && (
+              <div className="mb-2 pb-2 border-b border-white/10 space-y-0.5">
+                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wide text-white/35">Favoritos</p>
+                {favoritos
+                  .map(to => flatNav.find(i => i.to === to))
+                  .filter((i): i is FlatNavItem => !!i)
+                  .map(i => (
+                    <div key={i.to} className="flex items-center gap-1">
+                      <NavLink
+                        to={i.to}
+                        end
+                        onClick={() => abrirItem(i)}
+                        className={({ isActive }) => clsx(
+                          'flex-1 min-w-0 flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                          isActive ? 'bg-teal-500 text-white' : 'text-white/80 hover:text-white hover:bg-white/10',
+                        )}
+                      >
+                        {i.icon}
+                        <span className="flex-1 truncate">{i.label}</span>
+                      </NavLink>
+                      <button
+                        onClick={() => toggleFavorito(i.to)}
+                        className="p-1.5 text-amber-400 hover:text-amber-300 shrink-0"
+                        title="Remover dos favoritos"
+                      >
+                        <Star size={13} fill="currentColor" />
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            {visibleNav.map(item => (
+              item.children ? (
+                <div key={item.to}>
+                  <button
+                    onClick={() => setExpanded(v => ({ ...v, [item.to]: !v[item.to] }))}
+                    className={clsx(
+                      'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'text-white/70 hover:text-white hover:bg-white/10',
+                    )}
+                  >
+                    {item.icon}
+                    <span className="flex-1 text-left">{item.label}</span>
+                    <ChevronDown size={14} className={clsx('transition-transform', expanded[item.to] && 'rotate-180')} />
+                  </button>
+                  {expanded[item.to] && (
+                    <div className="ml-6 mt-0.5 space-y-0.5">
+                      {item.children.map(child => (
+                        <div key={child.to} className="flex items-center gap-1">
+                          <NavLink
+                            to={child.to}
+                            end
+                            onClick={() => setOpen(false)}
+                            className={({ isActive }) => clsx(
+                              'flex-1 min-w-0 block px-3 py-1.5 rounded-lg text-xs font-medium transition-colors truncate',
+                              isActive ? 'bg-teal-500 text-white' : 'text-white/60 hover:text-white hover:bg-white/10',
+                            )}
+                          >
+                            {child.label}
+                          </NavLink>
+                          <button
+                            onClick={() => toggleFavorito(child.to)}
+                            className={clsx(
+                              'p-1 rounded-md transition-colors shrink-0',
+                              favoritos.includes(child.to) ? 'text-amber-400' : 'text-white/20 hover:text-white/50',
+                            )}
+                            title={favoritos.includes(child.to) ? 'Remover dos favoritos' : 'Fixar nos favoritos'}
+                          >
+                            <Star size={11} fill={favoritos.includes(child.to) ? 'currentColor' : 'none'} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div key={item.to} className="flex items-center gap-1">
+                  <NavLink
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) => clsx(
+                      'flex-1 min-w-0 flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      isActive ? 'bg-teal-500 text-white' : 'text-white/70 hover:text-white hover:bg-white/10',
+                    )}
+                  >
+                    {item.icon}
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {item.novo && (
+                      <span className="bg-teal-400 text-navy-700 text-[9px] font-bold tracking-wide rounded-full px-1.5 py-0.5">
+                        NOVO
+                      </span>
+                    )}
+                    {item.to === '/demandas' && (demandasPendentesCount ?? 0) > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                        {demandasPendentesCount}
+                      </span>
+                    )}
+                    {item.to === '/confirmar-eliminacoes' && (eliminacoesPendentesCount ?? 0) > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                        {eliminacoesPendentesCount}
+                      </span>
+                    )}
+                    {item.to === '/conferencia-caixas' && (pocosArquivamentoProntosCount ?? 0) > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                        {pocosArquivamentoProntosCount}
+                      </span>
+                    )}
+                  </NavLink>
+                  <button
+                    onClick={() => toggleFavorito(item.to)}
+                    className={clsx(
+                      'p-1.5 rounded-md transition-colors shrink-0',
+                      favoritos.includes(item.to) ? 'text-amber-400' : 'text-white/25 hover:text-white/60',
+                    )}
+                    title={favoritos.includes(item.to) ? 'Remover dos favoritos' : 'Fixar nos favoritos'}
+                  >
+                    <Star size={13} fill={favoritos.includes(item.to) ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
+              )
+            ))}
+          </>
+        )}
       </nav>
 
       {/* User */}
