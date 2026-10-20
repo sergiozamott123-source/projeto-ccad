@@ -1,4 +1,4 @@
-import { Trash2, ShieldCheck, CheckCircle2, Clock, Archive } from 'lucide-react'
+import { Trash2, ShieldCheck, CheckCircle2, Clock, Archive, Undo2, MapPin, CalendarDays } from 'lucide-react'
 import clsx from 'clsx'
 
 // ------------------------------------------------------------------
@@ -88,4 +88,40 @@ export function RequisicaoStatusBadge({ status, className }: { status: string | 
     )
   }
   return <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500', className)}>{status}</span>
+}
+
+/** Badge de status de uma avaliação (aguardando confirmação / confirmada / devolvida), com ícone fixo. */
+export function AvaliacaoStatusBadge({ status, className }: { status: string | null | undefined; className?: string }) {
+  if (status === 'confirmada') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700', className)}>
+        <CheckCircle2 size={11} /> Confirmada
+      </span>
+    )
+  }
+  if (status === 'devolvida') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700', className)}>
+        <Undo2 size={11} /> Devolvida
+      </span>
+    )
+  }
+  if (status === 'aguardando_confirmacao') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700', className)}>
+        <Clock size={11} /> Aguardando confirmação
+      </span>
+    )
+  }
+  return <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500', className)}>{status}</span>
+}
+
+/** Ícone pequeno de Setor/local — usado inline ao lado do texto do setor, sem virar um "pill" (o setor já aparece como texto simples na maioria das telas, só precisa do sinal visual). */
+export function SetorIcon({ className }: { className?: string }) {
+  return <MapPin size={11} className={clsx('text-gray-400 shrink-0', className)} />
+}
+
+/** Ícone pequeno de Data — mesmo princípio do SetorIcon, para datas/anos mostrados como texto simples. */
+export function DataIcon({ className }: { className?: string }) {
+  return <CalendarDays size={11} className={clsx('text-gray-400 shrink-0', className)} />
 }

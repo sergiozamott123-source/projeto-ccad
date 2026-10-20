@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { PackageCheck, ChevronDown, ChevronUp, AlertTriangle, Boxes } from 'lucide-react'
+import { PackageCheck, ChevronDown, ChevronUp, AlertTriangle, Boxes, MapPin } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Caixa, ConfigArquivamentoFinal } from '@/lib/database.types'
+import { DecisaoBadge } from '@/components/badges/DecisaoBadges'
 import clsx from 'clsx'
 
 // Caixas finais por setor — "poços de arquivamento" (10/10/2026)
@@ -31,11 +32,6 @@ type ProcessoPoco = {
 }
 
 type Poco = Caixa & { processos: ProcessoPoco[] }
-
-const DESTINACAO_LABEL: Record<string, string> = {
-  eliminacao: 'Eliminação',
-  guarda_permanente: 'Guarda Permanente',
-}
 
 export function ConferenciaCaixasPage() {
   const { profile } = useAuth()
@@ -205,15 +201,10 @@ export function ConferenciaCaixasPage() {
                   <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <span className="font-mono font-semibold text-gray-900 text-sm">{p.setor}</span>
-                        <span
-                          className={clsx(
-                            'text-xs px-2 py-0.5 rounded-full font-medium',
-                            p.destinacao === 'eliminacao' ? 'bg-red-100 text-red-700' : 'bg-teal-100 text-teal-700',
-                          )}
-                        >
-                          {DESTINACAO_LABEL[p.destinacao ?? ''] ?? p.destinacao}
+                        <span className="font-mono font-semibold text-gray-900 text-sm inline-flex items-center gap-1">
+                          <MapPin size={12} className="text-gray-400" /> {p.setor}
                         </span>
+                        <DecisaoBadge destino={p.destinacao} />
                         {pronto && (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 font-medium inline-flex items-center gap-1">
                             <Boxes size={12} /> Pronto para arquivar
@@ -257,16 +248,7 @@ export function ConferenciaCaixasPage() {
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className="font-mono text-gray-700">{proc.ttd?.codigo ?? '—'}</span>
-                              <span
-                                className={
-                                  'px-2 py-0.5 rounded-full font-medium ' +
-                                  (aval?.decisao?.toLowerCase().includes('elimin')
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-teal-100 text-teal-700')
-                                }
-                              >
-                                {aval?.decisao ?? '—'}
-                              </span>
+                              <DecisaoBadge destino={aval?.decisao} />
                             </div>
                           </div>
                         )

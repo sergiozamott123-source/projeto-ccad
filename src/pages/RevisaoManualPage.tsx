@@ -4,6 +4,7 @@ import { CheckCircle, AlertCircle, Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { Processo, TtdCodigo } from '@/lib/database.types'
 import { correspondeBusca } from '@/lib/textSearch'
+import { DecisaoBadge } from '@/components/badges/DecisaoBadges'
 
 // Busca/seleção de um código TTD vigente — reaproveitada tanto na
 // classificação de um processo por vez quanto na classificação em lote
@@ -53,8 +54,8 @@ function TtdBusca({
         <div className="bg-gray-50 rounded-lg p-2 text-xs grid grid-cols-3 gap-2">
           <div><span className="text-gray-400">Corrente:</span> {selected.fase_corrente}</div>
           <div><span className="text-gray-400">Interm.:</span> {selected.fase_intermediaria}</div>
-          <div className={selected.destinacao_final?.toLowerCase().includes('elimin') ? 'text-red-600' : 'text-teal-700'}>
-            <span className="text-gray-400">Destinação:</span> {selected.destinacao_final}
+          <div className="flex items-center gap-1.5">
+            <span className="text-gray-400">Destinação:</span> <DecisaoBadge destino={selected.destinacao_final} />
           </div>
         </div>
       )}

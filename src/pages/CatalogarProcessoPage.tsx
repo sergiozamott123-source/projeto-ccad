@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Star } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { TtdCodigo, Caixa } from '@/lib/database.types'
 import { correspondeBusca } from '@/lib/textSearch'
+import { DecisaoBadge } from '@/components/badges/DecisaoBadges'
 import clsx from 'clsx'
 
 interface ProcessoForm {
@@ -222,13 +223,7 @@ export function CatalogarProcessoPage() {
             </div>
             <div>
               <label className="label text-gray-500">Destinação final</label>
-              <p className={clsx(
-                'text-sm font-medium',
-                selectedTtd.destinacao_final?.toLowerCase().includes('elimin')
-                  ? 'text-red-600' : 'text-teal-700',
-              )}>
-                {selectedTtd.destinacao_final || '—'}
-              </p>
+              <DecisaoBadge destino={selectedTtd.destinacao_final} />
             </div>
           </div>
         )}
