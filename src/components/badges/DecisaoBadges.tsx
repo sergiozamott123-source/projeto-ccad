@@ -63,3 +63,29 @@ export function TtdStatusBadge({ status, className }: { status: string | null | 
     </span>
   )
 }
+
+/** Badge de status de uma requisição de avaliação/CEPA (pendente / concluída / cancelada), com ícone fixo. */
+export function RequisicaoStatusBadge({ status, className }: { status: string | null | undefined; className?: string }) {
+  if (status === 'pendente') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700', className)}>
+        <Clock size={11} /> Pendente
+      </span>
+    )
+  }
+  if (status === 'concluida') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700', className)}>
+        <CheckCircle2 size={11} /> Concluída
+      </span>
+    )
+  }
+  if (status === 'cancelada') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500', className)}>
+        <Archive size={11} /> Cancelada
+      </span>
+    )
+  }
+  return <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500', className)}>{status}</span>
+}
