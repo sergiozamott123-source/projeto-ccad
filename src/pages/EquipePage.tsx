@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { UserPlus, Mail, Plus, Building2, Boxes } from 'lucide-react'
+import { UserPlus, Mail, Plus, Building2, Boxes, CheckCircle2, Clock, Trash2, ShieldCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Usuario, Pilar, SetorCdtiv, ConfigArquivamentoFinal } from '@/lib/database.types'
@@ -277,7 +277,9 @@ export function EquipePage() {
         {isCoord ? (
           <div className="flex flex-wrap items-end gap-4">
             <div>
-              <label className="label">Eliminação</label>
+              <label className="label flex items-center gap-1">
+                <Trash2 size={11} className="text-red-500" /> Eliminação
+              </label>
               <input
                 className="input w-28"
                 type="number"
@@ -287,7 +289,9 @@ export function EquipePage() {
               />
             </div>
             <div>
-              <label className="label">Guarda Permanente</label>
+              <label className="label flex items-center gap-1">
+                <ShieldCheck size={11} className="text-teal-600" /> Guarda Permanente
+              </label>
               <input
                 className="input w-28"
                 type="number"
@@ -308,9 +312,13 @@ export function EquipePage() {
             )}
           </div>
         ) : (
-          <p className="text-sm text-gray-600">
-            Eliminação: {configArquivamento?.quantidade_minima_eliminacao ?? '—'} · Guarda Permanente:{' '}
-            {configArquivamento?.quantidade_minima_guarda_permanente ?? '—'}
+          <p className="text-sm text-gray-600 flex items-center gap-3 flex-wrap">
+            <span className="inline-flex items-center gap-1">
+              <Trash2 size={11} className="text-red-500" /> Eliminação: {configArquivamento?.quantidade_minima_eliminacao ?? '—'}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <ShieldCheck size={11} className="text-teal-600" /> Guarda Permanente: {configArquivamento?.quantidade_minima_guarda_permanente ?? '—'}
+            </span>
           </p>
         )}
       </div>
@@ -391,9 +399,10 @@ export function EquipePage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={clsx(
-                      'px-2 py-0.5 rounded-full text-xs font-medium',
+                      'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
                       u.status === 'ativo' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700',
                     )}>
+                      {u.status === 'ativo' ? <CheckCircle2 size={11} /> : <Clock size={11} />}
                       {STATUS_LABELS[u.status] ?? u.status}
                     </span>
                   </td>

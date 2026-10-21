@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation } from 'react-router-dom'
-import { Archive, MapPin, CheckCircle, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy, PackageCheck, ClipboardList, LayoutGrid, Construction } from 'lucide-react'
+import { Archive, MapPin, CheckCircle, CheckCircle2, Clock, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy, PackageCheck, ClipboardList, LayoutGrid, Construction } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, formatDistanceToNow, startOfMonth, subMonths } from 'date-fns'
@@ -37,6 +37,18 @@ const CAIXA_STATUS_LABEL: Record<StatusCaixa, string> = {
   distribuida: 'Distribuída para poços',
   arquivada: 'Arquivada',
   em_construcao: 'Poço em construção',
+}
+
+// Ícone por etapa — mesmo espírito do vocabulário visual aprovado (relógio
+// para pendente/em andamento, check para concluído), aplicado aqui no painel
+// de etapas do ciclo da caixa, sem mudar nenhuma cor/contagem já existente.
+const CAIXA_STATUS_ICON: Record<StatusCaixa, React.ReactNode> = {
+  catalogada: <ClipboardList size={13} className="text-gray-400" />,
+  em_avaliacao: <Clock size={13} className="text-gray-400" />,
+  aguardando_conferencia: <Clock size={13} className="text-gray-400" />,
+  distribuida: <ArrowRight size={13} className="text-gray-400" />,
+  arquivada: <PackageCheck size={13} className="text-gray-400" />,
+  em_construcao: <Archive size={13} className="text-gray-400" />,
 }
 
 // Cor da barra de progresso por avaliador, de acordo com o % concluído —
@@ -594,9 +606,10 @@ export function DashboardPage() {
               </p>
               {ultimaMensal && (
                 <span className={clsx(
-                  'inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium',
+                  'inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium',
                   ultimaMensal.encaminhado_nrh ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
                 )}>
+                  {ultimaMensal.encaminhado_nrh ? <CheckCircle2 size={11} /> : <Clock size={11} />}
                   {ultimaMensal.encaminhado_nrh ? 'Encaminhado ao NRH' : 'Não encaminhado ao NRH'}
                 </span>
               )}
@@ -833,7 +846,9 @@ export function DashboardPage() {
                     {(resumoAvaliacoes?.porStatus ?? []).map(s => (
                       <div key={s.status} className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-3 text-center">
                         <p className="text-xl font-bold text-gray-900">{s.count.toLocaleString('pt-BR')}</p>
-                        <p className="text-[11px] text-gray-500 mt-0.5">{CAIXA_STATUS_LABEL[s.status]}</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5 flex items-center justify-center gap-1">
+                          {CAIXA_STATUS_ICON[s.status]} {CAIXA_STATUS_LABEL[s.status]}
+                        </p>
                       </div>
                     ))}
                   </div>

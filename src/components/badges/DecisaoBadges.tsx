@@ -1,4 +1,4 @@
-import { Trash2, ShieldCheck, CheckCircle2, Clock, Archive, Undo2, MapPin, CalendarDays } from 'lucide-react'
+import { Trash2, ShieldCheck, CheckCircle2, Clock, Archive, Undo2, MapPin, CalendarDays, AlertTriangle, PenLine } from 'lucide-react'
 import clsx from 'clsx'
 
 // ------------------------------------------------------------------
@@ -114,6 +114,36 @@ export function AvaliacaoStatusBadge({ status, className }: { status: string | n
     )
   }
   return <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500', className)}>{status}</span>
+}
+
+/** Badge de status de um relatório mensal (rascunho / enviado / atrasado / não enviado), com ícone fixo. Reaproveitado em "Meus Relatórios Mensais" e "Relatórios da Equipe" — antes cada tela tinha seu próprio mapa de cor duplicado. */
+export function RelatorioStatusBadge({ status, className }: { status: string | null | undefined; className?: string }) {
+  if (status === 'enviado') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700', className)}>
+        <CheckCircle2 size={11} /> Enviado
+      </span>
+    )
+  }
+  if (status === 'atrasado') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700', className)}>
+        <AlertTriangle size={11} /> Atrasado
+      </span>
+    )
+  }
+  if (status === 'nao_enviado') {
+    return (
+      <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-500', className)}>
+        <Clock size={11} /> Não enviado
+      </span>
+    )
+  }
+  return (
+    <span className={clsx('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600', className)}>
+      <PenLine size={11} /> Rascunho
+    </span>
+  )
 }
 
 /** Ícone pequeno de Setor/local — usado inline ao lado do texto do setor, sem virar um "pill" (o setor já aparece como texto simples na maioria das telas, só precisa do sinal visual). */

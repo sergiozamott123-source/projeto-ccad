@@ -7,14 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import type { RelatorioMensal, Usuario } from '@/lib/database.types'
 import { format, startOfMonth, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import clsx from 'clsx'
-
-const STATUS_COLOR: Record<string, string> = {
-  rascunho: 'bg-gray-100 text-gray-600',
-  enviado: 'bg-green-100 text-green-700',
-  atrasado: 'bg-red-100 text-red-700',
-  nao_enviado: 'bg-red-50 text-red-500',
-}
+import { RelatorioStatusBadge } from '@/components/badges/DecisaoBadges'
 
 const STATUS_LABEL: Record<string, string> = {
   rascunho: 'Rascunho',
@@ -469,9 +462,7 @@ export function RelatoriosEquipePage() {
                         <Clock size={12} /> {format(new Date(relatorio.enviado_em), 'dd/MM/yyyy HH:mm')}
                       </span>
                     )}
-                    <span className={clsx('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLOR[status])}>
-                      {STATUS_LABEL[status]}
-                    </span>
+                    <RelatorioStatusBadge status={status} />
                     {relatorio && (
                       <button
                         type="button"
