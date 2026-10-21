@@ -7,6 +7,7 @@ import type { RelatorioMensal, Demanda } from '@/lib/database.types'
 import { format, startOfMonth, subMonths, addMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import clsx from 'clsx'
+import { RelatorioStatusBadge } from '@/components/badges/DecisaoBadges'
 
 interface AtividadesImportadas {
   processos_avaliados_qtd: number
@@ -97,12 +98,6 @@ function montarTextoAtividades(
   }
 
   return blocos.join('\n\n')
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  rascunho: 'bg-gray-100 text-gray-600',
-  enviado: 'bg-green-100 text-green-700',
-  atrasado: 'bg-red-100 text-red-700',
 }
 
 export function RelatoriosPage() {
@@ -409,9 +404,7 @@ export function RelatoriosPage() {
                     </p>
                   )}
                 </div>
-                <span className={clsx('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLOR[r.status])}>
-                  {r.status === 'rascunho' ? 'Rascunho' : r.status === 'enviado' ? 'Enviado' : 'Atrasado'}
-                </span>
+                <RelatorioStatusBadge status={r.status} />
               </div>
             ))}
           </div>
