@@ -12,6 +12,7 @@ import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
 import { AlertaRitmoAvaliacao } from '@/components/AlertaRitmoAvaliacao'
 import { AlertaAvaliacaoPessoal } from '@/components/AlertaAvaliacaoPessoal'
 import { correspondeBusca } from '@/lib/textSearch'
+import { useDevolvidosDoAvaliador, totalDevolvidos } from '@/lib/devolvidosAvaliador'
 import clsx from 'clsx'
 
 interface NavItem {
@@ -155,6 +156,11 @@ export function AppLayout() {
     },
     enabled: !!profile?.id,
   })
+
+  // Processos que a Coordenação devolveu a esta pessoa para refazer — contador
+  // do item "Minhas Atribuições" (onde fica a Avaliação de Processos).
+  const { data: gruposDevolvidos } = useDevolvidosDoAvaliador()
+  const devolvidosCount = totalDevolvidos(gruposDevolvidos ?? [])
 
   const { data: eliminacoesPendentesCount } = useQuery({
     queryKey: ['eliminacoes-pendentes-count', profile?.id, profile?.pilar_id, podeConfirmarEliminacoes],
@@ -408,6 +414,14 @@ export function AppLayout() {
                     {item.to === '/demandas' && (demandasPendentesCount ?? 0) > 0 && (
                       <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                         {demandasPendentesCount}
+                      </span>
+                    )}
+                    {item.to === '/minha-parte' && devolvidosCount > 0 && (
+                      <span
+                        title={`${devolvidosCount} ${devolvidosCount === 1 ? 'processo devolvido' : 'processos devolvidos'} para você`}
+                        className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"
+                      >
+                        {devolvidosCount}
                       </span>
                     )}
                     {item.to === '/confirmar-eliminacoes' && (eliminacoesPendentesCount ?? 0) > 0 && (

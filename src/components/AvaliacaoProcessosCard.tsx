@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2, FileSignature } from 'lucide-react'
+import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2, FileSignature, Undo2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
 import type { Processo, TtdCodigo, Avaliacao, RequisicaoAvaliacao } from '@/lib/database.types'
 import { declaracaoCrpa, gerarCrpaPdf } from '@/lib/documentosCepaCrpa'
 import { isEliminacao, DecisaoBadge, AvaliacaoStatusBadge } from '@/components/badges/DecisaoBadges'
+import { QuadroDevolvidos } from '@/components/QuadroDevolvidos'
+import { useDevolvidosDoAvaliador, type CaixaComDevolvidos } from '@/lib/devolvidosAvaliador'
 import clsx from 'clsx'
 
 // Uma avaliação já "resolve" o processo (não precisa mais avaliar) se ela
@@ -42,6 +44,29 @@ export function AvaliacaoProcessosCard() {
   // filtra a lista "Nesta caixa" por número ou assunto para achar rápido.
   const [selecionadoId, setSelecionadoId] = useState<string | null>(null)
   const [buscaProcesso, setBuscaProcesso] = useState('')
+
+  // Processos devolvidos pela Coordenação a este avaliador (quadro "Devolvidos
+  // para você"). `focoProcessoId` guarda qual processo abrir assim que a caixa
+  // clicada em "Corrigir agora" terminar de carregar.
+  const { data: gruposDevolvidos } = useDevolvidosDoAvaliador()
+  const [focoProcessoId, setFocoProcessoId] = useState<string | null>(null)
+  const idsDevolvidos = useMemo(
+    () => new Set((gruposDevolvidos ?? []).flatMap(g => g.processoIds)),
+    [gruposDevolvidos],
+  )
+
+  function corrigirDevolvidos(grupo: CaixaComDevolvidos) {
+    setCaixaNumero(grupo.caixaNumero)
+    setCaixaBusca(grupo.caixaNumero)
+    setFocoProcessoId(grupo.processoIds[0] ?? null)
+  }
+
+  function voltarParaDevolvidos() {
+    setCaixaNumero('')
+    setCaixaBusca('')
+    setSelecionadoId(null)
+    setTimeout(() => document.getElementById('quadro-devolvidos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+  }
 
   // Quem não é Coordenação só pode avaliar caixas que constam numa
   // requisição pendente enviada a ele — não busca mais livremente.
@@ -282,7 +307,7 @@ export function AvaliacaoProcessosCard() {
     queryFn: async () => {
       const { data } = await supabase
         .from('avaliacoes')
-        .select('motivo_devolucao, created_at')
+        .select('motivo_devolucao, created_at, confirmado_em, devolvido_por:confirmado_por(nome)')
         .eq('processo_id', atual!.id)
         .eq('status', 'devolvida')
         .order('created_at', { ascending: false })
@@ -292,6 +317,15 @@ export function AvaliacaoProcessosCard() {
     },
     enabled: !!atual?.id,
   })
+
+  // "Corrigir agora": quando a caixa carrega, abre direto o processo devolvido.
+  useEffect(() => {
+    if (!focoProcessoId || !caixaInfo?.caixa) return
+    if (pendentes.some(p => p.id === focoProcessoId)) setSelecionadoId(focoProcessoId)
+    setFocoProcessoId(null)
+    setTimeout(() => document.getElementById('avaliacao-processo-atual')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focoProcessoId, caixaInfo])
 
   useEffect(() => {
     if (atual?.ttd) {
@@ -370,6 +404,8 @@ export function AvaliacaoProcessosCard() {
       qc.invalidateQueries({ queryKey: ['minhas-avaliacoes-hoje'] })
       qc.invalidateQueries({ queryKey: ['minhas-avaliacoes-hoje-count'] })
       qc.invalidateQueries({ queryKey: ['minhas-requisicoes-pendentes'] })
+      qc.invalidateQueries({ queryKey: ['devolvidos-avaliador'] })
+      qc.invalidateQueries({ queryKey: ['avaliacao-devolucao'] })
       setSelectedTtd(null)
       setTtdSearch('')
       // Depois de salvar, volta a sugerir o próximo da ordem padrão — o
@@ -400,6 +436,8 @@ export function AvaliacaoProcessosCard() {
           </span>
         </div>
       </div>
+
+      <QuadroDevolvidos grupos={gruposDevolvidos ?? []} onCorrigir={corrigirDevolvidos} />
 
       {/* Selecionar caixa: Coordenação busca livremente; os demais só
           veem as caixas que foram enviadas a eles numa requisição */}
@@ -579,10 +617,45 @@ export function AvaliacaoProcessosCard() {
       )}
 
       {atual && (
-        <div className="mb-4">
+        <div id="avaliacao-processo-atual" className="mb-4 scroll-mt-4">
           {devolucao && (
-            <div className="mb-3 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-800">
-              <strong>Devolvido pelo Responsável do Eixo:</strong> {devolucao.motivo_devolucao}
+            <div className="mb-4 rounded-xl border-2 border-red-500 bg-white p-4">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-red-800">
+                  <Undo2 size={11} /> Devolvido pela Coordenação
+                </span>
+                <span className="text-xs text-gray-500">
+                  Processo {atual.numero_documento}
+                  {(() => {
+                    const por = Array.isArray(devolucao.devolvido_por) ? devolucao.devolvido_por[0] : devolucao.devolvido_por
+                    const quando = devolucao.confirmado_em ?? devolucao.created_at
+                    return ` · devolvido${por?.nome ? ` por ${por.nome}` : ''}${quando ? ` em ${format(new Date(quando), 'dd/MM/yyyy')}` : ''}`
+                  })()}
+                </span>
+              </div>
+              <div className="rounded-md border-l-4 border-red-500 bg-red-50 px-3 py-2.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-red-800">Motivo da devolução</p>
+                <p className="text-base text-gray-900">{devolucao.motivo_devolucao || 'Motivo não informado. Fale com a Coordenação.'}</p>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <div className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-gray-700">
+                  <p className="font-semibold text-teal-700">1. Leia o motivo</p>
+                  Ele explica o que a Coordenação pede para rever.
+                </div>
+                <div className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-gray-700">
+                  <p className="font-semibold text-teal-700">2. Escolha o código correto</p>
+                  Busque pelo assunto ou pelo código na tabela TTD, logo abaixo.
+                </div>
+                <div className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-gray-700">
+                  <p className="font-semibold text-teal-700">3. Salve de novo</p>
+                  O processo volta para a Coordenação confirmar.
+                </div>
+              </div>
+              {(gruposDevolvidos ?? []).length > 0 && (
+                <button type="button" className="btn-secondary text-xs mt-3" onClick={voltarParaDevolvidos}>
+                  Voltar à lista de devolvidos
+                </button>
+              )}
             </div>
           )}
           {/* O que é o processo: número, ano, interessado e — o mais
@@ -803,6 +876,11 @@ export function AvaliacaoProcessosCard() {
                   </span>
                   <span className="font-mono text-gray-600 shrink-0">{p.numero_documento}</span>
                   <span className="text-gray-500 truncate flex-1">{p.assunto_processo || '—'}</span>
+                  {!isDone && idsDevolvidos.has(p.id) && (
+                    <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-800">
+                      <Undo2 size={10} /> Devolvido
+                    </span>
+                  )}
                   {isDone && <DecisaoBadge destino={decisao} className="shrink-0" />}
                 </div>
               )
