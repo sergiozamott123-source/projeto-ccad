@@ -33,10 +33,10 @@ export function GroupedVerticalBarChart({
             <XAxis dataKey="label" tick={{ fontSize: 12, fill: COR.texto }} axisLine={false} tickLine={false} />
             <YAxis hide />
             <Bar dataKey="total" fill={COLOR_TOTAL} radius={[4, 4, 0, 0]} barSize={18} isAnimationActive={false} shape={minHeightShape}>
-              <LabelList dataKey="total" position="top" style={{ fontSize: 11, fill: COR.textoSecundario }} />
+              <LabelList dataKey="total" position="top" style={{ fontSize: 12, fill: COR.textoSecundario }} />
             </Bar>
             <Bar dataKey="enviados" fill={COLOR_ENVIADOS} radius={[4, 4, 0, 0]} barSize={18} isAnimationActive={false} shape={minHeightShape}>
-              <LabelList dataKey="enviados" position="top" style={{ fontSize: 11, fill: COR.primaria, fontWeight: 600 }} />
+              <LabelList dataKey="enviados" position="top" style={{ fontSize: 12, fill: COR.primaria, fontWeight: 600 }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>

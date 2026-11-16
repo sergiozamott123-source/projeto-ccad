@@ -223,7 +223,7 @@ export function MemoriaPilarPage() {
 
   const podeVer = isCoord || (!!pilar && profile?.pilar_id === pilar.id)
 
-  if (!pilar) return <p className="text-gray-400 text-center py-10">Carregando…</p>
+  if (!pilar) return <p className="text-gray-500 text-center py-10">Carregando…</p>
   if (!podeVer) return <p className="text-gray-500">Acesso restrito ao Coordenador e à equipe deste pilar.</p>
 
   const fasesOrdenadas = [...(pilar.fases ?? [])].sort((a, b) => a.ordem - b.ordem)
@@ -269,7 +269,7 @@ export function MemoriaPilarPage() {
                   <span className="text-sm font-bold text-gray-900">{fase.percentual_conclusao}%</span>
                 </div>
                 {atividadesFase.length === 0 ? (
-                  <p className="text-xs text-gray-400 mb-2">Nenhuma atividade cadastrada nesta fase.</p>
+                  <p className="text-xs text-gray-500 mb-2">Nenhuma atividade cadastrada nesta fase.</p>
                 ) : (
                   <div className="space-y-1.5 mb-2">
                     {atividadesFase.map(a => (
@@ -288,7 +288,7 @@ export function MemoriaPilarPage() {
                         <span>
                           <span className={a.concluida ? 'text-sm text-gray-500 line-through' : 'text-sm text-gray-800'}>{a.titulo}</span>
                           {a.concluida && (
-                            <span className="block text-xs text-gray-400">
+                            <span className="block text-xs text-gray-500">
                               {a.concluida_por_usuario?.nome ?? '—'} · {a.concluida_em ? format(new Date(a.concluida_em), 'dd/MM/yy') : ''}
                             </span>
                           )}
@@ -323,13 +323,13 @@ export function MemoriaPilarPage() {
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Demandas do Pilar</h2>
         {(demandas ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma demanda registrada.</p>
+          <p className="text-sm text-gray-500">Nenhuma demanda registrada.</p>
         ) : (
           <div className="space-y-2">
             {(demandas ?? []).map(d => (
               <div key={d.id} className="flex items-center justify-between py-2 border-b last:border-0">
                 <p className="text-sm font-medium text-gray-900">{d.titulo}</p>
-                <span className="text-xs text-gray-400">{STATUS_LABEL[d.status]}</span>
+                <span className="text-xs text-gray-500">{STATUS_LABEL[d.status]}</span>
               </div>
             ))}
           </div>
@@ -355,13 +355,13 @@ export function MemoriaPilarPage() {
             </div>
           )}
           {(benchmarking ?? []).length === 0 ? (
-            <p className="text-sm text-gray-400">Nenhum registro de benchmarking.</p>
+            <p className="text-sm text-gray-500">Nenhum registro de benchmarking.</p>
           ) : (
             <div className="space-y-2 max-h-56 overflow-y-auto">
               {(benchmarking ?? []).map(b => (
                 <div key={b.id} className="py-2 border-b last:border-0">
                   <p className="text-sm font-medium text-gray-900">{b.instituicao}</p>
-                  <p className="text-xs text-gray-400">{b.data_visita && format(new Date(b.data_visita), 'dd/MM/yyyy')} {b.notas && `· ${b.notas}`}</p>
+                  <p className="text-xs text-gray-500">{b.data_visita && format(new Date(b.data_visita), 'dd/MM/yyyy')} {b.notas && `· ${b.notas}`}</p>
                 </div>
               ))}
             </div>
@@ -396,13 +396,13 @@ export function MemoriaPilarPage() {
           ) : consultoria ? (
             <div className="text-sm">
               <p className="font-medium text-gray-900">{consultoria.especialista || 'Sem especialista definido'}</p>
-              <p className="text-xs text-gray-400">{consultoria.area}</p>
+              <p className="text-xs text-gray-500">{consultoria.area}</p>
               <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
                 {CONSULTORIA_LABEL[consultoria.status]}
               </span>
             </div>
           ) : (
-            <p className="text-sm text-gray-400">Consultoria ainda não registrada.</p>
+            <p className="text-sm text-gray-500">Consultoria ainda não registrada.</p>
           )}
         </div>
       </div>
@@ -414,7 +414,7 @@ export function MemoriaPilarPage() {
           <Link to="/acervo#buscar-memoria" className="btn-secondary text-xs py-1.5"><Search size={14} /> Buscar mais itens no acervo</Link>
         </div>
         {(candidatos ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhum item marcado como candidato ainda.</p>
+          <p className="text-sm text-gray-500">Nenhum item marcado como candidato ainda.</p>
         ) : (
           <div className="space-y-2 max-h-72 overflow-y-auto mb-4">
             {(candidatos ?? []).map(p => (
@@ -424,7 +424,7 @@ export function MemoriaPilarPage() {
                   {' '}
                   <span className="text-gray-800">{p.assunto_processo || (p.ttd as { assunto?: string } | undefined)?.assunto}</span>
                 </div>
-                <span className="text-xs text-gray-400 shrink-0">Caixa {(p.caixa as { numero?: string } | undefined)?.numero}</span>
+                <span className="text-xs text-gray-500 shrink-0">Caixa {(p.caixa as { numero?: string } | undefined)?.numero}</span>
               </div>
             ))}
           </div>
@@ -473,15 +473,15 @@ export function MemoriaPilarPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div className="sm:col-span-2">
-              <p className="text-gray-400 text-xs mb-0.5">Conceito / layout</p>
+              <p className="text-gray-500 text-xs mb-0.5">Conceito / layout</p>
               <p className="text-gray-800 whitespace-pre-wrap">{projeto?.conceito_layout || '—'}</p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs mb-0.5">Itens no acervo expositivo</p>
+              <p className="text-gray-500 text-xs mb-0.5">Itens no acervo expositivo</p>
               <p className="font-semibold text-gray-900">{(candidatos ?? []).length}</p>
             </div>
             <div>
-              <p className="text-gray-400 text-xs mb-0.5">Orçamento estimado</p>
+              <p className="text-gray-500 text-xs mb-0.5">Orçamento estimado</p>
               <p className="font-semibold text-gray-900">
                 {projeto?.orcamento_estimado != null ? projeto.orcamento_estimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'}
               </p>
@@ -515,7 +515,7 @@ export function MemoriaPilarPage() {
           </div>
         )}
         {(atas ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma ata registrada.</p>
+          <p className="text-sm text-gray-500">Nenhuma ata registrada.</p>
         ) : (
           <div className="space-y-2">
             {(atas ?? []).map(a => (

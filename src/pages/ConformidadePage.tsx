@@ -102,7 +102,7 @@ export function ConformidadePage() {
           <h2 className="font-semibold text-gray-900">Status por membro</h2>
         </div>
         {isLoading ? (
-          <p className="px-5 py-8 text-sm text-gray-400 text-center">Carregando…</p>
+          <p className="px-5 py-8 text-sm text-gray-500 text-center">Carregando…</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -120,7 +120,7 @@ export function ConformidadePage() {
                   <tr key={m.usuario_id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <p className="font-medium text-gray-900">{m.nome}</p>
-                      <p className="text-xs text-gray-400">{m.email}</p>
+                      <p className="text-xs text-gray-500">{m.email}</p>
                     </td>
                     <td className="px-4 py-3 text-gray-500">{m.pilar}</td>
                     <td className="px-4 py-3">

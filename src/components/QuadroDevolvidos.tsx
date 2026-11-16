@@ -41,7 +41,7 @@ export function QuadroDevolvidos({ grupos, onCorrigir }: Props) {
                 Último motivo: {g.motivo ? `"${g.motivo}"` : 'não informado'}
               </p>
               {(g.devolvidoPor || g.devolvidoEm) && (
-                <p className="text-[11px] text-gray-400">
+                <p className="text-xs text-gray-500">
                   {g.devolvidoPor ? `Devolvido por ${g.devolvidoPor}` : 'Devolvido'}
                   {g.devolvidoEm ? ` em ${format(new Date(g.devolvidoEm), 'dd/MM/yyyy')}` : ''}
                 </p>

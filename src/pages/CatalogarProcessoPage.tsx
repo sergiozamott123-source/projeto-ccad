@@ -203,7 +203,7 @@ export function CatalogarProcessoPage() {
                     {ttd.status === 'proposta' && <span className="badge-proposta">proposta</span>}
                   </div>
                   <p className="text-gray-700 truncate">{ttd.assunto}</p>
-                  <p className="text-xs text-gray-400 truncate">{ttd.serie}</p>
+                  <p className="text-xs text-gray-500 truncate">{ttd.serie}</p>
                 </button>
               ))}
             </div>

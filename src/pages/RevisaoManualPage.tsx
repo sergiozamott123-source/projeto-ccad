@@ -52,10 +52,10 @@ function TtdBusca({
       )}
       {selected && (
         <div className="bg-gray-50 rounded-lg p-2 text-xs grid grid-cols-3 gap-2">
-          <div><span className="text-gray-400">Corrente:</span> {selected.fase_corrente}</div>
-          <div><span className="text-gray-400">Interm.:</span> {selected.fase_intermediaria}</div>
+          <div><span className="text-gray-500">Corrente:</span> {selected.fase_corrente}</div>
+          <div><span className="text-gray-500">Interm.:</span> {selected.fase_intermediaria}</div>
           <div className="flex items-center gap-1.5">
-            <span className="text-gray-400">Destinação:</span> <DecisaoBadge destino={selected.destinacao_final} />
+            <span className="text-gray-500">Destinação:</span> <DecisaoBadge destino={selected.destinacao_final} />
           </div>
         </div>
       )}
@@ -221,7 +221,7 @@ export function RevisaoManualPage() {
       )}
 
       {isLoading ? (
-        <p className="text-center py-10 text-gray-400">Carregando…</p>
+        <p className="text-center py-10 text-gray-500">Carregando…</p>
       ) : filtered.length === 0 ? (
         <div className="card p-10 text-center">
           <CheckCircle size={40} className="text-green-400 mx-auto mb-2" />
@@ -253,20 +253,20 @@ export function RevisaoManualPage() {
                     <AlertCircle size={14} className="text-orange-500 shrink-0" />
                     <span className="font-mono text-sm font-semibold text-gray-900">{p.numero_documento}</span>
                     {p.caixa && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-500">
                         Caixa: {(p.caixa as { numero: string }).numero}
                         {(p.setor_origem ?? (p.caixa as { setor: string | null }).setor) && ` | ${p.setor_origem ?? (p.caixa as { setor: string | null }).setor}`}
                       </span>
                     )}
                     {p.ano_producao && (
-                      <span className="text-xs text-gray-400">Ano: {p.ano_producao}</span>
+                      <span className="text-xs text-gray-500">Ano: {p.ano_producao}</span>
                     )}
                   </div>
                   {p.interessado && (
                     <p className="text-sm text-gray-600 mt-1">{p.interessado}</p>
                   )}
                   {p.assunto_processo && (
-                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{p.assunto_processo}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{p.assunto_processo}</p>
                   )}
 
                   {/* Inline TTD assignment (classificação individual) */}

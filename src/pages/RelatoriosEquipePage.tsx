@@ -240,7 +240,7 @@ export function RelatoriosEquipePage() {
               setTermoGerado(false)
             }}
           />
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Sugerida automaticamente a partir do mês selecionado acima — ajuste aqui se o termo cobrir mais de um mês
             (ex.: "Junho-Julho/2026").
           </p>
@@ -259,7 +259,7 @@ export function RelatoriosEquipePage() {
               setTermoGerado(false)
             }}
           />
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Data, local, saudação e assinatura eletrônica são preenchidos automaticamente pelo sistema.
           </p>
         </div>
@@ -282,9 +282,9 @@ export function RelatoriosEquipePage() {
       </div>
 
       {isLoading ? (
-        <p className="text-center py-10 text-gray-400">Carregando…</p>
+        <p className="text-center py-10 text-gray-500">Carregando…</p>
       ) : linhas.length === 0 ? (
-        <p className="text-center py-10 text-gray-400">Nenhum membro ativo cadastrado.</p>
+        <p className="text-center py-10 text-gray-500">Nenhum membro ativo cadastrado.</p>
       ) : (
         <div className="space-y-3">
           {linhas.map(({ usuario, relatorio }) => {
@@ -294,11 +294,11 @@ export function RelatoriosEquipePage() {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div>
                     <p className="font-semibold text-gray-900">{usuario.nome}</p>
-                    <p className="text-xs text-gray-400">{usuario.email}</p>
+                    <p className="text-xs text-gray-500">{usuario.email}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     {relatorio?.enviado_em && (
-                      <span className="text-xs text-gray-400 flex items-center gap-1">
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
                         <Clock size={12} /> {format(new Date(relatorio.enviado_em), 'dd/MM/yyyy HH:mm')}
                       </span>
                     )}
@@ -349,12 +349,12 @@ export function RelatoriosEquipePage() {
                         )}
                       </div>
                     )}
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       Horas dedicadas no mês: {relatorio.horas_dedicadas ?? 0}h
                     </p>
                   </div>
                 ) : (
-                  <p className="mt-3 text-sm text-gray-400">
+                  <p className="mt-3 text-sm text-gray-500">
                     Este membro ainda não enviou o relatório deste mês.
                   </p>
                 )}

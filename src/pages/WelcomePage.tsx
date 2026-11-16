@@ -75,7 +75,7 @@ export function WelcomePage() {
                     </div>
                     <div>
                       <p className="font-semibold text-gray-900">Superpainel</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-500">
                         Visão geral dos três pilares, indicadores e Mural de Conquistas
                       </p>
                     </div>

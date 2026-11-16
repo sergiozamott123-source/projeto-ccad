@@ -540,7 +540,7 @@ export function RelatoriosDiversosTab() {
           <Zap size={15} className="text-teal-600" />
           <h2 className="font-semibold text-gray-900 text-sm">Atalhos rápidos</h2>
         </div>
-        <p className="text-xs text-gray-400 mb-3">
+        <p className="text-xs text-gray-500 mb-3">
           Aplica de uma vez a combinação de filtros do recorte, substituindo os filtros atuais.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -743,9 +743,9 @@ export function RelatoriosDiversosTab() {
         </div>
 
         {isLoading ? (
-          <p className="text-center py-10 text-gray-400">Carregando…</p>
+          <p className="text-center py-10 text-gray-500">Carregando…</p>
         ) : linhas.length === 0 ? (
-          <p className="text-center py-10 text-gray-400">Nenhum processo encontrado com esses filtros.</p>
+          <p className="text-center py-10 text-gray-500">Nenhum processo encontrado com esses filtros.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -776,7 +776,7 @@ export function RelatoriosDiversosTab() {
             >
               <ChevronLeft size={16} /> Anterior
             </button>
-            <span className="text-xs text-gray-400">Página {page} de {totalPaginas}</span>
+            <span className="text-xs text-gray-500">Página {page} de {totalPaginas}</span>
             <button
               className="btn-secondary text-sm"
               disabled={page >= totalPaginas}
@@ -787,7 +787,7 @@ export function RelatoriosDiversosTab() {
           </div>
         )}
 
-        <p className="text-xs text-gray-400 mt-4 border-t pt-3">
+        <p className="text-xs text-gray-500 mt-4 border-t pt-3">
           Ordenado do processo mais antigo para o mais recente. Para relatórios de eliminação, confirme o prazo exato de guarda na legislação/TTD de cada classe antes de decidir — este relatório aproxima pela data de produção, não calcula uma data de eliminação exata.
         </p>
       </div>
@@ -796,14 +796,14 @@ export function RelatoriosDiversosTab() {
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Relatórios salvos</h2>
         {(relatoriosSalvos ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhum relatório salvo ainda.</p>
+          <p className="text-sm text-gray-500">Nenhum relatório salvo ainda.</p>
         ) : (
           <div className="space-y-2">
             {(relatoriosSalvos ?? []).map(r => (
               <div key={r.id} className="flex items-center justify-between gap-3 py-2 border-b last:border-0">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{r.nome}</p>
-                  <p className="text-xs text-gray-400">{new Date(r.created_at).toLocaleDateString('pt-BR')}</p>
+                  <p className="text-xs text-gray-500">{new Date(r.created_at).toLocaleDateString('pt-BR')}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button className="btn-secondary text-xs py-1.5" onClick={() => abrirSalvo(r)}>
@@ -828,7 +828,7 @@ export function RelatoriosDiversosTab() {
         <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
           <div>
             <h2 className="font-semibold text-gray-900">Produção e avaliação por setor</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-500 mt-0.5">
               Quantos processos cada setor produziu e quantos já foram avaliados, com o percentual.
             </p>
           </div>
@@ -855,9 +855,9 @@ export function RelatoriosDiversosTab() {
         </div>
 
         {carregandoProducaoSetor ? (
-          <p className="text-center py-10 text-gray-400">Calculando…</p>
+          <p className="text-center py-10 text-gray-500">Calculando…</p>
         ) : !producaoPorSetor?.length ? (
-          <p className="text-center py-10 text-gray-400">Nenhum processo encontrado nesse período.</p>
+          <p className="text-center py-10 text-gray-500">Nenhum processo encontrado nesse período.</p>
         ) : (
           <div className="overflow-x-auto mt-3">
             <table className="w-full text-sm">
@@ -902,7 +902,7 @@ export function RelatoriosDiversosTab() {
           </button>
         </div>
 
-        <p className="text-xs text-gray-400 mt-3 border-t pt-3">
+        <p className="text-xs text-gray-500 mt-3 border-t pt-3">
           "Setor" agrupa variações de digitação do mesmo setor (ex.: siglas seguidas de "- PROCESSO ELIMINADO") registradas antes da lista oficial de setores existir no sistema — não altera nenhum processo, só a forma como este relatório soma os números. "Outros / não identificado" reúne registros raros que não puderam ser agrupados com confiança.
         </p>
       </div>

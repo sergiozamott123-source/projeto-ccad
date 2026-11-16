@@ -80,9 +80,9 @@ export function DemandasPage() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-10 text-gray-400">Carregando…</div>
+        <div className="text-center py-10 text-gray-500">Carregando…</div>
       ) : filtered.length === 0 ? (
-        <div className="card p-8 text-center text-gray-400">
+        <div className="card p-8 text-center text-gray-500">
           Nenhuma demanda encontrada.
         </div>
       ) : (
@@ -119,7 +119,7 @@ function DemandaCard({ demanda: d }: { demanda: Demanda }) {
             </span>
           </div>
           {d.descricao && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{d.descricao}</p>}
-          <div className="flex items-center gap-4 mt-2 flex-wrap text-xs text-gray-400">
+          <div className="flex items-center gap-4 mt-2 flex-wrap text-xs text-gray-500">
             {d.pilar && (
               <span className="flex items-center gap-1">
                 <Flag size={12} /> {(d.pilar as { nome: string }).nome}

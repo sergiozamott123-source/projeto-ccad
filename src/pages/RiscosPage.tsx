@@ -178,12 +178,12 @@ export function RiscosPage() {
                     Prob: {r.probabilidade}
                   </span>
                   {r.pilar && (
-                    <span className="text-xs text-gray-400">{(r.pilar as { nome: string }).nome}</span>
+                    <span className="text-xs text-gray-500">{(r.pilar as { nome: string }).nome}</span>
                   )}
                 </div>
                 {r.descricao && <p className="text-sm text-gray-500">{r.descricao}</p>}
                 {r.mitigacao && (
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-gray-500 mt-1">
                     <span className="font-medium">Mitigação:</span> {r.mitigacao}
                   </p>
                 )}

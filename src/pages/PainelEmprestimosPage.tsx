@@ -78,7 +78,7 @@ export function PainelEmprestimosPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-center py-10 text-gray-400">Carregando…</p>
+        <p className="text-center py-10 text-gray-500">Carregando…</p>
       ) : lista.length === 0 ? (
         <div className="card p-10 text-center">
           <PackageCheck size={36} className="text-gray-300 mx-auto mb-2" />

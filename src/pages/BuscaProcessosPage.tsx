@@ -211,7 +211,7 @@ function ModalSolicitarEmprestimo({
         <div>
           <label className="label">Prazo de devolução</label>
           <input type="date" className="input" value={prazo} onChange={e => setPrazo(e.target.value)} />
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 mt-1">
             Sugerido automaticamente ({PRAZO_PADRAO_DIAS} dias corridos) — pode ajustar se necessário.
           </p>
         </div>
@@ -411,7 +411,7 @@ function ModalProrrogarPrazo({
         <div>
           <label className="label">Novo prazo de devolução</label>
           <input type="date" className="input" value={novoPrazo} onChange={e => setNovoPrazo(e.target.value)} />
-          <p className="text-xs text-gray-400 mt-1">Precisa ser depois do prazo atual.</p>
+          <p className="text-xs text-gray-500 mt-1">Precisa ser depois do prazo atual.</p>
         </div>
         <div>
           <label className="label">Motivo (opcional)</label>
@@ -576,7 +576,7 @@ export function BuscaProcessosPage() {
             ))}
           </select>
         </div>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-500">
           A busca considera assunto, número do documento, interessado e o campo de ano ao mesmo tempo — não precisa saber onde a informação está.
         </p>
       </div>
@@ -587,14 +587,14 @@ export function BuscaProcessosPage() {
           <p className="text-gray-500 text-sm">Digite ao menos 2 letras ou escolha um filtro para começar a busca.</p>
         </div>
       ) : isLoading || isFetching ? (
-        <p className="text-center py-10 text-gray-400">Buscando…</p>
+        <p className="text-center py-10 text-gray-500">Buscando…</p>
       ) : (resultados ?? []).length === 0 ? (
         <div className="card p-10 text-center">
           <p className="text-gray-500 text-sm">Nenhum processo encontrado com esses termos. Tente um assunto mais geral ou remova algum filtro.</p>
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             {resultados!.length} processo(s) encontrado(s){resultados!.length === 50 ? ' — mostrando os 50 primeiros, refine a busca para ver mais precisão' : ''}.
           </p>
           {resultados!.map(p => {
@@ -638,12 +638,12 @@ export function BuscaProcessosPage() {
                 </div>
 
                 <div className="shrink-0 text-center bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
-                  <p className="text-[10px] uppercase tracking-wide text-amber-700 font-semibold flex items-center gap-1 justify-center">
+                  <p className="text-xs uppercase tracking-wide text-amber-700 font-semibold flex items-center gap-1 justify-center">
                     <Archive size={11} /> Caixa
                   </p>
                   <p className="text-base font-bold text-amber-800">{p.caixa?.numero ?? '—'}</p>
                   {(p.setor_origem ?? p.caixa?.setor) && (
-                    <p className="text-[10px] text-amber-600 mt-0.5 inline-flex items-center gap-0.5">
+                    <p className="text-xs text-amber-600 mt-0.5 inline-flex items-center gap-0.5">
                       <MapPin size={10} /> {p.setor_origem ?? p.caixa?.setor}
                     </p>
                   )}
@@ -678,7 +678,7 @@ export function BuscaProcessosPage() {
                     </button>
                   )}
                   {!podeEmprestar && !podeDevolver && (
-                    <p className="text-[10px] text-gray-400 text-center">
+                    <p className="text-xs text-gray-500 text-center">
                       {eliminadoEm ? 'eliminado' : 'indisponível'}
                     </p>
                   )}

@@ -722,7 +722,7 @@ export function RequisicoesAvaliacaoPage() {
                         <span className="font-mono font-semibold text-gray-900 text-sm">Caixa física {l.numeroFisico}</span>
                         <span className="text-xs text-gray-500">{l.processos.length} processo{l.processos.length === 1 ? '' : 's'}</span>
                         {l.setores.length > 0 && (
-                          <span className="text-[11px] text-gray-400">setores: {l.setores.join(', ')}</span>
+                          <span className="text-xs text-gray-500">setores: {l.setores.join(', ')}</span>
                         )}
                       </div>
 
@@ -749,7 +749,7 @@ export function RequisicoesAvaliacaoPage() {
                     </div>
 
                     {l.duplicado === 'verificando' && (
-                      <p className="text-xs text-gray-400 mt-2">Verificando se esta caixa já foi enviada antes…</p>
+                      <p className="text-xs text-gray-500 mt-2">Verificando se esta caixa já foi enviada antes…</p>
                     )}
                     {duplicadoInfo && (
                       <p className="text-xs text-red-700 mt-2">
@@ -763,9 +763,9 @@ export function RequisicoesAvaliacaoPage() {
                     )}
 
                     <details className="mt-2">
-                      <summary className="text-[11px] text-gray-400 cursor-pointer select-none">ver processos desta caixa</summary>
+                      <summary className="text-xs text-gray-500 cursor-pointer select-none">ver processos desta caixa</summary>
                       <div className="mt-1.5 overflow-x-auto">
-                        <table className="w-full text-[11px]">
+                        <table className="w-full text-xs">
                           <thead>
                             <tr className="text-left text-gray-400">
                               <th className="font-medium pb-1 pr-2">Nº Processo</th>
@@ -846,7 +846,7 @@ export function RequisicoesAvaliacaoPage() {
                     onChange={e => setSetorNovo(e.target.value.toUpperCase())}
                   />
                 )}
-                <p className="text-[11px] text-gray-400 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   Se a caixa tiver processos de mais de um setor, deixe assim e informe o setor de cada processo na tabela abaixo — este campo só preenche o padrão de linhas novas.
                 </p>
               </div>
@@ -895,7 +895,7 @@ export function RequisicoesAvaliacaoPage() {
 
             <div className="mt-5 pt-4 border-t border-gray-100">
               <label className="label">Processos da caixa</label>
-              <p className="text-xs text-gray-400 mb-2">
+              <p className="text-xs text-gray-500 mb-2">
                 Arraste aqui a planilha com a relação dos processos (número, ano de produção e o assunto que está na etiqueta), ou cole a lista diretamente. Se a planilha arrastada for a Planilha Mãe do Protocolo (com a coluna "CAIXA" reunindo várias caixas físicas de uma vez), o sistema reconhece isso sozinho e abre a tela de conferência em lote antes de enviar qualquer coisa. Depois, complete na tabela abaixo o Setor de origem, o Interessado (CDTIV ou PMV) e a última movimentação de cada processo — se não houver despacho registrado, marque a caixinha "Não há data de último despacho" em vez de deixar em branco. Todos esses campos são obrigatórios para enviar a requisição. Uma mesma caixa pode ter processos de setores diferentes: o "Setor de origem padrão" acima só preenche as linhas automaticamente, cada uma pode ser corrigida individualmente.
               </p>
 
@@ -916,7 +916,7 @@ export function RequisicoesAvaliacaoPage() {
               >
                 <UploadCloud size={22} className="text-gray-400" />
                 <p className="text-sm text-gray-600">Arraste a planilha aqui, ou clique para escolher o arquivo</p>
-                <p className="text-[11px] text-gray-400">.xlsx, .xls ou .csv</p>
+                <p className="text-xs text-gray-500">.xlsx, .xls ou .csv</p>
                 <input
                   ref={arquivoInputRef}
                   type="file"
@@ -1024,7 +1024,7 @@ export function RequisicoesAvaliacaoPage() {
                                   disabled={l.semDataUltimaMovimentacao}
                                   onChange={e => atualizarLinha(i, 'dataUltimaMovimentacao', e.target.value)}
                                 />
-                                <label className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                                <label className="flex items-center gap-1.5 text-xs text-gray-500">
                                   <input
                                     type="checkbox"
                                     checked={l.semDataUltimaMovimentacao}
@@ -1100,9 +1100,9 @@ export function RequisicoesAvaliacaoPage() {
 
       <div className="card p-2 sm:p-4">
         {isLoading ? (
-          <p className="text-center py-10 text-gray-400">Carregando…</p>
+          <p className="text-center py-10 text-gray-500">Carregando…</p>
         ) : (requisicoes ?? []).length === 0 ? (
-          <p className="text-center py-10 text-gray-400 text-sm">Nenhuma requisição criada ainda.</p>
+          <p className="text-center py-10 text-gray-500 text-sm">Nenhuma requisição criada ainda.</p>
         ) : (
           <div className="divide-y divide-gray-100">
             {(requisicoes ?? []).map(r => (
@@ -1122,7 +1122,7 @@ export function RequisicoesAvaliacaoPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-500">
                     Para {r.avaliador?.nome ?? '—'} · enviado por {r.criador?.nome ?? '—'} · entregue em {format(new Date(r.data_entrega + 'T00:00:00'), 'dd/MM/yyyy')}
                   </p>
                 </div>

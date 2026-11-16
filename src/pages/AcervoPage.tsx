@@ -91,7 +91,7 @@ export function AcervoPage({ titulo = 'Acervo' }: { titulo?: string }) {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">Catalogar Processo</p>
-                <p className="text-xs text-gray-400">Vincular processo à TTD</p>
+                <p className="text-xs text-gray-500">Vincular processo à TTD</p>
               </div>
             </div>
           </Link>
@@ -104,7 +104,7 @@ export function AcervoPage({ titulo = 'Acervo' }: { titulo?: string }) {
             </div>
             <div>
               <p className="font-semibold text-gray-900">Tabela TTD</p>
-              <p className="text-xs text-gray-400">Consultar e propor revisões</p>
+              <p className="text-xs text-gray-500">Consultar e propor revisões</p>
             </div>
           </div>
         </Link>
@@ -117,7 +117,7 @@ export function AcervoPage({ titulo = 'Acervo' }: { titulo?: string }) {
               </div>
               <div>
                 <p className="font-semibold text-gray-900">Fila de Revisão</p>
-                <p className="text-xs text-gray-400">{stats?.revisao ?? 0} processos aguardando</p>
+                <p className="text-xs text-gray-500">{stats?.revisao ?? 0} processos aguardando</p>
               </div>
             </div>
           </Link>
@@ -136,12 +136,12 @@ export function AcervoPage({ titulo = 'Acervo' }: { titulo?: string }) {
             onChange={e => setBusca(e.target.value)}
           />
         </div>
-        <p className="text-xs text-gray-400 mb-2">
+        <p className="text-xs text-gray-500 mb-2">
           Marque com a estrela os itens candidatos ao Espaço Memória da CDTIV.
         </p>
         {busca.length >= 2 && (
           (buscaResultados ?? []).length === 0 ? (
-            <p className="text-sm text-gray-400 py-4 text-center">Nenhum processo encontrado.</p>
+            <p className="text-sm text-gray-500 py-4 text-center">Nenhum processo encontrado.</p>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto">
               {(buscaResultados ?? []).map(p => (

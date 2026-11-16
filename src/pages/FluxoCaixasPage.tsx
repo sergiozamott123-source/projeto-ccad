@@ -75,10 +75,10 @@ function Cartao({ caixa }: { caixa: CaixaFluxo }) {
           <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
             <div className="h-full bg-sky-400 rounded-full" style={{ width: `${caixa.percentualAvaliado}%` }} />
           </div>
-          <p className="text-[11px] text-gray-400 mt-0.5">{caixa.percentualAvaliado}% avaliado</p>
+          <p className="text-xs text-gray-500 mt-0.5">{caixa.percentualAvaliado}% avaliado</p>
         </div>
       )}
-      <p className="text-[11px] text-gray-400 mt-1">{textoDias(caixa.diasNaEtapa)}</p>
+      <p className="text-xs text-gray-500 mt-1">{textoDias(caixa.diasNaEtapa)}</p>
     </div>
   )
 }
@@ -100,7 +100,7 @@ export function FluxoCaixasPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-gray-400">Carregando...</p>
+        <p className="text-sm text-gray-500">Carregando...</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
           {COLUNAS.map(coluna => {
@@ -113,7 +113,7 @@ export function FluxoCaixasPage() {
                     <h2 className="text-sm font-semibold text-gray-900">{coluna.titulo}</h2>
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${coluna.corBadge}`}>{cartoes.length}</span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{coluna.subtitulo}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{coluna.subtitulo}</p>
                 </div>
                 <div className="p-3 space-y-2 flex-1 min-h-[72px]">
                   {cartoes.length === 0 ? (

@@ -380,7 +380,7 @@ export function ConfirmarEliminacoesPage() {
 
       <div className="card p-2 sm:p-4">
         {isLoading ? (
-          <p className="text-center py-10 text-gray-400">Carregando…</p>
+          <p className="text-center py-10 text-gray-500">Carregando…</p>
         ) : (pendentes ?? []).length === 0 ? (
           <div className="text-center py-10">
             <CheckCircle size={36} className="text-teal-400 mx-auto mb-2" />
@@ -411,12 +411,12 @@ export function ConfirmarEliminacoesPage() {
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
                       <span className="font-mono font-semibold text-gray-900 text-sm">{p.processo?.numero_documento}</span>
                       <DecisaoBadge destino={p.processo?.ttd?.destinacao_final ?? 'Eliminação'} />
-                      {p.processo?.caixa && <span className="text-xs text-gray-400">Caixa {p.processo.caixa.numero}</span>}
+                      {p.processo?.caixa && <span className="text-xs text-gray-500">Caixa {p.processo.caixa.numero}</span>}
                     </div>
                     {p.processo?.assunto_processo && (
                       <p className="text-sm text-gray-600 truncate max-w-md">{p.processo.assunto_processo}</p>
                     )}
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       Avaliado por {p.avaliador?.nome ?? '—'} · {format(new Date(p.created_at), 'dd/MM HH:mm')}
                     </p>
                     </div>
@@ -450,7 +450,7 @@ export function ConfirmarEliminacoesPage() {
                 <div className="mt-2.5 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
-                      <span className="text-gray-400">Código usado:</span>
+                      <span className="text-gray-500">Código usado:</span>
                       <span className="font-mono font-semibold text-gray-800">{p.processo?.ttd?.codigo ?? '—'}</span>
                       {p.processo?.ttd?.assunto && (
                         <span className="text-gray-600 truncate">{p.processo.ttd.assunto}</span>
@@ -468,23 +468,23 @@ export function ConfirmarEliminacoesPage() {
                   {expandidoId === p.id && (
                     <div className="mt-2.5 pt-2.5 border-t border-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
                       <div>
-                        <span className="text-gray-400">Classe/Série TTD: </span>
+                        <span className="text-gray-500">Classe/Série TTD: </span>
                         <span className="text-gray-700">{[p.processo?.ttd?.classe, p.processo?.ttd?.serie].filter(Boolean).join(' / ') || '—'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">Destinação final na TTD: </span>
+                        <span className="text-gray-500">Destinação final na TTD: </span>
                         <DecisaoBadge destino={p.processo?.ttd?.destinacao_final} />
                       </div>
                       <div>
-                        <span className="text-gray-400">Fase corrente/intermediária: </span>
+                        <span className="text-gray-500">Fase corrente/intermediária: </span>
                         <span className="text-gray-700">{[p.processo?.ttd?.fase_corrente, p.processo?.ttd?.fase_intermediaria].filter(Boolean).join(' / ') || '—'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">Interessado: </span>
+                        <span className="text-gray-500">Interessado: </span>
                         <span className="text-gray-700">{p.processo?.interessado || '—'}</span>
                       </div>
                       <div>
-                        <span className="text-gray-400">Última movimentação: </span>
+                        <span className="text-gray-500">Última movimentação: </span>
                         <span className="text-gray-700">
                           {p.processo?.sem_data_ultima_movimentacao
                             ? 'Não há data de último despacho'
@@ -570,13 +570,13 @@ export function ConfirmarEliminacoesPage() {
 
         {mostrarHistorico && (
           <div className="mt-3 pt-3 border-t border-gray-100">
-            <p className="text-xs text-gray-400 mb-2">
+            <p className="text-xs text-gray-500 mb-2">
               Mostrando as 50 devoluções mais recentes{podeVerTudo ? '' : ' da sua equipe'}, do mais novo para o mais antigo.
             </p>
             {carregandoHistorico ? (
-              <p className="text-center py-6 text-gray-400 text-sm">Carregando…</p>
+              <p className="text-center py-6 text-gray-500 text-sm">Carregando…</p>
             ) : (historico ?? []).length === 0 ? (
-              <p className="text-center py-6 text-gray-400 text-sm">Nenhuma devolução registrada até o momento.</p>
+              <p className="text-center py-6 text-gray-500 text-sm">Nenhuma devolução registrada até o momento.</p>
             ) : (
               <div className="divide-y divide-gray-100">
                 {(historico ?? []).map(h => (
@@ -585,7 +585,7 @@ export function ConfirmarEliminacoesPage() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
                           <span className="font-mono font-semibold text-gray-900 text-sm">{h.processo?.numero_documento}</span>
-                          {h.processo?.caixa && <span className="text-xs text-gray-400">Caixa {h.processo.caixa.numero}</span>}
+                          {h.processo?.caixa && <span className="text-xs text-gray-500">Caixa {h.processo.caixa.numero}</span>}
                         </div>
                         <p className="text-xs text-gray-500">
                           Avaliado por {h.avaliador?.nome ?? '—'} · devolvido por {h.devolvido_por?.nome ?? '—'}

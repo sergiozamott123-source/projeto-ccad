@@ -389,7 +389,7 @@ export function RelatoriosPage() {
           <h2 className="font-semibold text-gray-900">Histórico</h2>
         </div>
         {(relatorios ?? []).length === 0 ? (
-          <p className="px-5 py-8 text-sm text-gray-400 text-center">Nenhum relatório registrado.</p>
+          <p className="px-5 py-8 text-sm text-gray-500 text-center">Nenhum relatório registrado.</p>
         ) : (
           <div className="divide-y">
             {(relatorios ?? []).map(r => (
@@ -399,7 +399,7 @@ export function RelatoriosPage() {
                     {format(new Date(r.mes_referencia), 'MMMM yyyy', { locale: ptBR })}
                   </p>
                   {r.enviado_em && (
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-gray-500">
                       Enviado em {format(new Date(r.enviado_em), 'dd/MM/yyyy HH:mm')}
                     </p>
                   )}

@@ -127,7 +127,7 @@ export function TtdPage() {
 
       {/* Table */}
       {isLoading ? (
-        <div className="text-center py-10 text-gray-400">Carregando TTD…</div>
+        <div className="text-center py-10 text-gray-500">Carregando TTD…</div>
       ) : (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">

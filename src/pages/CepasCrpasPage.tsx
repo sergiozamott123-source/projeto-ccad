@@ -140,10 +140,10 @@ export function CepasCrpasPage() {
           </select>
         </div>
 
-        {isFetching && <p className="text-sm text-gray-400 py-4">Carregando…</p>}
+        {isFetching && <p className="text-sm text-gray-500 py-4">Carregando…</p>}
 
         {!isFetching && listaFiltrada.length === 0 && (
-          <p className="text-sm text-gray-400 py-6 text-center">
+          <p className="text-sm text-gray-500 py-6 text-center">
             {(cepas ?? []).length === 0
               ? 'Nenhuma CEPA emitida ainda. Elas aparecem aqui assim que o Protocolo enviar uma caixa e emitir o documento.'
               : 'Nenhum resultado para esse filtro.'}
@@ -174,9 +174,9 @@ export function CepasCrpasPage() {
                   </div>
                   <p className="text-sm text-gray-800">
                     Caixa <strong>{c.caixa?.numero ?? '—'}</strong> — {c.avaliador?.nome ?? '—'}
-                    <span className="text-gray-400"> · {c.caixa?.quantidade_declarada ?? 0} processo(s)</span>
+                    <span className="text-gray-500"> · {c.caixa?.quantidade_declarada ?? 0} processo(s)</span>
                   </p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     Enviada por {c.gerador?.nome ?? '—'} em {format(new Date(c.gerado_em), 'dd/MM/yyyy HH:mm')}
                     {crpa && <> · recebida em {format(new Date(crpa.confirmado_em), 'dd/MM/yyyy HH:mm')}</>}
                   </p>

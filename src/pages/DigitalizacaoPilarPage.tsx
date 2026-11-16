@@ -237,7 +237,7 @@ export function DigitalizacaoPilarPage() {
 
   const podeVer = isCoord || (!!pilar && profile?.pilar_id === pilar.id)
 
-  if (!pilar) return <p className="text-gray-400 text-center py-10">Carregando…</p>
+  if (!pilar) return <p className="text-gray-500 text-center py-10">Carregando…</p>
   if (!podeVer) return <p className="text-gray-500">Acesso restrito ao Coordenador e à equipe deste pilar.</p>
 
   const fasesOrdenadas = [...(pilar.fases ?? [])].sort((a, b) => a.ordem - b.ordem)
@@ -306,7 +306,7 @@ export function DigitalizacaoPilarPage() {
                   <span className="text-sm font-bold text-gray-900">{fase.percentual_conclusao}%</span>
                 </div>
                 {atividadesFase.length === 0 ? (
-                  <p className="text-xs text-gray-400 mb-2">Nenhuma atividade cadastrada nesta fase.</p>
+                  <p className="text-xs text-gray-500 mb-2">Nenhuma atividade cadastrada nesta fase.</p>
                 ) : (
                   <div className="space-y-1.5 mb-2">
                     {atividadesFase.map(a => (
@@ -325,7 +325,7 @@ export function DigitalizacaoPilarPage() {
                         <span>
                           <span className={a.concluida ? 'text-sm text-gray-500 line-through' : 'text-sm text-gray-800'}>{a.titulo}</span>
                           {a.concluida && (
-                            <span className="block text-xs text-gray-400">
+                            <span className="block text-xs text-gray-500">
                               {a.concluida_por_usuario?.nome ?? '—'} · {a.concluida_em ? format(new Date(a.concluida_em), 'dd/MM/yy') : ''}
                             </span>
                           )}
@@ -428,7 +428,7 @@ export function DigitalizacaoPilarPage() {
               { label: 'Restante até a meta', value: restantePaginas, color: COR.borda },
             ]}
           />
-          <p className="text-xs text-gray-400 mt-3">
+          <p className="text-xs text-gray-500 mt-3">
             Meta acumulada ({anosPrazo} {anosPrazo === 1 ? 'ano' : 'anos'}): {metaAcumuladaPaginas.toLocaleString('pt-BR')} páginas
           </p>
         </div>
@@ -438,7 +438,7 @@ export function DigitalizacaoPilarPage() {
       <div className="card p-5 overflow-x-auto">
         <h2 className="font-semibold text-gray-900 mb-1">Marcos por Ano de Execução</h2>
         {!dataInicio && (
-          <p className="text-xs text-gray-400 mb-3">Execução ainda não iniciada — defina a data de início no card de Licitação para acompanhar o realizado.</p>
+          <p className="text-xs text-gray-500 mb-3">Execução ainda não iniciada — defina a data de início no card de Licitação para acompanhar o realizado.</p>
         )}
         <table className="w-full text-sm">
           <thead>
@@ -479,7 +479,7 @@ export function DigitalizacaoPilarPage() {
                   </td>
                 </tr>
                 <tr className="border-t border-dashed">
-                  <td className="py-2 pr-3 text-gray-400">{ind.label} — realizado</td>
+                  <td className="py-2 pr-3 text-gray-500">{ind.label} — realizado</td>
                   {dataInicio ? (
                     ANOS.map(ano => (
                       <td key={ano} className="py-2 px-2 text-right text-gray-500">{fmtNumero(realizadoNoAno(ano, ind.realizadoField))}</td>
@@ -521,7 +521,7 @@ export function DigitalizacaoPilarPage() {
               </td>
             </tr>
             <tr className="border-t border-dashed">
-              <td className="py-2 pr-3 text-gray-400">Investimento — realizado <span className="text-gray-300">(lançamento manual)</span></td>
+              <td className="py-2 pr-3 text-gray-500">Investimento — realizado <span className="text-gray-300">(lançamento manual)</span></td>
               {ANOS.map(ano => (
                 <td key={ano} className="py-2 px-2 text-right">
                   {editingField === 'investimento_realizado' ? (
@@ -564,13 +564,13 @@ export function DigitalizacaoPilarPage() {
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Demandas do Pilar</h2>
         {(demandas ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma demanda registrada.</p>
+          <p className="text-sm text-gray-500">Nenhuma demanda registrada.</p>
         ) : (
           <div className="space-y-2">
             {(demandas ?? []).map(d => (
               <div key={d.id} className="flex items-center justify-between py-2 border-b last:border-0">
                 <p className="text-sm font-medium text-gray-900">{d.titulo}</p>
-                <span className="text-xs text-gray-400">{STATUS_LABEL[d.status]}</span>
+                <span className="text-xs text-gray-500">{STATUS_LABEL[d.status]}</span>
               </div>
             ))}
           </div>
@@ -602,7 +602,7 @@ export function DigitalizacaoPilarPage() {
           </div>
         )}
         {(atas ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma ata registrada.</p>
+          <p className="text-sm text-gray-500">Nenhuma ata registrada.</p>
         ) : (
           <div className="space-y-2">
             {(atas ?? []).map(a => (

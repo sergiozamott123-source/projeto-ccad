@@ -234,7 +234,7 @@ export function EquipePage() {
         )}
 
         {(setores ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhum setor cadastrado ainda.</p>
+          <p className="text-sm text-gray-500">Nenhum setor cadastrado ainda.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {(setores ?? []).map(s => (
@@ -242,14 +242,14 @@ export function EquipePage() {
                 key={s.id}
                 className={clsx(
                   'flex items-center gap-2 text-xs font-medium px-2.5 py-1 rounded-full',
-                  s.ativo ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-400 line-through',
+                  s.ativo ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-500 line-through',
                 )}
               >
                 {s.sigla}
                 {isCoord && (
                   <button
                     type="button"
-                    className="no-underline font-normal text-[11px] underline decoration-dotted hover:opacity-70"
+                    className="no-underline font-normal text-xs underline decoration-dotted hover:opacity-70"
                     onClick={() => alternarSetorAtivo.mutate({ id: s.id, ativo: !s.ativo })}
                     disabled={alternarSetorAtivo.isPending}
                   >

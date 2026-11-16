@@ -173,12 +173,12 @@ export function ConferenciaCaixasPage() {
 
       <div className="card p-2 sm:p-4">
         {isLoading ? (
-          <p className="text-center py-10 text-gray-400">Carregando…</p>
+          <p className="text-center py-10 text-gray-500">Carregando…</p>
         ) : isError ? (
           <div className="text-center py-10">
             <AlertTriangle size={36} className="text-red-400 mx-auto mb-2" />
             <p className="text-red-600 text-sm font-medium">Não foi possível carregar os poços.</p>
-            <p className="text-gray-400 text-xs mt-1">
+            <p className="text-gray-500 text-xs mt-1">
               {(erroPocos as any)?.message || 'Erro desconhecido ao consultar o banco de dados.'}
             </p>
           </div>
@@ -211,7 +211,7 @@ export function ConferenciaCaixasPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-gray-500">
                         {totalProcessos} processo{totalProcessos === 1 ? '' : 's'} acumulado
                         {totalProcessos === 1 ? '' : 's'}
                         {minimo != null && ` · mínimo configurado: ${minimo}`}

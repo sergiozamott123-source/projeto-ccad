@@ -91,12 +91,12 @@ export function TtdCodigoPicker({
           onFocus={() => setAberto(true)}
         />
         {isFetching && !todos && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-300">carregando…</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-300">carregando…</span>
         )}
       </div>
 
       {busca.length > 0 && busca.length < 2 && (
-        <p className="text-xs text-gray-400 mt-1">Digite ao menos 2 letras para buscar.</p>
+        <p className="text-xs text-gray-500 mt-1">Digite ao menos 2 letras para buscar.</p>
       )}
 
       {aberto && busca.trim().length >= 2 && (
@@ -117,7 +117,7 @@ export function TtdCodigoPicker({
               </button>
             ))
           ) : (
-            <p className="px-3 py-3 text-xs text-gray-400">Nenhum código encontrado para "{busca}".</p>
+            <p className="px-3 py-3 text-xs text-gray-500">Nenhum código encontrado para "{busca}".</p>
           )}
         </div>
       )}
@@ -156,7 +156,7 @@ export function TtdCodigoPicker({
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
               <div>
                 <h3 className="font-semibold text-gray-900 text-sm">Tabela de Temporalidade (TTD) completa</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Navegue por classe e clique no código que se aplica.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Navegue por classe e clique no código que se aplica.</p>
               </div>
               <button onClick={() => setMostrarTabela(false)} className="text-gray-400 hover:text-gray-700 shrink-0 ml-2">
                 <X size={18} />
@@ -176,14 +176,14 @@ export function TtdCodigoPicker({
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-3">
               {!todos ? (
-                <p className="text-sm text-gray-400 py-6 text-center">Carregando tabela…</p>
+                <p className="text-sm text-gray-500 py-6 text-center">Carregando tabela…</p>
               ) : gruposTabela.length === 0 ? (
-                <p className="text-sm text-gray-400 py-6 text-center">Nenhum código encontrado para esse filtro.</p>
+                <p className="text-sm text-gray-500 py-6 text-center">Nenhum código encontrado para esse filtro.</p>
               ) : (
                 gruposTabela.map(([classe, itens]) => (
                   <div key={classe} className="mb-4">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 sticky top-0 bg-white py-1">
-                      {classe} <span className="font-normal normal-case text-gray-400">· {itens.length} código{itens.length === 1 ? '' : 's'}</span>
+                      {classe} <span className="font-normal normal-case text-gray-500">· {itens.length} código{itens.length === 1 ? '' : 's'}</span>
                     </p>
                     <div className="space-y-1">
                       {itens.map(ttd => (
@@ -197,7 +197,7 @@ export function TtdCodigoPicker({
                             <span className="font-mono font-semibold text-teal-600">{ttd.codigo}</span>
                             <span className="text-gray-700">{ttd.assunto}</span>
                           </div>
-                          <div className="text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                          <div className="text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
                             {ttd.serie && <span>Série: {ttd.serie}</span>}
                             <DecisaoBadge destino={ttd.destinacao_final} />
                           </div>

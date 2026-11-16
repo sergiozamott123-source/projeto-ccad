@@ -183,7 +183,7 @@ export function BoasPraticasPilarPage() {
 
   const podeVer = isCoord || (!!pilar && profile?.pilar_id === pilar.id)
 
-  if (!pilar) return <p className="text-gray-400 text-center py-10">Carregando…</p>
+  if (!pilar) return <p className="text-gray-500 text-center py-10">Carregando…</p>
   if (!podeVer) return <p className="text-gray-500">Acesso restrito ao Coordenador e à equipe deste pilar.</p>
 
   const fasesOrdenadas = [...(pilar.fases ?? [])].sort((a, b) => a.ordem - b.ordem)
@@ -225,7 +225,7 @@ export function BoasPraticasPilarPage() {
                   <span className="text-sm font-bold text-gray-900">{fase.percentual_conclusao}%</span>
                 </div>
                 {atividadesFase.length === 0 ? (
-                  <p className="text-xs text-gray-400 mb-2">Nenhuma atividade cadastrada nesta fase.</p>
+                  <p className="text-xs text-gray-500 mb-2">Nenhuma atividade cadastrada nesta fase.</p>
                 ) : (
                   <div className="space-y-1.5 mb-2">
                     {atividadesFase.map(a => (
@@ -244,7 +244,7 @@ export function BoasPraticasPilarPage() {
                         <span>
                           <span className={a.concluida ? 'text-sm text-gray-500 line-through' : 'text-sm text-gray-800'}>{a.titulo}</span>
                           {a.concluida && (
-                            <span className="block text-xs text-gray-400">
+                            <span className="block text-xs text-gray-500">
                               {a.concluida_por_usuario?.nome ?? '—'} · {a.concluida_em ? format(new Date(a.concluida_em), 'dd/MM/yy') : ''}
                             </span>
                           )}
@@ -303,7 +303,7 @@ export function BoasPraticasPilarPage() {
                   : <Square size={18} className="text-gray-300 shrink-0" />}
                 <span className="text-sm text-gray-800 flex-1">{dep.nome}</span>
                 {dep.mapeado && dep.mapeado_por_usuario && (
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-500">
                     {dep.mapeado_por_usuario.nome} · {dep.data_mapeamento && format(new Date(dep.data_mapeamento), 'dd/MM/yy')}
                   </span>
                 )}
@@ -317,14 +317,14 @@ export function BoasPraticasPilarPage() {
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Demandas do Pilar</h2>
         {(demandas ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma demanda registrada.</p>
+          <p className="text-sm text-gray-500">Nenhuma demanda registrada.</p>
         ) : (
           <div className="space-y-2">
             {(demandas ?? []).map(d => (
               <div key={d.id} className="flex items-center justify-between py-2 border-b last:border-0">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{d.titulo}</p>
-                  {d.prazo && <p className="text-xs text-gray-400">Prazo: {format(new Date(d.prazo), 'dd/MM/yyyy', { locale: ptBR })}</p>}
+                  {d.prazo && <p className="text-xs text-gray-500">Prazo: {format(new Date(d.prazo), 'dd/MM/yyyy', { locale: ptBR })}</p>}
                 </div>
                 <span className={clsx('px-2 py-0.5 rounded-full text-xs font-medium', STATUS_COLOR[d.status])}>
                   {STATUS_LABEL[d.status]}
@@ -371,20 +371,20 @@ export function BoasPraticasPilarPage() {
           </div>
         ) : protocoloAtual ? (
           <div>
-            <p className="text-xs text-gray-400 mb-1">
+            <p className="text-xs text-gray-500 mb-1">
               Versão {protocoloAtual.versao} · atualizado por {protocoloAtual.atualizado_por_usuario?.nome ?? '—'} em {format(new Date(protocoloAtual.atualizado_em), 'dd/MM/yyyy')}
             </p>
             <p className="text-sm text-gray-700 whitespace-pre-wrap">{protocoloAtual.conteudo}</p>
           </div>
         ) : (
-          <p className="text-sm text-gray-400">Nenhuma versão registrada ainda.</p>
+          <p className="text-sm text-gray-500">Nenhuma versão registrada ainda.</p>
         )}
 
         {showHistorico && (protocoloVersoes?.length ?? 0) > 1 && (
           <div className="mt-4 pt-4 border-t space-y-3">
             {protocoloVersoes!.slice(1).map(v => (
               <div key={v.id} className="text-sm">
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-500">
                   Versão {v.versao} · {v.atualizado_por_usuario?.nome ?? '—'} em {format(new Date(v.atualizado_em), 'dd/MM/yyyy')}
                 </p>
                 <p className="text-gray-600 whitespace-pre-wrap line-clamp-3">{v.conteudo}</p>
@@ -421,7 +421,7 @@ export function BoasPraticasPilarPage() {
         )}
 
         {(atas ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma ata registrada.</p>
+          <p className="text-sm text-gray-500">Nenhuma ata registrada.</p>
         ) : (
           <div className="space-y-2">
             {(atas ?? []).map(a => (

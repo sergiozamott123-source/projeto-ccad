@@ -92,7 +92,7 @@ function MuralEventoRow({ evento }: { evento: MuralEvento }) {
       <div className="mt-0.5 shrink-0">{MURAL_ICON[evento.tipo]}</div>
       <div>
         <p className="text-sm text-gray-800">{muralTexto(evento)}</p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-500">
           {evento.pilar?.nome ?? 'CCAD'} · {formatDistanceToNow(new Date(evento.ocorrido_em), { locale: ptBR, addSuffix: true })}
         </p>
       </div>
@@ -109,7 +109,7 @@ function MetricCard({ icon, label, value, sub, color }: {
         <div>
           <p className="text-sm text-gray-500">{label}</p>
           <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-          {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+          {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
         </div>
         <div className={clsx('p-2.5 rounded-xl', color)}>
           {icon}
@@ -143,7 +143,7 @@ function PilarCard({ pilar }: { pilar: Pilar & { fases?: { percentual_conclusao:
         />
       </div>
       {pilar.responsavel && (
-        <p className="text-xs text-gray-400 mt-2">Resp: {pilar.responsavel.nome}</p>
+        <p className="text-xs text-gray-500 mt-2">Resp: {pilar.responsavel.nome}</p>
       )}
       {PILAR_PAGE_ROUTE[pilar.nome] && (
         <Link
@@ -165,7 +165,7 @@ function RiscoRow({ risco }: { risco: Risco }) {
     <div className="flex items-center justify-between py-2.5 border-b last:border-0">
       <div>
         <p className="text-sm font-medium text-gray-800">{risco.titulo}</p>
-        <p className="text-xs text-gray-400">{risco.pilar?.nome ?? '—'}</p>
+        <p className="text-xs text-gray-500">{risco.pilar?.nome ?? '—'}</p>
       </div>
       <span className={impactColor[risco.impacto]}>{risco.impacto}</span>
     </div>
@@ -503,7 +503,7 @@ export function DashboardPage() {
       {isCoord && (
         <div>
           <h2 className="text-base font-semibold text-gray-900 mb-1">Indicadores Institucionais</h2>
-          <p className="text-xs text-gray-400 mb-3">Totais combinados dos três pilares (Digitalização, Boas Práticas e Memória).</p>
+          <p className="text-xs text-gray-500 mb-3">Totais combinados dos três pilares (Digitalização, Boas Práticas e Memória).</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <MetricCard
               icon={<Archive size={20} className="text-teal-600" />}
@@ -543,9 +543,9 @@ export function DashboardPage() {
       {/* Mural de Conquistas */}
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-1">Mural de Conquistas da CCAD</h2>
-        <p className="text-xs text-gray-400 mb-3">Ações concluídas pela equipe nos três pilares.</p>
+        <p className="text-xs text-gray-500 mb-3">Ações concluídas pela equipe nos três pilares.</p>
         {(muralEventos ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma atividade registrada ainda.</p>
+          <p className="text-sm text-gray-500">Nenhuma atividade registrada ainda.</p>
         ) : (
           <div>
             {(muralEventos ?? []).map(e => <MuralEventoRow key={e.id} evento={e} />)}
@@ -601,7 +601,7 @@ export function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="card p-4">
-              <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.mensal_consolidada}</p>
+              <p className="text-xs text-gray-500">{REUNIAO_TIPO_LABEL.mensal_consolidada}</p>
               <p className="text-sm font-semibold text-gray-900 mt-1">
                 {ultimaMensal ? format(new Date(ultimaMensal.data_reuniao), 'dd/MM/yyyy') : 'Nenhuma registrada'}
               </p>
@@ -616,11 +616,11 @@ export function DashboardPage() {
               )}
             </div>
             <div className="card p-4">
-              <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.quinzenal_frente}</p>
+              <p className="text-xs text-gray-500">{REUNIAO_TIPO_LABEL.quinzenal_frente}</p>
               <p className="text-sm font-semibold text-gray-900 mt-1">{quinzenaisEsteMes} este mês</p>
             </div>
             <div className="card p-4">
-              <p className="text-xs text-gray-400">{REUNIAO_TIPO_LABEL.checkpoint_trimestral}</p>
+              <p className="text-xs text-gray-500">{REUNIAO_TIPO_LABEL.checkpoint_trimestral}</p>
               <p className="text-sm font-semibold text-gray-900 mt-1">
                 {ultimoCheckpoint ? format(new Date(ultimoCheckpoint.data_reuniao), 'dd/MM/yyyy') : 'Nenhum registrado'}
               </p>
@@ -672,7 +672,7 @@ export function DashboardPage() {
               <h2 className="font-semibold text-gray-900">Riscos em Destaque</h2>
             </div>
             {(riscosAtivos ?? []).length === 0 ? (
-              <p className="text-sm text-gray-400">Nenhum risco ativo de alto/médio impacto.</p>
+              <p className="text-sm text-gray-500">Nenhum risco ativo de alto/médio impacto.</p>
             ) : (
               <div>
                 {(riscosAtivos ?? []).map(r => <RiscoRow key={r.id} risco={r} />)}
@@ -710,7 +710,7 @@ export function DashboardPage() {
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div>
                 <h2 className="text-base font-semibold text-gray-900 mb-1">Acompanhamento de Avaliações</h2>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-500">
                   Caixas distribuídas pelo Protocolo para avaliação e o andamento da classificação dos processos.
                 </p>
                 {periodoRange && (
@@ -768,7 +768,7 @@ export function DashboardPage() {
                       aria-label="Data final do período"
                     />
                     {!(periodoInicio && periodoFim) && (
-                      <span className="text-gray-400 italic">escolha as duas datas</span>
+                      <span className="text-gray-500 italic">escolha as duas datas</span>
                     )}
                   </div>
                 )}
@@ -776,7 +776,7 @@ export function DashboardPage() {
             </div>
 
             {carregandoResumoAvaliacoes ? (
-              <p className="text-center py-10 text-gray-400 text-sm">Carregando…</p>
+              <p className="text-center py-10 text-gray-500 text-sm">Carregando…</p>
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -818,7 +818,7 @@ export function DashboardPage() {
                 {resumoAvaliacoes && resumoAvaliacoes.totalProcessos > 0 && (
                   <div className="card p-5">
                     <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Progresso geral de avaliação</h3>
-                    <p className="text-xs text-gray-400 mb-4">
+                    <p className="text-xs text-gray-500 mb-4">
                       Percentual de processos já avaliados, considerando todas as caixas distribuídas.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -834,7 +834,7 @@ export function DashboardPage() {
                         <p className="text-4xl font-bold text-green-600 leading-none">
                           {Math.round((resumoAvaliacoes.processosAvaliados / resumoAvaliacoes.totalProcessos) * 100)}%
                         </p>
-                        <p className="text-xs text-gray-400 mt-1.5">já avaliado, do total distribuído pelo Protocolo</p>
+                        <p className="text-xs text-gray-500 mt-1.5">já avaliado, do total distribuído pelo Protocolo</p>
                       </div>
                     </div>
                   </div>
@@ -842,12 +842,12 @@ export function DashboardPage() {
 
                 <div className="card p-5">
                   <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Caixas por etapa do ciclo</h3>
-                  <p className="text-xs text-gray-400 mb-3">Todas as caixas do sistema, incluindo o acervo histórico já migrado.</p>
+                  <p className="text-xs text-gray-500 mb-3">Todas as caixas do sistema, incluindo o acervo histórico já migrado.</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {(resumoAvaliacoes?.porStatus ?? []).map(s => (
                       <div key={s.status} className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-3 text-center">
                         <p className="text-xl font-bold text-gray-900">{s.count.toLocaleString('pt-BR')}</p>
-                        <p className="text-[11px] text-gray-500 mt-0.5 flex items-center justify-center gap-1">
+                        <p className="text-xs text-gray-500 mt-0.5 flex items-center justify-center gap-1">
                           {CAIXA_STATUS_ICON[s.status]} {CAIXA_STATUS_LABEL[s.status]}
                         </p>
                       </div>
@@ -857,14 +857,14 @@ export function DashboardPage() {
 
                 <div className="card p-5">
                   <h3 className="font-semibold text-gray-900 text-sm mb-0.5">Desempenho por avaliador</h3>
-                  <p className="text-xs text-gray-400 mb-4">
+                  <p className="text-xs text-gray-500 mb-4">
                     % de processos já avaliados frente ao que está sob responsabilidade de cada um — do que mais precisa de atenção para o mais adiantado.
                   </p>
 
                   {carregandoDesempenho ? (
-                    <p className="text-center py-8 text-gray-400 text-sm">Carregando…</p>
+                    <p className="text-center py-8 text-gray-500 text-sm">Carregando…</p>
                   ) : (desempenhoAvaliadores ?? []).length === 0 ? (
-                    <p className="text-center py-8 text-gray-400 text-sm">Nenhum avaliador habilitado ainda.</p>
+                    <p className="text-center py-8 text-gray-500 text-sm">Nenhum avaliador habilitado ainda.</p>
                   ) : (
                     <>
                       {(() => {
@@ -879,7 +879,7 @@ export function DashboardPage() {
                             data={comProgresso.map(d => ({ label: d.nome, value: d.percentual as number, color: corDesempenho(d.percentual as number) }))}
                           />
                         ) : (
-                          <p className="text-sm text-gray-400">Nenhum avaliador com caixa sob responsabilidade no momento.</p>
+                          <p className="text-sm text-gray-500">Nenhum avaliador com caixa sob responsabilidade no momento.</p>
                         )
                       })()}
 
@@ -902,7 +902,7 @@ export function DashboardPage() {
                                 <td className="py-2 pr-3 text-gray-600">{d.processosAtribuidos}</td>
                                 <td className="py-2 pr-3 text-gray-600">{d.processosAvaliados}</td>
                                 {d.percentual === null ? (
-                                  <td className="py-2 text-gray-400" title="Sem caixa sob responsabilidade no momento">—</td>
+                                  <td className="py-2 text-gray-500" title="Sem caixa sob responsabilidade no momento">—</td>
                                 ) : (
                                   <td className="py-2 font-semibold" style={{ color: corDesempenho(d.percentual) }}>{d.percentual}%</td>
                                 )}

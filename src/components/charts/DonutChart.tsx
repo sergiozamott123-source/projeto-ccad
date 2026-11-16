@@ -33,7 +33,7 @@ export function DonutChart({
         {centerLabel && (
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span className="text-lg font-bold text-gray-900">{total}</span>
-            <span className="text-[11px] text-gray-400 text-center leading-tight">{centerLabel}</span>
+            <span className="text-xs text-gray-500 text-center leading-tight">{centerLabel}</span>
           </div>
         )}
       </div>

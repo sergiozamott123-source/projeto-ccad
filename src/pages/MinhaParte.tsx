@@ -151,7 +151,7 @@ export function MinhaParte() {
             <div>
               <p className="text-sm text-gray-500">Suas atividades concluídas</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{contribuicoes?.atividades ?? 0}</p>
-              <p className="text-xs text-gray-400 mt-0.5">este mês</p>
+              <p className="text-xs text-gray-500 mt-0.5">este mês</p>
             </div>
             <div className="p-2.5 rounded-xl bg-teal-50">
               <CheckCircle size={20} className="text-teal-600" />
@@ -163,7 +163,7 @@ export function MinhaParte() {
             <div>
               <p className="text-sm text-gray-500">Seus indicadores lançados</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{contribuicoes?.indicadores ?? 0}</p>
-              <p className="text-xs text-gray-400 mt-0.5">este mês</p>
+              <p className="text-xs text-gray-500 mt-0.5">este mês</p>
             </div>
             <div className="p-2.5 rounded-xl bg-orange-50">
               <TrendingUp size={20} className="text-accent-600" />
@@ -234,7 +234,7 @@ export function MinhaParte() {
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Minhas Demandas</h2>
         {(demandas ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">Nenhuma demanda ativa no momento.</p>
+          <p className="text-sm text-gray-500">Nenhuma demanda ativa no momento.</p>
         ) : (
           <div className="space-y-2">
             {(demandas ?? []).map(d => (
@@ -245,7 +245,7 @@ export function MinhaParte() {
                 <div>
                   <p className="text-sm font-medium text-gray-900">{d.titulo}</p>
                   {d.prazo && (
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       Prazo: {format(new Date(d.prazo), 'dd/MM/yyyy', { locale: ptBR })}
                     </p>
                   )}

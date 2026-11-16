@@ -458,7 +458,7 @@ export function AvaliacaoProcessosCard() {
         <div className="mb-4">
           <label className="label">Requisições pendentes para você</label>
           {(minhasRequisicoes ?? []).length === 0 ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500">
               Nenhuma requisição pendente no momento. Aguarde a Coordenação enviar uma caixa para você avaliar.
             </p>
           ) : (
@@ -473,7 +473,7 @@ export function AvaliacaoProcessosCard() {
                     <span
                       key={r.id}
                       title="O Protocolo ainda não emitiu a CEPA (Confirmação de Envio) desta caixa."
-                      className="text-xs px-3 py-1.5 rounded-full border border-dashed border-gray-300 text-gray-400 font-medium"
+                      className="text-xs px-3 py-1.5 rounded-full border border-dashed border-gray-300 text-gray-500 font-medium"
                     >
                       Caixa {caixaNumero} · aguardando emissão da CEPA
                     </span>
@@ -535,7 +535,7 @@ export function AvaliacaoProcessosCard() {
                   `CEPA ${String(confirmando.cepaNumero).padStart(2, '0')}/${confirmando.cepaAno}`,
                 )}
               </p>
-              <p className="text-gray-400 mb-3">
+              <p className="text-gray-500 mb-3">
                 Ao confirmar, você assina eletronicamente este recebimento em seu nome
                 {profile?.nome ? ` (${profile.nome})` : ''} e a caixa fica liberada para avaliação.
               </p>
@@ -564,7 +564,7 @@ export function AvaliacaoProcessosCard() {
       )}
 
       {caixaBusca && buscandoCaixa && (
-        <p className="text-sm text-gray-400 py-4">Buscando…</p>
+        <p className="text-sm text-gray-500 py-4">Buscando…</p>
       )}
 
       {caixaBusca && !buscandoCaixa && !caixaInfo?.caixa && (
@@ -574,7 +574,7 @@ export function AvaliacaoProcessosCard() {
       )}
 
       {caixaInfo?.caixa && totalNaCaixa === 0 && (
-        <p className="text-sm text-gray-400 py-4">Essa caixa ainda não tem processos catalogados.</p>
+        <p className="text-sm text-gray-500 py-4">Essa caixa ainda não tem processos catalogados.</p>
       )}
 
       {/* Barra de progresso da caixa — sempre visível enquanto há uma
@@ -602,15 +602,15 @@ export function AvaliacaoProcessosCard() {
           <div className="flex justify-center gap-3 flex-wrap">
             <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 min-w-[6.5rem]">
               <p className="text-lg font-bold text-gray-900">{totalNaCaixa}</p>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wide">Avaliados</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Avaliados</p>
             </div>
             <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 min-w-[6.5rem]">
               <p className="text-lg font-bold text-red-600">{resumoCaixa.elim}</p>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wide">Eliminação</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Eliminação</p>
             </div>
             <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 min-w-[6.5rem]">
               <p className="text-lg font-bold text-teal-600">{resumoCaixa.perm}</p>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wide">Guarda Perm.</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Guarda Perm.</p>
             </div>
           </div>
         </div>
@@ -621,7 +621,7 @@ export function AvaliacaoProcessosCard() {
           {devolucao && (
             <div className="mb-4 rounded-xl border-2 border-red-500 bg-white p-4">
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-red-800">
+                <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-800">
                   <Undo2 size={11} /> Devolvido pela Coordenação
                 </span>
                 <span className="text-xs text-gray-500">
@@ -634,7 +634,7 @@ export function AvaliacaoProcessosCard() {
                 </span>
               </div>
               <div className="rounded-md border-l-4 border-red-500 bg-red-50 px-3 py-2.5">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-red-800">Motivo da devolução</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-red-800">Motivo da devolução</p>
                 <p className="text-base text-gray-900">{devolucao.motivo_devolucao || 'Motivo não informado. Fale com a Coordenação.'}</p>
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -687,7 +687,7 @@ export function AvaliacaoProcessosCard() {
             </span>
             <div className="flex-1 min-w-0" ref={dropdownRef}>
               <p className="font-semibold text-gray-900 text-sm mb-0.5">Encontre o código na Tabela de Temporalidade (TTD)</p>
-              <p className="text-xs text-gray-400 mb-2">
+              <p className="text-xs text-gray-500 mb-2">
                 Digite parte do código (ex.: 020.1) ou uma palavra do assunto acima (ex.: convênio).
               </p>
               <div className="relative">
@@ -700,7 +700,7 @@ export function AvaliacaoProcessosCard() {
                   onFocus={() => setShowDropdown(true)}
                 />
                 {ttdSearch.length > 0 && ttdSearch.length < 2 && (
-                  <p className="text-xs text-gray-400 mt-1">Digite ao menos 2 letras para buscar.</p>
+                  <p className="text-xs text-gray-500 mt-1">Digite ao menos 2 letras para buscar.</p>
                 )}
                 {showDropdown && ttdSearch.length >= 2 && ttdSearch !== `${selectedTtd?.codigo} — ${selectedTtd?.assunto}` && (
                   <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
@@ -716,7 +716,7 @@ export function AvaliacaoProcessosCard() {
                         </button>
                       ))
                     ) : (
-                      <p className="px-3 py-3 text-xs text-gray-400">
+                      <p className="px-3 py-3 text-xs text-gray-500">
                         Nenhum código encontrado para "{ttdSearch}".
                       </p>
                     )}
@@ -769,14 +769,14 @@ export function AvaliacaoProcessosCard() {
             <span
               className={clsx(
                 'shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border mt-0.5 transition-colors',
-                selectedTtd ? 'bg-teal-500 border-teal-500 text-white' : 'bg-gray-100 border-gray-200 text-gray-400',
+                selectedTtd ? 'bg-teal-500 border-teal-500 text-white' : 'bg-gray-100 border-gray-200 text-gray-500',
               )}
             >
               2
             </span>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900 text-sm mb-0.5">Confirme e avance</p>
-              <p className="text-xs text-gray-400 mb-3">
+              <p className="text-xs text-gray-500 mb-3">
                 {selectedTtd
                   ? 'Confira o código acima e confirme para salvar esta avaliação.'
                   : 'Escolha um código no passo 1 para liberar a confirmação.'}
@@ -791,7 +791,7 @@ export function AvaliacaoProcessosCard() {
               >
                 {salvar.isPending ? 'Salvando…' : 'Confirmar avaliação e ir para o próximo'} <ArrowRight size={14} />
               </button>
-              <p className="text-[11px] text-gray-400 text-center mt-1.5">
+              <p className="text-xs text-gray-500 text-center mt-1.5">
                 Isso salva a decisão deste processo e já abre o próximo da caixa.
               </p>
             </div>
@@ -808,7 +808,7 @@ export function AvaliacaoProcessosCard() {
               Nesta caixa · {totalNaCaixa} processo{totalNaCaixa === 1 ? '' : 's'}
             </p>
             {selecionado && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium border border-amber-200">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium border border-amber-200">
                 Fora da ordem padrão
               </span>
             )}
@@ -832,12 +832,12 @@ export function AvaliacaoProcessosCard() {
               </button>
             )}
           </div>
-          <p className="text-[11px] text-gray-400 mb-1.5">
+          <p className="text-xs text-gray-500 mb-1.5">
             Clique em um processo pendente para avaliá-lo agora, fora da ordem da lista.
           </p>
           <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
             {processosFiltrados.length === 0 && (
-              <p className="text-xs text-gray-400 py-3 text-center">Nenhum processo encontrado para "{buscaProcesso}".</p>
+              <p className="text-xs text-gray-500 py-3 text-center">Nenhum processo encontrado para "{buscaProcesso}".</p>
             )}
             {processosFiltrados.map(p => {
               const i = processos.findIndex(pr => pr.id === p.id)
@@ -864,12 +864,12 @@ export function AvaliacaoProcessosCard() {
                 >
                   <span
                     className={clsx(
-                      'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 border',
+                      'w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border',
                       isDone
                         ? 'bg-teal-500 border-teal-500 text-white'
                         : isCurrent
                         ? 'bg-teal-50 border-teal-400 text-teal-700'
-                        : 'bg-gray-50 border-gray-200 text-gray-400',
+                        : 'bg-gray-50 border-gray-200 text-gray-500',
                     )}
                   >
                     {isDone ? <Check size={11} /> : i + 1}
@@ -877,7 +877,7 @@ export function AvaliacaoProcessosCard() {
                   <span className="font-mono text-gray-600 shrink-0">{p.numero_documento}</span>
                   <span className="text-gray-500 truncate flex-1">{p.assunto_processo || '—'}</span>
                   {!isDone && idsDevolvidos.has(p.id) && (
-                    <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-800">
+                    <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-800">
                       <Undo2 size={10} /> Devolvido
                     </span>
                   )}
@@ -899,7 +899,7 @@ export function AvaliacaoProcessosCard() {
                 <span className="font-mono text-gray-500 w-20 shrink-0">{a.processo?.numero_documento}</span>
                 <span className="w-32 shrink-0"><DecisaoBadge destino={a.decisao} /></span>
                 <AvaliacaoStatusBadge status={a.status} className="shrink-0" />
-                <span className="text-gray-400 ml-auto shrink-0">{format(new Date(a.created_at), 'HH:mm')}</span>
+                <span className="text-gray-500 ml-auto shrink-0">{format(new Date(a.created_at), 'HH:mm')}</span>
               </div>
             ))}
           </div>
@@ -916,7 +916,7 @@ export function AvaliacaoProcessosCard() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
               <div>
                 <h3 className="font-semibold text-gray-900 text-sm">Tabela de Temporalidade (TTD) completa</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Navegue por classe e clique no código que mais se aplica.</p>
+                <p className="text-xs text-gray-500 mt-0.5">Navegue por classe e clique no código que mais se aplica.</p>
               </div>
               <button onClick={() => setMostrarTabela(false)} className="text-gray-400 hover:text-gray-700 shrink-0 ml-2">
                 <X size={18} />
@@ -936,14 +936,14 @@ export function AvaliacaoProcessosCard() {
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-3">
               {carregandoTtdTodos ? (
-                <p className="text-sm text-gray-400 py-6 text-center">Carregando tabela…</p>
+                <p className="text-sm text-gray-500 py-6 text-center">Carregando tabela…</p>
               ) : gruposTabela.length === 0 ? (
-                <p className="text-sm text-gray-400 py-6 text-center">Nenhum código encontrado para esse filtro.</p>
+                <p className="text-sm text-gray-500 py-6 text-center">Nenhum código encontrado para esse filtro.</p>
               ) : (
                 gruposTabela.map(([classe, itens]) => (
                   <div key={classe} className="mb-4">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 sticky top-0 bg-white py-1">
-                      {classe} <span className="font-normal normal-case text-gray-400">· {itens.length} código{itens.length === 1 ? '' : 's'}</span>
+                      {classe} <span className="font-normal normal-case text-gray-500">· {itens.length} código{itens.length === 1 ? '' : 's'}</span>
                     </p>
                     <div className="space-y-1">
                       {itens.map(ttd => (
@@ -957,7 +957,7 @@ export function AvaliacaoProcessosCard() {
                             <span className="font-mono font-semibold text-teal-600">{ttd.codigo}</span>
                             <span className="text-gray-700">{ttd.assunto}</span>
                           </div>
-                          <div className="text-gray-400 mt-0.5 flex items-center gap-2 flex-wrap">
+                          <div className="text-gray-500 mt-0.5 flex items-center gap-2 flex-wrap">
                             {ttd.serie && <span>Série: {ttd.serie}</span>}
                             <DecisaoBadge destino={ttd.destinacao_final} />
                           </div>
