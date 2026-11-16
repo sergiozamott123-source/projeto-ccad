@@ -3,12 +3,11 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, ShieldAlert,
-  Users, Archive, BookOpen, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature, Workflow, Star,
+  Users, Archive, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature, Workflow, Star,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import type { Usuario } from '@/lib/database.types'
-import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
 import { AlertaRitmoAvaliacao } from '@/components/AlertaRitmoAvaliacao'
 import { AlertaAvaliacaoPessoal } from '@/components/AlertaAvaliacaoPessoal'
 import { correspondeBusca } from '@/lib/textSearch'
@@ -252,12 +251,12 @@ export function AppLayout() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center justify-between gap-3 px-6 py-5 border-b border-white/10">
-        <div className="flex items-center gap-3 min-w-0">
-          <BookOpen size={24} className="text-teal-400 shrink-0" />
-          <p className="font-bold text-white leading-tight">CCAD</p>
-        </div>
-        <img src={CDTIV_LOGO_DARKBG} alt="CDTIV" className="h-7 w-auto shrink-0" />
+      <div className="px-6 py-5 border-b border-white/10">
+        <img
+          src="/ccad-assinatura-branca.svg"
+          alt="CCAD — Comissão Central de Avaliação de Documentos · CDTIV"
+          className="h-10 w-auto"
+        />
       </div>
 
       {/* Busca de telas (pedido do Sérgio, 20/10/2026) — digite o nome de

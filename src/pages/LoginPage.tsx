@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
-import { BookOpen, Lock, Mail } from 'lucide-react'
+import { Lock, Mail } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { CDTIV_LOGO_DARKBG } from '@/assets/cdtivLogo'
@@ -58,11 +58,12 @@ export function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-teal-500 mb-4">
-            <BookOpen size={32} className="text-white" />
-          </div>
+          <img
+            src="/ccad-assinatura-branca.svg"
+            alt="CCAD — Comissão Central de Avaliação de Documentos · CDTIV"
+            className="h-20 w-auto mx-auto mb-4"
+          />
           <h1 className="text-2xl font-bold text-white">Plataforma CCAD</h1>
-          <p className="text-white/50 text-sm mt-1">Comissão Central de Avaliação de Documentos</p>
         </div>
 
         {/* Card */}

@@ -1,3 +1,5 @@
+@import './lib/identidade/identidade-dinov.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

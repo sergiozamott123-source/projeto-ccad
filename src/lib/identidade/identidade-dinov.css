@@ -1,0 +1,153 @@
+/* =====================================================================
+   IDENTIDADE VISUAL DINOV — TOKENS DE CORES, FONTES E MEDIDAS
+   Versão 1.0 · 16/11/2026 · Guardião: projeto "Identidade Visual - FACITEC_CONECTA"
+   ---------------------------------------------------------------------
+   COMO USAR
+   1. Carregue as fontes no <head> do index.html (antes do CSS do sistema):
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap">
+   2. Importe este arquivo no CSS principal do sistema (ex.: no topo do src/index.css):
+      @import "./identidade-dinov.css";
+   3. Marque o sistema na tag <html>:  <html lang="pt-BR" data-sistema="facitec-conecta">
+      Valores possíveis: facitec-conecta | ccad | dinov-gestao
+   4. Use SEMPRE as variáveis (var(--dv-...)). Nunca escreva códigos de cor soltos no código.
+   NÃO ALTERE ESTE ARQUIVO no sistema. Mudanças são decididas no projeto de Identidade Visual
+   e chegam numa nova versão do arquivo.
+   ===================================================================== */
+
+:root {
+  /* ---------- BASE COMUM (igual em todos os sistemas) ---------- */
+
+  /* Azul-marinho institucional: títulos, cabeçalhos, menus, fundos escuros */
+  --dv-marinho:            #193651;
+  --dv-marinho-escuro:     #12283C;   /* hover/pressionado sobre marinho */
+  --dv-marinho-claro:      #E6EAEF;   /* fundos suaves, cabeçalho de tabela */
+  --dv-marinho-menu-ativo: #244766;   /* item ativo do menu escuro */
+
+  /* Texto */
+  --dv-texto:              #1F2D3A;   /* texto principal (14:1) */
+  --dv-texto-secundario:   #4A5A6B;   /* legendas, rótulos, texto de apoio (7:1) */
+  --dv-texto-desativado:   #7A8796;   /* só para texto desativado/placeholder (3,6:1) */
+  --dv-texto-sobre-escuro: #FFFFFF;
+  --dv-texto-suave-escuro: #BFD3E8;   /* texto secundário sobre marinho */
+
+  /* Superfícies e linhas */
+  --dv-fundo:              #F6F8FA;   /* fundo das telas */
+  --dv-superficie:         #FFFFFF;   /* cartões, modais, tabelas */
+  --dv-borda:              #D5DCE3;   /* bordas de campos e cartões */
+  --dv-divisoria:          #E3E8EE;   /* linhas entre itens de lista/tabela */
+
+  /* Cores de situação (selo = fundo claro + texto escuro da mesma cor; contraste AA) */
+  --dv-sucesso:            #1C7A43;  --dv-sucesso-fundo:  #E3F4EA;  /* concluído, aprovado, enviado */
+  --dv-atencao:            #A35700;  --dv-atencao-fundo:  #FEF1DE;  /* pendente, aguardando, prazo próximo */
+  --dv-erro:               #B4261E;  --dv-erro-fundo:     #FDE7E6;  /* erro, devolvido, reprovado, vencido */
+  --dv-info:               #0E5A94;  --dv-info-fundo:     #E2EEF8;  /* em análise, informação */
+  --dv-neutro:             #4A5A6B;  --dv-neutro-fundo:   #EEF1F5;  /* rascunho, agendado, sem situação */
+
+  /* Fontes */
+  --dv-fonte-titulo: 'Poppins', 'Segoe UI', Arial, sans-serif;
+  --dv-fonte-texto:  'Inter', 'Segoe UI', Arial, sans-serif;
+  --dv-fonte-numeros-tabela: 'Inter', 'Segoe UI', Arial, sans-serif; /* usar com font-variant-numeric: tabular-nums */
+
+  /* Escala tipográfica das telas (8 tamanhos — não criar outros) */
+  --dv-texto-xs:   12px;  /* selos, legendas pequenas */
+  --dv-texto-sm:   14px;  /* texto de tabela, rótulos, campos */
+  --dv-texto-md:   16px;  /* texto corrido */
+  --dv-texto-lg:   18px;  /* subtítulos de cartão */
+  --dv-titulo-sm:  20px;  /* título de seção (Poppins 600) */
+  --dv-titulo-md:  24px;  /* título de página (Poppins 700) */
+  --dv-titulo-lg:  30px;  /* título de destaque (Poppins 700) */
+  --dv-numero-destaque: 36px; /* números de painel (Poppins 700) */
+
+  /* Cantos, sombras e espaçamento */
+  --dv-raio-sm:   6px;    /* campos, botões pequenos */
+  --dv-raio-md:   10px;   /* botões, cartões */
+  --dv-raio-lg:   14px;   /* modais, cartões grandes */
+  --dv-raio-selo: 999px;  /* selos (pílula) */
+  --dv-sombra-1: 0 1px 2px rgba(25, 54, 81, 0.08);
+  --dv-sombra-2: 0 6px 18px rgba(25, 54, 81, 0.12);
+  --dv-espaco: 8px;       /* espaçamentos sempre múltiplos de 8 (4 em casos finos) */
+
+  /* Logos institucionais (ordem de assinatura: sistema · CDTIV · Prefeitura) */
+
+  /* ---------- PADRÃO (caso data-sistema não seja informado): FACITEC CONECTA ---------- */
+  --dv-primaria:          #3072B1;
+  --dv-primaria-hover:    #255C91;
+  --dv-primaria-clara:    #E8F0F8;
+  --dv-primaria-texto:    #255C91;
+  --dv-texto-sobre-primaria: #FFFFFF;
+  --dv-faixa: linear-gradient(90deg, #3072B1 0 33.33%, #30B172 33.33% 66.66%, #F3763C 66.66% 100%);
+  --dv-grafico-1: #3072B1; --dv-grafico-2: #F3763C; --dv-grafico-3: #30B172;
+  --dv-grafico-4: #193651; --dv-grafico-5: #7A8796;
+}
+
+/* ---------- COR-ASSINATURA: FACITEC CONECTA (também PIBIC Jr e Conecta Ciência) ---------- */
+[data-sistema="facitec-conecta"] {
+  --dv-primaria:          #3072B1;   /* azul FACITEC: botões, links, foco, item ativo */
+  --dv-primaria-hover:    #255C91;
+  --dv-primaria-clara:    #E8F0F8;
+  --dv-primaria-texto:    #255C91;   /* texto na cor da marca sobre fundo claro (AA) */
+  --dv-texto-sobre-primaria: #FFFFFF;
+  --dv-acento-verde:      #30B172;   --dv-acento-verde-claro:   #E5F5EC;
+  --dv-acento-laranja:    #F3763C;   --dv-acento-laranja-claro: #FDECE3;
+  /* verde e laranja NUNCA como cor de texto sobre branco: só faixas, ícones, gráficos, fundos */
+  --dv-faixa: linear-gradient(90deg, #3072B1 0 33.33%, #30B172 33.33% 66.66%, #F3763C 66.66% 100%);
+  --dv-grafico-1: #3072B1; --dv-grafico-2: #F3763C; --dv-grafico-3: #30B172;
+  --dv-grafico-4: #193651; --dv-grafico-5: #7A8796;
+}
+
+/* ---------- COR-ASSINATURA: CCAD (Portal da CCAD) — linguagem da CDTIV ---------- */
+[data-sistema="ccad"] {
+  --dv-primaria:          #0E7C86;   /* teal CCAD: botões, links, foco, item ativo */
+  --dv-primaria-hover:    #0B626B;
+  --dv-primaria-clara:    #E6F4F5;
+  --dv-primaria-texto:    #0B626B;   /* texto na cor da marca sobre fundo claro (AA) */
+  --dv-texto-sobre-primaria: #FFFFFF;
+  /* cores da CDTIV (logo): para faixas, ícones, gráficos e destaques — não para texto pequeno */
+  --dv-cdtiv-laranja:  #F68712;
+  --dv-cdtiv-vermelho: #EF2E32;
+  --dv-cdtiv-verde:    #32B672;
+  --dv-cdtiv-azul:     #3871C1;
+  --dv-cdtiv-petroleo: #0F5165;
+  --dv-faixa: linear-gradient(90deg, #F68712 0 25%, #32B672 25% 50%, #3871C1 50% 75%, #0F5165 75% 100%);
+  --dv-grafico-1: #0E7C86; --dv-grafico-2: #F68712; --dv-grafico-3: #3871C1;
+  --dv-grafico-4: #32B672; --dv-grafico-5: #7A8796;
+  /* pilares do Portal (gráficos): Digitalização = azul, Boas Práticas = verde, Memória = laranja */
+  --dv-pilar-digitalizacao: #3871C1;
+  --dv-pilar-boas-praticas: #32B672;
+  --dv-pilar-memoria:       #F68712;
+}
+
+/* ---------- COR-ASSINATURA: DINOV-GESTÃO — arco da CDTIV, uma cor por área ---------- */
+[data-sistema="dinov-gestao"] {
+  --dv-primaria:          #1170B7;   /* azul DINOV-Gestão: botões padrão, links, foco */
+  --dv-primaria-hover:    #0E5A94;
+  --dv-primaria-clara:    #E2EEF8;
+  --dv-primaria-texto:    #0E5A94;   /* texto na cor da marca sobre fundo claro (AA) */
+  --dv-texto-sobre-primaria: #FFFFFF;
+  /* cores das áreas: cor (faixa/destaque) · texto escuro (AA) · fundo claro */
+  --dv-area-diretora:     #F39200;  --dv-area-diretora-texto:   #A35700;  --dv-area-diretora-fundo:   #FEF1DE;
+  --dv-area-gerencia:     #2BA85F;  --dv-area-gerencia-texto:   #1C7A43;  --dv-area-gerencia-fundo:   #E3F4EA;
+  --dv-area-secretaria:   #1170B7;  --dv-area-secretaria-texto: #0E5A94;  --dv-area-secretaria-fundo: #E2EEF8;
+  --dv-area-estagiarios:  #00A49A;  --dv-area-estagiarios-texto:#00756D;  --dv-area-estagiarios-fundo:#DFF3F1;
+  --dv-faixa: linear-gradient(90deg, #F39200 0 20%, #E6332A 20% 40%, #2BA85F 40% 60%, #1170B7 60% 80%, #00A49A 80% 100%);
+  --dv-grafico-1: #0E5A94; --dv-grafico-2: #F39200; --dv-grafico-3: #2BA85F;
+  --dv-grafico-4: #00A49A; --dv-grafico-5: #7A8796;
+}
+
+/* ---------- APLICAÇÃO BÁSICA ---------- */
+html { font-family: var(--dv-fonte-texto); color: var(--dv-texto); background: var(--dv-fundo); }
+h1, h2, h3, h4 { font-family: var(--dv-fonte-titulo); color: var(--dv-marinho); }
+
+/* Faixa colorida do topo das telas (6px). Uso: <div class="dv-faixa"></div> */
+.dv-faixa { height: 6px; background: var(--dv-faixa); }
+
+/* Selos de situação. Uso: <span class="dv-selo dv-selo--sucesso">Concluído</span> */
+.dv-selo { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px;
+  border-radius: var(--dv-raio-selo); font: 600 var(--dv-texto-xs)/1.6 var(--dv-fonte-texto); }
+.dv-selo--sucesso { background: var(--dv-sucesso-fundo); color: var(--dv-sucesso); }
+.dv-selo--atencao { background: var(--dv-atencao-fundo); color: var(--dv-atencao); }
+.dv-selo--erro    { background: var(--dv-erro-fundo);    color: var(--dv-erro); }
+.dv-selo--info    { background: var(--dv-info-fundo);    color: var(--dv-info); }
+.dv-selo--neutro  { background: var(--dv-neutro-fundo);  color: var(--dv-neutro); }
