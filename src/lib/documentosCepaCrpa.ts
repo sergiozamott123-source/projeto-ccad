@@ -6,9 +6,8 @@
 // do PDF em três lugares — ver migracao_fase21_cepa_crpa.sql para o
 // desenho das tabelas por trás desses documentos.
 
-import jsPDF from 'jspdf'
 import { format } from 'date-fns'
-import { desenharCabecalhoCcad, desenharRodapeCcad, desenharAssinaturaCcad } from '@/lib/identidadeVisualCcad'
+import { carregarModeloDocumento, setorCcad, dataHoraPorExtenso } from '@/lib/pdfCcad'
 
 export function declaracaoCepa(caixaNumero: string, avaliadorNome: string, qtdProcessos: number, dataEntrega: string) {
   return `Declaro, para os devidos fins, que a Caixa ${caixaNumero} foi encaminhada para avaliação do(a) avaliador(a) ${avaliadorNome}, contendo ${qtdProcessos} processo(s), com entrega em ${format(new Date(dataEntrega + 'T00:00:00'), 'dd/MM/yyyy')}.`
@@ -26,7 +25,7 @@ export function codigoCrpa(numeroSequencial: number, ano: number) {
   return `CRPA ${String(numeroSequencial).padStart(2, '0')}/${ano}`
 }
 
-export function gerarCepaPdf(dados: {
+export async function gerarCepaPdf(dados: {
   numeroSequencial: number
   ano: number
   caixaNumero: string
@@ -37,64 +36,37 @@ export function gerarCepaPdf(dados: {
   declaracao: string
   geradoEm: Date
 }) {
-  const doc = new jsPDF()
-  const larguraPagina = doc.internal.pageSize.getWidth()
-  const margemEsquerda = 20
+  const { JsPDF, M } = await carregarModeloDocumento()
   const codigoDocumento = codigoCepa(dados.numeroSequencial, dados.ano)
+  const doc = M.novoDocumento(
+    { sistema: 'ccad', setor: setorCcad('Protocolo Geral · Arquivo'), tituloPdf: codigoDocumento },
+    JsPDF,
+  )
 
-  let y = desenharCabecalhoCcad(doc)
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.setTextColor(20, 20, 20)
-  doc.text('CONFIRMAÇÃO DE ENVIO DE PROCESSOS PARA AVALIAÇÃO', larguraPagina / 2, y, { align: 'center' })
-  y += 6
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(100, 100, 100)
-  doc.text('CCAD / CDTIV', larguraPagina / 2, y, { align: 'center' })
-  y += 10
-
-  // Selo do número do documento
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  const seloLargura = doc.getTextWidth(codigoDocumento) + 10
-  const seloX = larguraPagina / 2 - seloLargura / 2
-  doc.setFillColor(14, 124, 134)
-  doc.roundedRect(seloX, y - 5.5, seloLargura, 8, 2, 2, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.text(codigoDocumento, larguraPagina / 2, y, { align: 'center' })
-  y += 16
-
-  // Ficha de dados
-  const linhaFicha = (label: string, valor: string) => {
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(90, 90, 90)
-    doc.text(label, margemEsquerda, y)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(20, 20, 20)
-    doc.text(valor, margemEsquerda + 48, y)
-    y += 7
-  }
-  linhaFicha('Caixa:', dados.caixaNumero)
-  linhaFicha('Avaliador(a):', dados.avaliadorNome)
-  linhaFicha('Quantidade de processos:', String(dados.qtdProcessos))
-  linhaFicha('Data de entrega:', format(new Date(dados.dataEntrega + 'T00:00:00'), 'dd/MM/yyyy'))
-  y += 8
-
-  y = desenharAssinaturaCcad(doc, y, {
+  let y = M.titulo(doc, { chapeu: codigoDocumento, texto: 'Confirmação de Envio de Processos para Avaliação' })
+  y = M.ficha(
+    doc,
+    [
+      ['Caixa', dados.caixaNumero],
+      ['Avaliador(a)', dados.avaliadorNome],
+      ['Quantidade de processos', String(dados.qtdProcessos)],
+      ['Data de entrega', format(new Date(dados.dataEntrega + 'T00:00:00'), 'dd/MM/yyyy')],
+    ],
+    y,
+  )
+  y = M.paragrafo(doc, dados.declaracao, y)
+  M.assinatura(doc, {
     nome: dados.nomeProtocolo,
-    papel: 'Protocolo — CCAD/CDTIV',
-    declaracao: dados.declaracao,
-    dataHora: dados.geradoEm,
+    cargo: 'Protocolo — CCAD/CDTIV',
+    y: y + 18,
+    eletronica: { data: dataHoraPorExtenso(dados.geradoEm) },
   })
 
-  desenharRodapeCcad(doc, codigoDocumento)
+  M.finalizar(doc, { codigo: codigoDocumento, geradoEm: dados.geradoEm })
   doc.save(`${codigoDocumento.replace(/[^\w-]/g, '-')}-caixa-${dados.caixaNumero}.pdf`)
 }
 
-export function gerarCrpaPdf(dados: {
+export async function gerarCrpaPdf(dados: {
   numeroSequencial: number
   ano: number
   caixaNumero: string
@@ -104,58 +76,32 @@ export function gerarCrpaPdf(dados: {
   declaracao: string
   geradoEm: Date
 }) {
-  const doc = new jsPDF()
-  const larguraPagina = doc.internal.pageSize.getWidth()
-  const margemEsquerda = 20
+  const { JsPDF, M } = await carregarModeloDocumento()
   const codigoDocumento = codigoCrpa(dados.numeroSequencial, dados.ano)
+  const doc = M.novoDocumento(
+    { sistema: 'ccad', setor: setorCcad('Avaliação de Processos'), tituloPdf: codigoDocumento },
+    JsPDF,
+  )
 
-  let y = desenharCabecalhoCcad(doc)
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.setTextColor(20, 20, 20)
-  const linhasTitulo = doc.splitTextToSize('CONFIRMAÇÃO DE RECEBIMENTO DE PROCESSOS PARA AVALIAÇÃO', larguraPagina - 50)
-  doc.text(linhasTitulo, larguraPagina / 2, y, { align: 'center' })
-  y += 6 * linhasTitulo.length
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(100, 100, 100)
-  doc.text('CCAD / CDTIV', larguraPagina / 2, y, { align: 'center' })
-  y += 10
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  const seloLargura = doc.getTextWidth(codigoDocumento) + 10
-  const seloX = larguraPagina / 2 - seloLargura / 2
-  doc.setFillColor(14, 124, 134)
-  doc.roundedRect(seloX, y - 5.5, seloLargura, 8, 2, 2, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.text(codigoDocumento, larguraPagina / 2, y, { align: 'center' })
-  y += 16
-
-  const linhaFicha = (label: string, valor: string) => {
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(90, 90, 90)
-    doc.text(label, margemEsquerda, y)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(20, 20, 20)
-    doc.text(valor, margemEsquerda + 55, y)
-    y += 7
-  }
-  linhaFicha('Caixa:', dados.caixaNumero)
-  linhaFicha('Avaliador(a):', dados.avaliadorNome)
-  linhaFicha('Quantidade de processos:', String(dados.qtdProcessos))
-  linhaFicha('Documento de origem:', dados.cepaCodigo)
-  y += 8
-
-  y = desenharAssinaturaCcad(doc, y, {
+  let y = M.titulo(doc, { chapeu: codigoDocumento, texto: 'Confirmação de Recebimento de Processos para Avaliação' })
+  y = M.ficha(
+    doc,
+    [
+      ['Caixa', dados.caixaNumero],
+      ['Avaliador(a)', dados.avaliadorNome],
+      ['Quantidade de processos', String(dados.qtdProcessos)],
+      ['Documento de origem', dados.cepaCodigo],
+    ],
+    y,
+  )
+  y = M.paragrafo(doc, dados.declaracao, y)
+  M.assinatura(doc, {
     nome: dados.avaliadorNome,
-    papel: 'Avaliador(a) — CCAD/CDTIV',
-    declaracao: dados.declaracao,
-    dataHora: dados.geradoEm,
+    cargo: 'Avaliador(a) — CCAD/CDTIV',
+    y: y + 18,
+    eletronica: { data: dataHoraPorExtenso(dados.geradoEm) },
   })
 
-  desenharRodapeCcad(doc, codigoDocumento)
+  M.finalizar(doc, { codigo: codigoDocumento, geradoEm: dados.geradoEm })
   doc.save(`${codigoDocumento.replace(/[^\w-]/g, '-')}-caixa-${dados.caixaNumero}.pdf`)
 }

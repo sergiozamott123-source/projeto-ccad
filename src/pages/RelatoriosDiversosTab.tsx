@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as XLSX from 'xlsx'
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import { Download, FileSpreadsheet, Save, Trash2, ChevronLeft, ChevronRight, FolderOpen, Zap } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Processo, RelatorioSalvo } from '@/lib/database.types'
-import { CDTIV_LOGO_LIGHTBG } from '@/assets/cdtivLogo'
+import { carregarModeloDocumento, setorCcad, tabelaComQuebra } from '@/lib/pdfCcad'
 import clsx from 'clsx'
 
 interface FiltrosState {
@@ -447,21 +445,20 @@ export function RelatoriosDiversosTab() {
       const colunas = COLUNAS.filter(c => colunasSelecionadas.includes(c.key))
       const linhas = ((data ?? []) as Processo[]).map(p => colunas.map(c => String(getValor(p, c.key))))
 
-      const doc = new jsPDF({ orientation: 'landscape' })
-      const pageWidth = doc.internal.pageSize.getWidth()
-      const logoW = 30
-      const logoH = logoW / (256 / 124) // proporção original do arquivo da logo
-      doc.addImage(CDTIV_LOGO_LIGHTBG, 'JPEG', pageWidth - 14 - logoW, 8, logoW, logoH)
-      doc.setFontSize(14)
-      doc.text('Relatório do Acervo — CCAD/CDTIV', 14, 15)
-      doc.setFontSize(9)
-      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} — ${descreverFiltros(filtros)}`, 14, 21)
-      autoTable(doc, {
-        startY: 26,
-        head: [colunas.map(c => c.label)],
-        body: linhas,
-        styles: { fontSize: 8 },
+      // PROVISÓRIO: o modelo único do kit (v1.0) só existe em A4 retrato; a política prevê
+      // paisagem para relatórios largos, mas o kit ainda não traz esse formato (pedido ao guardião).
+      const { JsPDF, M } = await carregarModeloDocumento()
+      const doc = M.novoDocumento(
+        { sistema: 'ccad', setor: setorCcad('Coordenação · Relatórios'), tituloPdf: 'Relatório do Acervo' },
+        JsPDF,
+      )
+      let y = M.titulo(doc, { chapeu: 'Relatório do acervo', texto: 'Relatório do Acervo — CCAD/CDTIV' })
+      y = M.paragrafo(doc, `Gerado em ${new Date().toLocaleDateString('pt-BR')} — ${descreverFiltros(filtros)}`, y - 4, {
+        tamanho: 9,
+        alinhamento: 'left',
       })
+      await tabelaComQuebra(doc, colunas.map(c => c.label), linhas, y, { tamanhoFonte: colunas.length > 8 ? 6.5 : 7.5 })
+      M.finalizar(doc)
       doc.save(`relatorio-acervo-${new Date().toISOString().slice(0, 10)}.pdf`)
     } finally {
       setExportando(null)
@@ -492,30 +489,33 @@ export function RelatoriosDiversosTab() {
     }
   }
 
-  function exportarProducaoSetorPdf() {
+  async function exportarProducaoSetorPdf() {
     if (!producaoPorSetor?.length) return
     setExportandoSetor('pdf')
     try {
-      const doc = new jsPDF()
-      const pageWidth = doc.internal.pageSize.getWidth()
-      const logoW = 30
-      const logoH = logoW / (256 / 124)
-      doc.addImage(CDTIV_LOGO_LIGHTBG, 'JPEG', pageWidth - 14 - logoW, 8, logoW, logoH)
-      doc.setFontSize(14)
-      doc.text('Produção e avaliação por setor — CCAD/CDTIV', 14, 15)
-      doc.setFontSize(9)
-      doc.text(`Gerado em ${new Date().toLocaleDateString('pt-BR')} — ${descreverPeriodoSetor()}`, 14, 21)
-      autoTable(doc, {
-        startY: 26,
-        head: [['Setor', 'Processos produzidos', 'Processos avaliados', '% avaliado']],
-        body: producaoPorSetor.map(l => [
+      const { JsPDF, M } = await carregarModeloDocumento()
+      const doc = M.novoDocumento(
+        { sistema: 'ccad', setor: setorCcad('Coordenação · Relatórios'), tituloPdf: 'Produção e avaliação por setor' },
+        JsPDF,
+      )
+      let y = M.titulo(doc, { chapeu: 'Relatório por setor', texto: 'Produção e avaliação por setor — CCAD/CDTIV' })
+      y = M.paragrafo(doc, `Gerado em ${new Date().toLocaleDateString('pt-BR')} — ${descreverPeriodoSetor()}`, y - 4, {
+        tamanho: 9,
+        alinhamento: 'left',
+      })
+      await tabelaComQuebra(
+        doc,
+        ['Setor', 'Processos produzidos', 'Processos avaliados', '% avaliado'],
+        producaoPorSetor.map(l => [
           l.setor,
           String(l.total),
           String(l.avaliados),
           l.total > 0 ? `${Math.round((l.avaliados / l.total) * 100)}%` : '—',
         ]),
-        styles: { fontSize: 9 },
-      })
+        y,
+        { tamanhoFonte: 9, colunasADireita: [1, 2, 3] },
+      )
+      M.finalizar(doc)
       doc.save(`relatorio-producao-setor-${new Date().toISOString().slice(0, 10)}.pdf`)
     } finally {
       setExportandoSetor(null)

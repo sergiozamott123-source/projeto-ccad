@@ -595,8 +595,8 @@ export function RequisicoesAvaliacaoPage() {
       setEmitindoIds(prev => ({ ...prev, [item.requisicaoId]: true }))
       setErrosCepa(prev => ({ ...prev, [item.requisicaoId]: '' }))
     },
-    onSuccess: ({ item, declaracao, numeroSequencial, ano }) => {
-      gerarCepaPdf({
+    onSuccess: async ({ item, declaracao, numeroSequencial, ano }) => {
+      await gerarCepaPdf({
         numeroSequencial,
         ano,
         caixaNumero: item.caixaNumero,

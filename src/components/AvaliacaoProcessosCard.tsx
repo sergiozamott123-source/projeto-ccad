@@ -144,8 +144,8 @@ export function AvaliacaoProcessosCard() {
       if (error) throw error
       return { p, cepaCodigo, declaracao, numeroSequencial: data!.numero_sequencial as number, ano: data!.ano as number }
     },
-    onSuccess: ({ p, cepaCodigo, declaracao, numeroSequencial, ano }) => {
-      gerarCrpaPdf({
+    onSuccess: async ({ p, cepaCodigo, declaracao, numeroSequencial, ano }) => {
+      await gerarCrpaPdf({
         numeroSequencial,
         ano,
         caixaNumero: p.caixaNumero,

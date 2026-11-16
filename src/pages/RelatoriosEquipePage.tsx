@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import jsPDF from 'jspdf'
+import { carregarModeloDocumento, setorCcad, dataHoraPorExtenso } from '@/lib/pdfCcad'
 import { FileSearch, Clock, Download, FileSignature, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -45,79 +45,40 @@ function gerarCodigoDocumento() {
   return `${codigo.slice(0, 4)}-${codigo.slice(4)}`
 }
 
-function exportarRelatorioMembroPdf(usuario: Usuario, relatorio: RelatorioMensal, mesSelecionado: string) {
-  const doc = new jsPDF()
-  const margemEsquerda = 14
-  const larguraUtil = 182
-  const alturaPagina = doc.internal.pageSize.getHeight()
-  const margemInferior = 20
-  let y = 20
+async function exportarRelatorioMembroPdf(usuario: Usuario, relatorio: RelatorioMensal, mesSelecionado: string) {
+  const { JsPDF, M, DV } = await carregarModeloDocumento()
+  const mesTexto = format(new Date(mesSelecionado), 'MMMM yyyy', { locale: ptBR })
+  const doc = M.novoDocumento(
+    { sistema: 'ccad', setor: setorCcad('Coordenação'), tituloPdf: 'Relatório Mensal de Atividades' },
+    JsPDF,
+  )
 
-  function novaLinha(altura: number) {
-    if (y + altura > alturaPagina - margemInferior) {
-      doc.addPage()
-      y = 20
-    }
-  }
+  let y = M.titulo(doc, { chapeu: `Relatório mensal · ${mesTexto}`, texto: 'Relatório Mensal de Atividades' })
 
-  function secao(titulo: string, corpo: string) {
-    novaLinha(8)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(80, 80, 80)
-    doc.text(titulo.toUpperCase(), margemEsquerda, y)
-    y += 6
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(30, 30, 30)
-    doc.setFontSize(11)
-    const linhas = doc.splitTextToSize(corpo || '—', larguraUtil)
-    for (const linha of linhas) {
-      novaLinha(6)
-      doc.text(linha, margemEsquerda, y)
-      y += 6
-    }
-    y += 3
-  }
-
-  // Cabeçalho
-  doc.setFontSize(14)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(20, 20, 20)
-  doc.text('CCAD — Comissão Central de Avaliação de Documentos', margemEsquerda, y)
-  y += 6
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(120, 120, 120)
-  doc.text('CDTIV', margemEsquerda, y)
-  y += 4
-  doc.setDrawColor(200, 200, 200)
-  doc.line(margemEsquerda, y, margemEsquerda + larguraUtil, y)
-  y += 10
-
-  // Título
-  doc.setFontSize(13)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(20, 20, 20)
-  doc.text('Relatório Mensal de Atividades', margemEsquerda, y)
-  y += 9
-
-  // Dados do membro
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
-  doc.text(usuario.nome, margemEsquerda, y)
-  y += 5.5
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(90, 90, 90)
-  doc.text(usuario.email, margemEsquerda, y)
-  y += 5.5
-  doc.text(`Mês de referência: ${format(new Date(mesSelecionado), 'MMMM yyyy', { locale: ptBR })}`, margemEsquerda, y)
-  y += 5.5
   const statusTexto = STATUS_LABEL[relatorio.status] ?? relatorio.status
   const enviadoTexto = relatorio.enviado_em
     ? ` — enviado em ${format(new Date(relatorio.enviado_em), 'dd/MM/yyyy HH:mm')}`
     : ''
-  doc.text(`Status: ${statusTexto}${enviadoTexto}`, margemEsquerda, y)
-  y += 9
+  y = M.ficha(
+    doc,
+    [
+      ['Membro', usuario.nome],
+      ['E-mail', usuario.email],
+      ['Mês de referência', mesTexto],
+      ['Status', `${statusTexto}${enviadoTexto}`],
+    ],
+    y,
+  )
+
+  function secao(titulo: string, corpo: string) {
+    y = M.paragrafo(doc, titulo.toUpperCase(), y, {
+      tamanho: 8.5,
+      alinhamento: 'left',
+      estilo: 'textoSemi',
+      cor: DV.base.textoSecundario,
+    })
+    y = M.paragrafo(doc, corpo || '—', y - 2)
+  }
 
   secao('Atividades realizadas', relatorio.atividades_realizadas)
   if (relatorio.dificuldades) {
@@ -135,169 +96,48 @@ function exportarRelatorioMembroPdf(usuario: Usuario, relatorio: RelatorioMensal
       `${relatorio.requisicoes_emitidas_qtd} requisição(ões) — caixas ${relatorio.requisicoes_emitidas_caixas.join(', ')}`,
     )
   }
+  M.paragrafo(doc, `Horas dedicadas no mês: ${relatorio.horas_dedicadas ?? 0}h`, y, {
+    alinhamento: 'left',
+    estilo: 'textoNegrito',
+  })
 
-  novaLinha(8)
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 30, 30)
-  doc.text(`Horas dedicadas no mês: ${relatorio.horas_dedicadas ?? 0}h`, margemEsquerda, y)
-
-  // Rodapé em todas as páginas
-  const totalPaginas = doc.getNumberOfPages()
-  for (let i = 1; i <= totalPaginas; i++) {
-    doc.setPage(i)
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(150, 150, 150)
-    doc.text(
-      `Gerado em ${new Date().toLocaleString('pt-BR')} pelo Portal da CCAD — página ${i} de ${totalPaginas}`,
-      margemEsquerda,
-      alturaPagina - 10,
-    )
-  }
-
+  M.finalizar(doc)
   const nomeArquivo = `relatorio-${slug(usuario.nome)}-${mesSelecionado}.pdf`
   doc.save(nomeArquivo)
 }
 
-function exportarTermoEnvioPdf(nomeCoordenador: string, mesSelecionado: string, referencia: string, textoAtividades: string) {
-  const doc = new jsPDF()
-  const larguraPagina = doc.internal.pageSize.getWidth()
-  const alturaPagina = doc.internal.pageSize.getHeight()
-  const margemEsquerda = 20
-  const margemDireita = 20
-  const larguraUtil = larguraPagina - margemEsquerda - margemDireita
-  const margemInferior = 22
+async function exportarTermoEnvioPdf(nomeCoordenador: string, mesSelecionado: string, referencia: string, textoAtividades: string) {
+  const { JsPDF, M } = await carregarModeloDocumento()
   const competencia = referencia.trim() || competenciaTexto(mesSelecionado)
   const codigoDocumento = gerarCodigoDocumento()
   const agora = new Date()
+  const doc = M.novoDocumento(
+    { sistema: 'ccad', setor: setorCcad('Coordenação'), tituloPdf: 'Termo de Envio de Relatórios Mensais' },
+    JsPDF,
+  )
 
-  let y = 0
+  let y = M.titulo(doc, { chapeu: `Referência: ${competencia}`, texto: 'Termo de Envio de Relatórios Mensais' })
 
-  function garantirEspaco(altura: number) {
-    if (y + altura > alturaPagina - margemInferior) {
-      doc.addPage()
-      y = 20
-    }
-  }
-
-  function paragrafo(texto: string, opts: { negrito?: boolean; tamanho?: number; espacoDepois?: number } = {}) {
-    doc.setFont('helvetica', opts.negrito ? 'bold' : 'normal')
-    doc.setFontSize(opts.tamanho ?? 11)
-    doc.setTextColor(30, 30, 30)
-    const linhas = doc.splitTextToSize(texto, larguraUtil)
-    for (const linha of linhas) {
-      garantirEspaco(6.2)
-      doc.text(linha, margemEsquerda, y)
-      y += 6.2
-    }
-    y += opts.espacoDepois ?? 4
-  }
-
-  // Cabeçalho com a identidade visual do Portal
-  doc.setFillColor(32, 40, 59)
-  doc.rect(0, 0, larguraPagina, 24, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.text('CCAD', margemEsquerda, 14)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(190, 219, 220)
-  doc.text('Comissão Central de Avaliação de Documentos — CDTIV', margemEsquerda, 20)
-  doc.setFillColor(14, 124, 134)
-  doc.rect(0, 24, larguraPagina, 2, 'F')
-  y = 38
-
-  // Título do documento
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.setTextColor(20, 20, 20)
-  doc.text('TERMO DE ENVIO DE RELATÓRIOS MENSAIS', larguraPagina / 2, y, { align: 'center' })
-  y += 6
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(100, 100, 100)
-  doc.text('CCAD / CDTIV', larguraPagina / 2, y, { align: 'center' })
-  y += 10
-
-  // Selo de referência (competência)
-  const refTexto = `Referência: ${competencia}`
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  const refLargura = doc.getTextWidth(refTexto) + 10
-  const refX = larguraPagina / 2 - refLargura / 2
-  doc.setFillColor(14, 124, 134)
-  doc.roundedRect(refX, y - 5.5, refLargura, 8, 2, 2, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.text(refTexto, larguraPagina / 2, y, { align: 'center' })
-  y += 14
-
-  // Saudação
-  paragrafo('Ao NRH', { espacoDepois: 5 })
+  y = M.paragrafo(doc, 'Ao NRH', y, { alinhamento: 'left' })
 
   // Corpo — texto do coordenador, dividido em parágrafos por linha em branco
   const paragrafos = textoAtividades.split(/\n\s*\n/).map(p => p.trim()).filter(Boolean)
   for (const p of paragrafos) {
-    paragrafo(p, { espacoDepois: 4 })
+    y = M.paragrafo(doc, p, y)
   }
 
   // Fechamento automático
-  paragrafo(
-    `Em anexo, apresento os relatórios mensais (competência ${competencia}) dos membros da CCAD.`,
-    { espacoDepois: 10 },
-  )
+  y = M.paragrafo(doc, `Em anexo, apresento os relatórios mensais (competência ${competencia}) dos membros da CCAD.`, y)
 
-  // Data por extenso (gerada automaticamente)
-  garantirEspaco(10)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(11)
-  doc.setTextColor(30, 30, 30)
-  doc.text(`Vitória, ${format(agora, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}.`, margemEsquerda, y)
-  y += 22
+  y = M.localData(doc, y + 4, agora)
+  M.assinatura(doc, {
+    nome: nomeCoordenador,
+    cargo: 'Coordenador da CCAD/CDTIV',
+    y: y + 18,
+    eletronica: { data: dataHoraPorExtenso(agora), codigo: codigoDocumento },
+  })
 
-  // Assinatura eletrônica (gerada automaticamente)
-  garantirEspaco(32)
-  const linhaLargura = 80
-  const linhaX = larguraPagina / 2 - linhaLargura / 2
-  doc.setDrawColor(120, 120, 120)
-  doc.line(linhaX, y, linhaX + linhaLargura, y)
-  y += 6
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.setTextColor(20, 20, 20)
-  doc.text(nomeCoordenador, larguraPagina / 2, y, { align: 'center' })
-  y += 5.5
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(90, 90, 90)
-  doc.text('Coordenador da CCAD/CDTIV', larguraPagina / 2, y, { align: 'center' })
-  y += 7
-  doc.setFont('helvetica', 'italic')
-  doc.setFontSize(8.5)
-  doc.setTextColor(130, 130, 130)
-  const assinaturaTexto = `Documento assinado eletronicamente por ${nomeCoordenador} em ${agora.toLocaleDateString('pt-BR')} às ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} — Portal da CCAD. Código do documento: ${codigoDocumento}`
-  const linhasAssinatura = doc.splitTextToSize(assinaturaTexto, larguraUtil - 30)
-  for (const linha of linhasAssinatura) {
-    garantirEspaco(4.2)
-    doc.text(linha, larguraPagina / 2, y, { align: 'center' })
-    y += 4.2
-  }
-
-  // Rodapé em todas as páginas
-  const totalPaginas = doc.getNumberOfPages()
-  for (let i = 1; i <= totalPaginas; i++) {
-    doc.setPage(i)
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(150, 150, 150)
-    doc.text(
-      `Documento gerado pelo Portal da CCAD — código ${codigoDocumento} — página ${i} de ${totalPaginas}`,
-      margemEsquerda,
-      alturaPagina - 12,
-    )
-  }
-
+  M.finalizar(doc, { codigo: codigoDocumento, geradoEm: agora })
   doc.save(`termo-envio-relatorio-${mesSelecionado}.pdf`)
 }
 
@@ -337,9 +177,9 @@ export function RelatoriosEquipePage() {
   const enviados = linhas.filter(l => l.relatorio?.status === 'enviado').length
   const total = linhas.length
 
-  function handleGerarTermo() {
+  async function handleGerarTermo() {
     if (!profile || !textoTermo.trim()) return
-    exportarTermoEnvioPdf(profile.nome, mesSelecionado, referenciaTermo, textoTermo.trim())
+    await exportarTermoEnvioPdf(profile.nome, mesSelecionado, referenciaTermo, textoTermo.trim())
     setTermoGerado(true)
   }
 

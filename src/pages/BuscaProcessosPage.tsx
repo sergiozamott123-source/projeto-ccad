@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import jsPDF from 'jspdf'
+import { carregarModeloDocumento, setorCcad } from '@/lib/pdfCcad'
 import { Search, Archive, AlertTriangle, Clock, X, FileSignature, Undo2, CheckCircle2, CalendarClock, MapPin } from 'lucide-react'
 import { DataIcon } from '@/components/badges/DecisaoBadges'
 import { format, addDays, isPast } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Processo, Caixa, Avaliacao, Emprestimo } from '@/lib/database.types'
@@ -32,7 +31,7 @@ function emprestimoAtivo(p: ProcessoBusca) {
   return (p.emprestimos ?? []).find(e => !e.devolvido_em) ?? null
 }
 
-function gerarDeclaracaoDesarquivamentoPdf(dados: {
+async function gerarDeclaracaoDesarquivamentoPdf(dados: {
   processo: ProcessoBusca
   solicitanteNome: string
   solicitanteMatricula: string
@@ -40,131 +39,48 @@ function gerarDeclaracaoDesarquivamentoPdf(dados: {
   prazoPrevisto: Date
 }) {
   const { processo, solicitanteNome, solicitanteMatricula, protocolistaNome, prazoPrevisto } = dados
-  const doc = new jsPDF()
-  const larguraPagina = doc.internal.pageSize.getWidth()
-  const alturaPagina = doc.internal.pageSize.getHeight()
-  const margemEsquerda = 20
-  const margemDireita = 20
-  const larguraUtil = larguraPagina - margemEsquerda - margemDireita
-  const margemInferior = 22
-  const agora = new Date()
-  let y = 0
+  const { JsPDF, M } = await carregarModeloDocumento()
+  const doc = M.novoDocumento(
+    { sistema: 'ccad', setor: setorCcad('Protocolo Geral · Arquivo'), tituloPdf: 'Declaração de Desarquivamento' },
+    JsPDF,
+  )
 
-  function garantirEspaco(altura: number) {
-    if (y + altura > alturaPagina - margemInferior) {
-      doc.addPage()
-      y = 20
-    }
-  }
+  let y = M.titulo(doc, { chapeu: 'Protocolo Geral', texto: 'Declaração de Desarquivamento' })
+  y = M.ficha(
+    doc,
+    [
+      ['Processo/documento', processo.numero_documento || '—'],
+      ['Caixa de origem', processo.caixa?.numero ?? '—'],
+    ],
+    y,
+  )
+  // Assunto e interessado podem ser longos: vão como texto corrido (a ficha só mostra uma linha por campo).
+  y = M.paragrafo(doc, `Assunto: ${processo.assunto_processo || '—'}`, y - 4, { alinhamento: 'left' })
+  y = M.paragrafo(doc, `Interessado: ${processo.interessado || '—'}`, y, { alinhamento: 'left' })
+  y += 4
 
-  function paragrafo(texto: string, opts: { negrito?: boolean; tamanho?: number; espacoDepois?: number } = {}) {
-    doc.setFont('helvetica', opts.negrito ? 'bold' : 'normal')
-    doc.setFontSize(opts.tamanho ?? 11)
-    doc.setTextColor(30, 30, 30)
-    const linhas = doc.splitTextToSize(texto, larguraUtil)
-    for (const linha of linhas) {
-      garantirEspaco(6.2)
-      doc.text(linha, margemEsquerda, y)
-      y += 6.2
-    }
-    y += opts.espacoDepois ?? 4
-  }
-
-  function linhaDado(rotulo: string, valor: string) {
-    garantirEspaco(6)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(90, 90, 90)
-    doc.text(rotulo, margemEsquerda, y)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(30, 30, 30)
-    doc.text(valor, margemEsquerda + 48, y)
-    y += 6
-  }
-
-  // Cabeçalho com a identidade visual do Portal
-  doc.setFillColor(32, 40, 59)
-  doc.rect(0, 0, larguraPagina, 24, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.text('CCAD', margemEsquerda, 14)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(190, 219, 220)
-  doc.text('Comissão Central de Avaliação de Documentos — CDTIV', margemEsquerda, 20)
-  doc.setFillColor(14, 124, 134)
-  doc.rect(0, 24, larguraPagina, 2, 'F')
-  y = 38
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.setTextColor(20, 20, 20)
-  doc.text('DECLARAÇÃO DE DESARQUIVAMENTO', larguraPagina / 2, y, { align: 'center' })
-  y += 6
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(100, 100, 100)
-  doc.text('Protocolo Geral — CCAD / CDTIV', larguraPagina / 2, y, { align: 'center' })
-  y += 14
-
-  linhaDado('Processo/documento:', processo.numero_documento || '—')
-  linhaDado('Assunto:', processo.assunto_processo || '—')
-  linhaDado('Caixa de origem:', processo.caixa?.numero ?? '—')
-  linhaDado('Interessado:', processo.interessado || '—')
-  y += 6
-
-  paragrafo(
+  y = M.paragrafo(
+    doc,
     `Eu, ${solicitanteNome}, portador(a) da matrícula nº ${solicitanteMatricula}, declaro ter retirado nesta data, junto ao Protocolo Geral da CCAD/CDTIV, o processo/documento acima identificado, sob a responsabilidade de ${protocolistaNome}.`,
-    { espacoDepois: 6 },
+    y,
   )
-  paragrafo(
+  y = M.paragrafo(
+    doc,
     `Assumo o compromisso de devolver o referido processo/documento até o dia ${format(prazoPrevisto, 'dd/MM/yyyy')}, ou de solicitar, junto ao Protocolo, a prorrogação desse prazo, caso seja necessário permanecer com o processo/documento por mais tempo.`,
-    { espacoDepois: 10 },
+    y,
   )
+  y = M.localData(doc, y + 4)
+  M.assinatura(doc, {
+    nome: solicitanteNome,
+    cargo: `Matrícula nº ${solicitanteMatricula} — assinatura do solicitante`,
+    y: y + 20,
+  })
 
-  garantirEspaco(10)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(11)
-  doc.setTextColor(30, 30, 30)
-  doc.text(`Vitória, ${format(agora, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}.`, margemEsquerda, y)
-  y += 26
-
-  // Linha de assinatura física do solicitante
-  garantirEspaco(20)
-  const linhaLargura = 90
-  const linhaX = larguraPagina / 2 - linhaLargura / 2
-  doc.setDrawColor(120, 120, 120)
-  doc.line(linhaX, y, linhaX + linhaLargura, y)
-  y += 6
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.setTextColor(20, 20, 20)
-  doc.text(solicitanteNome, larguraPagina / 2, y, { align: 'center' })
-  y += 5.5
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9.5)
-  doc.setTextColor(120, 120, 120)
-  doc.text(`Matrícula nº ${solicitanteMatricula} — assinatura do solicitante`, larguraPagina / 2, y, { align: 'center' })
-
-  // Rodapé
-  const totalPaginas = doc.getNumberOfPages()
-  for (let i = 1; i <= totalPaginas; i++) {
-    doc.setPage(i)
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(150, 150, 150)
-    doc.text(
-      `Gerado pelo Portal da CCAD em ${agora.toLocaleString('pt-BR')} — página ${i} de ${totalPaginas}`,
-      margemEsquerda,
-      alturaPagina - 12,
-    )
-  }
-
+  M.finalizar(doc)
   doc.save(`declaracao-desarquivamento-${processo.numero_documento || processo.id}.pdf`)
 }
 
-function gerarDeclaracaoDevolucaoPdf(dados: {
+async function gerarDeclaracaoDevolucaoPdf(dados: {
   processo: ProcessoBusca
   solicitanteNome: string
   solicitanteMatricula: string
@@ -172,124 +88,39 @@ function gerarDeclaracaoDevolucaoPdf(dados: {
   protocolistaNome: string
 }) {
   const { processo, solicitanteNome, solicitanteMatricula, desarquivadoEm, protocolistaNome } = dados
-  const doc = new jsPDF()
-  const larguraPagina = doc.internal.pageSize.getWidth()
-  const alturaPagina = doc.internal.pageSize.getHeight()
-  const margemEsquerda = 20
-  const margemDireita = 20
-  const larguraUtil = larguraPagina - margemEsquerda - margemDireita
-  const margemInferior = 22
-  const agora = new Date()
-  let y = 0
-
-  function garantirEspaco(altura: number) {
-    if (y + altura > alturaPagina - margemInferior) {
-      doc.addPage()
-      y = 20
-    }
-  }
-
-  function paragrafo(texto: string, opts: { negrito?: boolean; tamanho?: number; espacoDepois?: number } = {}) {
-    doc.setFont('helvetica', opts.negrito ? 'bold' : 'normal')
-    doc.setFontSize(opts.tamanho ?? 11)
-    doc.setTextColor(30, 30, 30)
-    const linhas = doc.splitTextToSize(texto, larguraUtil)
-    for (const linha of linhas) {
-      garantirEspaco(6.2)
-      doc.text(linha, margemEsquerda, y)
-      y += 6.2
-    }
-    y += opts.espacoDepois ?? 4
-  }
-
-  function linhaDado(rotulo: string, valor: string) {
-    garantirEspaco(6)
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(10)
-    doc.setTextColor(90, 90, 90)
-    doc.text(rotulo, margemEsquerda, y)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(30, 30, 30)
-    doc.text(valor, margemEsquerda + 48, y)
-    y += 6
-  }
-
-  // Cabeçalho com a identidade visual do Portal
-  doc.setFillColor(32, 40, 59)
-  doc.rect(0, 0, larguraPagina, 24, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(16)
-  doc.text('CCAD', margemEsquerda, 14)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(190, 219, 220)
-  doc.text('Comissão Central de Avaliação de Documentos — CDTIV', margemEsquerda, 20)
-  doc.setFillColor(14, 124, 134)
-  doc.rect(0, 24, larguraPagina, 2, 'F')
-  y = 38
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(14)
-  doc.setTextColor(20, 20, 20)
-  doc.text('DECLARAÇÃO DE DEVOLUÇÃO', larguraPagina / 2, y, { align: 'center' })
-  y += 6
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(100, 100, 100)
-  doc.text('Protocolo Geral — CCAD / CDTIV', larguraPagina / 2, y, { align: 'center' })
-  y += 14
-
-  linhaDado('Processo/documento:', processo.numero_documento || '—')
-  linhaDado('Assunto:', processo.assunto_processo || '—')
-  linhaDado('Caixa de destino:', processo.caixa?.numero ?? '—')
-  linhaDado('Interessado:', processo.interessado || '—')
-  linhaDado('Desarquivado em:', format(desarquivadoEm, 'dd/MM/yyyy'))
-  y += 6
-
-  paragrafo(
-    `Certifica-se que o processo/documento acima identificado, desarquivado em ${format(desarquivadoEm, 'dd/MM/yyyy')} por ${solicitanteNome}, matrícula nº ${solicitanteMatricula}, foi devolvido nesta data ao Protocolo Geral da CCAD/CDTIV e recomposto na respectiva caixa do Arquivo Geral.`,
-    { espacoDepois: 10 },
+  const { JsPDF, M } = await carregarModeloDocumento()
+  const doc = M.novoDocumento(
+    { sistema: 'ccad', setor: setorCcad('Protocolo Geral · Arquivo'), tituloPdf: 'Declaração de Devolução' },
+    JsPDF,
   )
 
-  garantirEspaco(10)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(11)
-  doc.setTextColor(30, 30, 30)
-  doc.text(`Vitória, ${format(agora, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}.`, margemEsquerda, y)
-  y += 26
+  let y = M.titulo(doc, { chapeu: 'Protocolo Geral', texto: 'Declaração de Devolução' })
+  y = M.ficha(
+    doc,
+    [
+      ['Processo/documento', processo.numero_documento || '—'],
+      ['Caixa de destino', processo.caixa?.numero ?? '—'],
+      ['Desarquivado em', format(desarquivadoEm, 'dd/MM/yyyy')],
+    ],
+    y,
+  )
+  y = M.paragrafo(doc, `Assunto: ${processo.assunto_processo || '—'}`, y - 4, { alinhamento: 'left' })
+  y = M.paragrafo(doc, `Interessado: ${processo.interessado || '—'}`, y, { alinhamento: 'left' })
+  y += 4
 
-  // Linha de assinatura do protocolista que recebeu a devolução
-  garantirEspaco(20)
-  const linhaLargura = 90
-  const linhaX = larguraPagina / 2 - linhaLargura / 2
-  doc.setDrawColor(120, 120, 120)
-  doc.line(linhaX, y, linhaX + linhaLargura, y)
-  y += 6
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.setTextColor(20, 20, 20)
-  doc.text(protocolistaNome, larguraPagina / 2, y, { align: 'center' })
-  y += 5.5
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9.5)
-  doc.setTextColor(120, 120, 120)
-  doc.text('Protocolo Geral — CCAD/CDTIV, responsável pelo recebimento', larguraPagina / 2, y, { align: 'center' })
+  y = M.paragrafo(
+    doc,
+    `Certifica-se que o processo/documento acima identificado, desarquivado em ${format(desarquivadoEm, 'dd/MM/yyyy')} por ${solicitanteNome}, matrícula nº ${solicitanteMatricula}, foi devolvido nesta data ao Protocolo Geral da CCAD/CDTIV e recomposto na respectiva caixa do Arquivo Geral.`,
+    y,
+  )
+  y = M.localData(doc, y + 4)
+  M.assinatura(doc, {
+    nome: protocolistaNome,
+    cargo: 'Protocolo Geral — CCAD/CDTIV, responsável pelo recebimento',
+    y: y + 20,
+  })
 
-  // Rodapé
-  const totalPaginas = doc.getNumberOfPages()
-  for (let i = 1; i <= totalPaginas; i++) {
-    doc.setPage(i)
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(150, 150, 150)
-    doc.text(
-      `Gerado pelo Portal da CCAD em ${agora.toLocaleString('pt-BR')} — página ${i} de ${totalPaginas}`,
-      margemEsquerda,
-      alturaPagina - 12,
-    )
-  }
-
+  M.finalizar(doc)
   doc.save(`declaracao-devolucao-${processo.numero_documento || processo.id}.pdf`)
 }
 
@@ -335,7 +166,7 @@ function ModalSolicitarEmprestimo({
         .eq('id', processo.id)
       if (erroUpdate) throw erroUpdate
 
-      gerarDeclaracaoDesarquivamentoPdf({
+      await gerarDeclaracaoDesarquivamentoPdf({
         processo,
         solicitanteNome: nome.trim(),
         solicitanteMatricula: matricula.trim(),
@@ -440,7 +271,7 @@ function ModalRegistrarDevolucao({
         .eq('id', processo.id)
       if (erroUpdateProcesso) throw erroUpdateProcesso
 
-      gerarDeclaracaoDevolucaoPdf({
+      await gerarDeclaracaoDevolucaoPdf({
         processo,
         solicitanteNome: emprestimo.solicitante_nome,
         solicitanteMatricula: emprestimo.solicitante_matricula,

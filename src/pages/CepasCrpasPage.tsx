@@ -78,8 +78,8 @@ export function CepasCrpasPage() {
     })
   }, [cepas, busca, filtroAno])
 
-  function baixarCepa(c: CepaLista) {
-    gerarCepaPdf({
+  async function baixarCepa(c: CepaLista) {
+    await gerarCepaPdf({
       numeroSequencial: c.numero_sequencial,
       ano: c.ano,
       caixaNumero: c.caixa?.numero ?? '—',
@@ -92,10 +92,10 @@ export function CepasCrpasPage() {
     })
   }
 
-  function baixarCrpa(c: CepaLista) {
+  async function baixarCrpa(c: CepaLista) {
     const crpa = unico(c.crpas)
     if (!crpa) return
-    gerarCrpaPdf({
+    await gerarCrpaPdf({
       numeroSequencial: crpa.numero_sequencial,
       ano: crpa.ano,
       caixaNumero: c.caixa?.numero ?? '—',
