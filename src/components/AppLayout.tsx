@@ -242,7 +242,7 @@ export function AppLayout() {
       apoio_tecnico: 'Apoio Técnico',
     }
     return (
-      <span className="text-xs px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300">
+      <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-[var(--dv-texto-suave-escuro)]">
         {labels[papel] ?? papel}
       </span>
     )
@@ -269,7 +269,7 @@ export function AppLayout() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar tela…"
-            className="w-full bg-white/95 border border-white/20 rounded-lg pl-8 pr-7 py-1.5 text-xs text-navy-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+            className="w-full bg-white/95 border border-white/20 rounded-lg pl-8 pr-7 py-1.5 text-xs text-navy-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
           {search && (
             <button
@@ -289,7 +289,7 @@ export function AppLayout() {
           // Resultados da busca — lista achatada, mostra "em <grupo>" para
           // os itens que moram dentro de um submenu.
           searchResults.length === 0 ? (
-            <p className="px-3 py-3 text-xs text-white/40">Nenhuma tela encontrada para "{search}".</p>
+            <p className="px-3 py-3 text-xs text-[var(--dv-texto-suave-escuro)]">Nenhuma tela encontrada para "{search}".</p>
           ) : (
             searchResults.map(i => (
               <NavLink
@@ -300,14 +300,14 @@ export function AppLayout() {
                 className={({ isActive }) => clsx(
                   'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors border',
                   isActive
-                    ? 'bg-teal-500 text-white border-teal-400'
-                    : 'bg-teal-500/15 text-white border-teal-500/30 hover:bg-teal-500/25',
+                    ? 'nav-ativo border-transparent'
+                    : 'bg-white/10 text-white border-white/15 hover:bg-white/15',
                 )}
               >
                 {i.icon}
                 <span className="flex-1 min-w-0">
                   <span className="block truncate">{i.label}</span>
-                  {i.group && <span className="block text-[10px] font-normal text-teal-300">em {i.group}</span>}
+                  {i.group && <span className="block text-xs font-normal text-[var(--dv-texto-suave-escuro)]">em {i.group}</span>}
                 </span>
               </NavLink>
             ))
@@ -319,7 +319,7 @@ export function AppLayout() {
                 usuário (ver toggleFavorito acima). */}
             {favoritos.length > 0 && (
               <div className="mb-2 pb-2 border-b border-white/10 space-y-0.5">
-                <p className="px-3 pb-1 text-[10px] font-bold uppercase tracking-wide text-white/35">Favoritos</p>
+                <p className="px-3 pb-1 text-xs font-bold uppercase tracking-wide text-[var(--dv-texto-suave-escuro)]">Favoritos</p>
                 {favoritos
                   .map(to => flatNav.find(i => i.to === to))
                   .filter((i): i is FlatNavItem => !!i)
@@ -331,7 +331,7 @@ export function AppLayout() {
                         onClick={() => abrirItem(i)}
                         className={({ isActive }) => clsx(
                           'flex-1 min-w-0 flex items-center gap-3 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
-                          isActive ? 'bg-teal-500 text-white' : 'text-white/80 hover:text-white hover:bg-white/10',
+                          isActive ? 'nav-ativo' : 'text-[var(--dv-texto-suave-escuro)] hover:text-white hover:bg-white/10',
                         )}
                       >
                         {i.icon}
@@ -356,7 +356,7 @@ export function AppLayout() {
                     onClick={() => setExpanded(v => ({ ...v, [item.to]: !v[item.to] }))}
                     className={clsx(
                       'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                      'text-white/70 hover:text-white hover:bg-white/10',
+                      'text-[var(--dv-texto-suave-escuro)] hover:text-white hover:bg-white/10',
                     )}
                   >
                     {item.icon}
@@ -373,7 +373,7 @@ export function AppLayout() {
                             onClick={() => setOpen(false)}
                             className={({ isActive }) => clsx(
                               'flex-1 min-w-0 block px-3 py-1.5 rounded-lg text-xs font-medium transition-colors truncate',
-                              isActive ? 'bg-teal-500 text-white' : 'text-white/60 hover:text-white hover:bg-white/10',
+                              isActive ? 'nav-ativo' : 'text-[var(--dv-texto-suave-escuro)] hover:text-white hover:bg-white/10',
                             )}
                           >
                             {child.label}
@@ -382,7 +382,7 @@ export function AppLayout() {
                             onClick={() => toggleFavorito(child.to)}
                             className={clsx(
                               'p-1 rounded-md transition-colors shrink-0',
-                              favoritos.includes(child.to) ? 'text-amber-400' : 'text-white/20 hover:text-white/50',
+                              favoritos.includes(child.to) ? 'text-amber-400' : 'text-white/50 hover:text-white/50',
                             )}
                             title={favoritos.includes(child.to) ? 'Remover dos favoritos' : 'Fixar nos favoritos'}
                           >
@@ -400,36 +400,36 @@ export function AppLayout() {
                     onClick={() => setOpen(false)}
                     className={({ isActive }) => clsx(
                       'flex-1 min-w-0 flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                      isActive ? 'bg-teal-500 text-white' : 'text-white/70 hover:text-white hover:bg-white/10',
+                      isActive ? 'nav-ativo' : 'text-[var(--dv-texto-suave-escuro)] hover:text-white hover:bg-white/10',
                     )}
                   >
                     {item.icon}
                     <span className="flex-1 truncate">{item.label}</span>
                     {item.novo && (
-                      <span className="bg-teal-400 text-navy-700 text-[9px] font-bold tracking-wide rounded-full px-1.5 py-0.5">
+                      <span className="bg-white text-navy-600 text-xs font-bold tracking-wide rounded-full px-1.5 py-0.5">
                         NOVO
                       </span>
                     )}
                     {item.to === '/demandas' && (demandasPendentesCount ?? 0) > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      <span className="bg-red-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                         {demandasPendentesCount}
                       </span>
                     )}
                     {item.to === '/minha-parte' && devolvidosCount > 0 && (
                       <span
                         title={`${devolvidosCount} ${devolvidosCount === 1 ? 'processo devolvido' : 'processos devolvidos'} para você`}
-                        className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1"
+                        className="bg-red-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1"
                       >
                         {devolvidosCount}
                       </span>
                     )}
                     {item.to === '/confirmar-eliminacoes' && (eliminacoesPendentesCount ?? 0) > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      <span className="bg-red-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                         {eliminacoesPendentesCount}
                       </span>
                     )}
                     {item.to === '/conferencia-caixas' && (pocosArquivamentoProntosCount ?? 0) > 0 && (
-                      <span className="bg-red-500 text-white text-[10px] font-semibold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                      <span className="bg-red-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                         {pocosArquivamentoProntosCount}
                       </span>
                     )}
@@ -438,7 +438,7 @@ export function AppLayout() {
                     onClick={() => toggleFavorito(item.to)}
                     className={clsx(
                       'p-1.5 rounded-md transition-colors shrink-0',
-                      favoritos.includes(item.to) ? 'text-amber-400' : 'text-white/25 hover:text-white/60',
+                      favoritos.includes(item.to) ? 'text-amber-400' : 'text-white/50 hover:text-[var(--dv-texto-suave-escuro)]',
                     )}
                     title={favoritos.includes(item.to) ? 'Remover dos favoritos' : 'Fixar nos favoritos'}
                   >
@@ -464,7 +464,7 @@ export function AppLayout() {
         </div>
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[var(--dv-texto-suave-escuro)] hover:text-white hover:bg-white/10 transition-colors"
         >
           <LogOut size={16} />
           Sair
@@ -474,9 +474,12 @@ export function AppLayout() {
   )
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex flex-col h-screen overflow-hidden">
+      {/* Faixa colorida de 6 px no topo (política DINOV) */}
+      <div className="dv-faixa shrink-0" />
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 bg-navy-600 flex-col shrink-0">
+      <aside className="hidden md:flex w-64 bg-navy-600 flex-col shrink-0">
         <SidebarContent />
       </aside>
 
@@ -498,7 +501,7 @@ export function AppLayout() {
             <Menu size={20} />
           </button>
           <span className="text-white font-semibold">CCAD</span>
-          <button onClick={() => setOpen(false)} className="ml-auto text-white/60 hidden">
+          <button onClick={() => setOpen(false)} className="ml-auto text-[var(--dv-texto-suave-escuro)] hidden">
             <X size={20} />
           </button>
         </header>
@@ -517,6 +520,7 @@ export function AppLayout() {
           <AlertaAvaliacaoPessoal />
           <Outlet />
         </main>
+      </div>
       </div>
     </div>
   )

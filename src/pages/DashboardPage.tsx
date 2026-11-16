@@ -13,6 +13,7 @@ import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressC
 import { GroupedVerticalBarChart } from '@/components/charts/GroupedVerticalBarChart'
 import { DonutChart } from '@/components/charts/DonutChart'
 import { buscarDesempenhoAvaliadores } from '@/lib/desempenhoAvaliadores'
+import { COR } from '@/lib/coresCcad'
 
 const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
@@ -54,9 +55,9 @@ const CAIXA_STATUS_ICON: Record<StatusCaixa, React.ReactNode> = {
 // Cor da barra de progresso por avaliador, de acordo com o % concluído —
 // só um sinal visual rápido de quem precisa de mais atenção da Coordenação.
 function corDesempenho(percentual: number) {
-  if (percentual < 40) return '#ef4444' // vermelho
-  if (percentual < 75) return '#f59e0b' // âmbar
-  return '#14b8a6' // teal
+  if (percentual < 40) return COR.erro
+  if (percentual < 75) return COR.atencao
+  return COR.sucesso
 }
 
 const REUNIAO_TIPO_LABEL: Record<string, string> = {
@@ -124,9 +125,9 @@ function PilarCard({ pilar }: { pilar: Pilar & { fases?: { percentual_conclusao:
     : 0
 
   const colors: Record<string, string> = {
-    'Digitalização do Acervo': 'bg-teal-500',
-    'Protocolo de Boas Práticas': 'bg-accent-500',
-    'Espaço Memória da CDTIV': 'bg-navy-400',
+    'Digitalização do Acervo': 'bg-pilar-digitalizacao',
+    'Protocolo de Boas Práticas': 'bg-pilar-boas-praticas',
+    'Espaço Memória da CDTIV': 'bg-pilar-memoria',
   }
 
   return (
@@ -654,7 +655,7 @@ export function DashboardPage() {
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900">Demandas Ativas</h2>
-              <span className="text-2xl font-bold text-accent-500">{demandasPendentes}</span>
+              <span className="text-2xl font-bold text-accent-600">{demandasPendentes}</span>
             </div>
             <p className="text-sm text-gray-500">
               Demandas pendentes ou em andamento aguardando execução.
@@ -825,8 +826,8 @@ export function DashboardPage() {
                         ariaLabel={`${Math.round((resumoAvaliacoes.processosAvaliados / resumoAvaliacoes.totalProcessos) * 100)}% dos processos já avaliados, ${resumoAvaliacoes.processosAvaliados} de ${resumoAvaliacoes.totalProcessos}`}
                         centerLabel="processos no total"
                         data={[
-                          { label: 'Avaliados', value: resumoAvaliacoes.processosAvaliados, color: '#16a34a' },
-                          { label: 'Pendentes', value: resumoAvaliacoes.totalProcessos - resumoAvaliacoes.processosAvaliados, color: '#d1d5db' },
+                          { label: 'Avaliados', value: resumoAvaliacoes.processosAvaliados, color: COR.sucesso },
+                          { label: 'Pendentes', value: resumoAvaliacoes.totalProcessos - resumoAvaliacoes.processosAvaliados, color: COR.borda },
                         ]}
                       />
                       <div className="text-center sm:text-left">

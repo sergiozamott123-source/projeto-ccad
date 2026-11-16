@@ -7,6 +7,7 @@ export interface DvSistema {
   primariaTexto: string
   faixa: string[]
   graficos: string[]
+  acentos: Record<string, string>
   logo: string
   rodapeTexto: string
 }

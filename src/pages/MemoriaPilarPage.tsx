@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import type { Pilar, Fase, Demanda, BenchmarkingRegistro, ConsultoriaMemorial, ProjetoMemorial, ReuniaoAta, Processo, AtividadeFase } from '@/lib/database.types'
 import { PILAR_NOMES, pilarColor } from '@/lib/pilarColors'
 import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressChart'
+import { COR } from '@/lib/coresCcad'
 
 const STATUS_LABEL: Record<string, string> = { pendente: 'Pendente', em_andamento: 'Em andamento', concluida: 'Concluída' }
 const CONSULTORIA_LABEL: Record<string, string> = { a_contratar: 'A contratar', contratado: 'Contratado', concluido: 'Concluído' }
@@ -433,11 +434,11 @@ export function MemoriaPilarPage() {
             <div style={{ width: '100%', height: 180 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={classeData} margin={{ top: 16, right: 8, bottom: 4, left: 4 }}>
-                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 12, fill: COR.texto }} axisLine={false} tickLine={false} />
                   <YAxis hide />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32} isAnimationActive={false}>
                     {classeData.map((_, i) => <Cell key={i} fill={color} />)}
-                    <LabelList dataKey="value" position="top" style={{ fontSize: 12, fill: '#374151', fontWeight: 600 }} />
+                    <LabelList dataKey="value" position="top" style={{ fontSize: 12, fill: COR.texto, fontWeight: 600 }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>

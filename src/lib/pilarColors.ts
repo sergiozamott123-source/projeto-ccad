@@ -1,4 +1,7 @@
-// Brand color per pilar, kept consistent across every chart in the system.
+// Cor de cada pilar, igual em todos os gráficos do sistema (política DINOV:
+// Digitalização azul, Boas Práticas verde, Memória laranja).
+import { COR } from './coresCcad'
+
 export const PILAR_NOMES = {
   DIGITALIZACAO: 'Digitalização do Acervo',
   BOAS_PRATICAS: 'Protocolo de Boas Práticas',
@@ -6,11 +9,11 @@ export const PILAR_NOMES = {
 } as const
 
 export const PILAR_COLORS: Record<string, string> = {
-  [PILAR_NOMES.DIGITALIZACAO]: '#2a78d6',
-  [PILAR_NOMES.BOAS_PRATICAS]: '#1baf7a',
-  [PILAR_NOMES.MEMORIA]: '#eda100',
+  [PILAR_NOMES.DIGITALIZACAO]: COR.pilarDigitalizacao,
+  [PILAR_NOMES.BOAS_PRATICAS]: COR.pilarBoasPraticas,
+  [PILAR_NOMES.MEMORIA]: COR.pilarMemoria,
 }
 
 export function pilarColor(nome: string | null | undefined): string {
-  return (nome && PILAR_COLORS[nome]) || '#6b7280'
+  return (nome && PILAR_COLORS[nome]) || COR.textoDesativado
 }

@@ -11,6 +11,7 @@ import type { Pilar, Fase, Demanda, DepartamentoMapeado, ProtocoloBoasPraticas, 
 import { PILAR_NOMES, pilarColor } from '@/lib/pilarColors'
 import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressChart'
 import { DonutChart } from '@/components/charts/DonutChart'
+import { COR } from '@/lib/coresCcad'
 
 const STATUS_LABEL: Record<string, string> = { pendente: 'Pendente', em_andamento: 'Em andamento', concluida: 'Concluída' }
 const STATUS_COLOR: Record<string, string> = {
@@ -283,7 +284,7 @@ export function BoasPraticasPilarPage() {
             centerLabel="departamentos"
             data={[
               { label: 'Mapeados', value: mapeados, color },
-              { label: 'Restantes', value: restantes, color: '#e5e7eb' },
+              { label: 'Restantes', value: restantes, color: COR.borda },
             ]}
           />
         </div>

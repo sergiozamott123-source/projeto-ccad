@@ -40,7 +40,7 @@ export function WelcomePage() {
         style={{
           minHeight: 240,
           maxHeight: 520,
-          background: 'linear-gradient(135deg, #0E7C86 0%, #20283B 100%)',
+          background: 'linear-gradient(135deg, var(--dv-primaria) 0%, var(--dv-marinho) 100%)',
         }}
       >
         <span className="text-white/90 text-xl md:text-2xl font-semibold tracking-wide text-center px-6">
@@ -48,7 +48,7 @@ export function WelcomePage() {
         </span>
         <div
           className="absolute bottom-0 left-0 right-0 h-12"
-          style={{ background: 'linear-gradient(to bottom, transparent, #f9fafb)' }}
+          style={{ background: 'linear-gradient(to bottom, transparent, var(--dv-fundo))' }}
         />
       </div>
 

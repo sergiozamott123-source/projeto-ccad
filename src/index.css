@@ -7,33 +7,62 @@
 @layer base {
   * { box-sizing: border-box; }
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--dv-fundo);
+    color: var(--dv-texto);
+    @apply antialiased;
+    font-family: var(--dv-fonte-texto);
   }
+  /* Foco visível para quem navega pelo teclado (política DINOV: cor primária do sistema) */
+  :focus-visible { outline: 2px solid var(--dv-primaria); outline-offset: 2px; }
 }
 
 @layer components {
+  /* Painéis/cartões: branco, borda #D5DCE3, cantos de 10 px */
   .card {
-    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    background: var(--dv-superficie);
+    border: 1px solid var(--dv-borda);
+    border-radius: var(--dv-raio-md);
+    box-shadow: var(--dv-sombra-1);
   }
-  .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-500 text-white font-medium hover:bg-teal-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  /* Botões: altura mínima de 40 px, cantos de 10 px, texto branco sobre a cor primária */
+  .btn-primary, .btn-secondary, .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-4 font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    min-height: 40px;
+    border-radius: var(--dv-raio-md);
   }
-  .btn-secondary {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors;
-  }
-  .btn-danger {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition-colors;
-  }
+  .btn-primary { background: var(--dv-primaria); color: var(--dv-texto-sobre-primaria); }
+  .btn-primary:hover:not(:disabled) { background: var(--dv-primaria-hover); }
+  .btn-secondary { background: var(--dv-superficie); border: 1px solid var(--dv-borda); color: var(--dv-texto); }
+  .btn-secondary:hover:not(:disabled) { background: var(--dv-fundo); }
+  .btn-danger { background: var(--dv-erro); color: var(--dv-texto-sobre-escuro); }
+  .btn-danger:hover:not(:disabled) { filter: brightness(0.9); }
+  /* Botões pequenos (text-xs) em linhas de tabela/lista: 32 px (provisório, aguardando orientação do guardião) */
+  .btn-primary.text-xs, .btn-secondary.text-xs, .btn-danger.text-xs { min-height: 32px; }
+  /* Menu lateral: item ativo #244766 com marcador na cor primária */
+  .nav-ativo { background: var(--dv-marinho-menu-ativo); color: var(--dv-texto-sobre-escuro); box-shadow: inset 3px 0 0 var(--dv-primaria); }
+  /* Campos: cantos de 6 px, foco na cor primária */
   .input {
-    @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent;
+    @apply w-full px-3 py-2 text-sm focus:outline-none;
+    border: 1px solid var(--dv-borda);
+    border-radius: var(--dv-raio-sm);
+    background: var(--dv-superficie);
+    color: var(--dv-texto);
+    min-height: 40px;
   }
+  .input.py-1, .input.text-xs { min-height: 32px; } /* campos compactos em tabelas (provisório) */
+  .input:focus { border-color: var(--dv-primaria); box-shadow: 0 0 0 2px var(--dv-primaria-clara); }
   .label {
-    @apply block text-sm font-medium text-gray-700 mb-1;
+    @apply block text-sm font-medium mb-1;
+    color: var(--dv-texto);
   }
-  .badge-alta { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700; }
-  .badge-media { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700; }
-  .badge-baixa { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700; }
-  .badge-proposta { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-300; }
-  .badge-vigente { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700; }
+  /* Selos de situação (texto escuro sobre fundo claro, sempre com a palavra) — iguais ao kit (.dv-selo) */
+  .badge-alta, .badge-media, .badge-baixa, .badge-proposta, .badge-vigente {
+    @apply inline-flex items-center gap-1 rounded-full text-xs font-semibold;
+    padding: 2px 10px;
+  }
+  .badge-alta     { background: var(--dv-erro-fundo);    color: var(--dv-erro); }
+  .badge-media    { background: var(--dv-atencao-fundo); color: var(--dv-atencao); }
+  .badge-baixa    { background: var(--dv-sucesso-fundo); color: var(--dv-sucesso); }
+  .badge-proposta { background: var(--dv-atencao-fundo); color: var(--dv-atencao); border: 1px solid var(--dv-atencao); }
+  .badge-vigente  { background: var(--dv-primaria-clara); color: var(--dv-primaria-texto); }
 }

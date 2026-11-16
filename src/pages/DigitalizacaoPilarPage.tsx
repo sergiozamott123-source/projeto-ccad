@@ -9,6 +9,7 @@ import type { Pilar, Fase, Demanda, IndicadorMensal, LicitacaoDigitalizacao, Dig
 import { PILAR_NOMES, pilarColor } from '@/lib/pilarColors'
 import { HorizontalProgressChart } from '@/components/charts/HorizontalProgressChart'
 import { DonutChart } from '@/components/charts/DonutChart'
+import { COR } from '@/lib/coresCcad'
 
 const STATUS_LABEL: Record<string, string> = { pendente: 'Pendente', em_andamento: 'Em andamento', concluida: 'Concluída' }
 const STATUS_LICITACAO_LABEL: Record<StatusLicitacaoDigitalizacao, string> = {
@@ -424,7 +425,7 @@ export function DigitalizacaoPilarPage() {
             centerLabel="páginas"
             data={[
               { label: 'Digitalizadas', value: totalPaginasDigitalizadas, color },
-              { label: 'Restante até a meta', value: restantePaginas, color: '#e5e7eb' },
+              { label: 'Restante até a meta', value: restantePaginas, color: COR.borda },
             ]}
           />
           <p className="text-xs text-gray-400 mt-3">

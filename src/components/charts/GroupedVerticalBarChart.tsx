@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, LabelList, ResponsiveContainer, Rectangle } from 'recharts'
 import type { BarShapeProps } from 'recharts'
+import { COR } from '@/lib/coresCcad'
 
 interface GroupedItem {
   label: string
@@ -7,8 +8,8 @@ interface GroupedItem {
   total: number
 }
 
-const COLOR_ENVIADOS = '#0E7C86'
-const COLOR_TOTAL = '#d1d5db'
+const COLOR_ENVIADOS = COR.primaria
+const COLOR_TOTAL = COR.borda
 const MIN_BAR_PX = 3
 
 // Bars grow upward from the baseline (y + height = baseline). Enforcing a
@@ -29,13 +30,13 @@ export function GroupedVerticalBarChart({
       <div style={{ width: '100%', height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 16, right: 8, bottom: 4, left: 4 }} barGap={4} barCategoryGap="28%">
-            <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 12, fill: COR.texto }} axisLine={false} tickLine={false} />
             <YAxis hide />
             <Bar dataKey="total" fill={COLOR_TOTAL} radius={[4, 4, 0, 0]} barSize={18} isAnimationActive={false} shape={minHeightShape}>
-              <LabelList dataKey="total" position="top" style={{ fontSize: 11, fill: '#9ca3af' }} />
+              <LabelList dataKey="total" position="top" style={{ fontSize: 11, fill: COR.textoSecundario }} />
             </Bar>
             <Bar dataKey="enviados" fill={COLOR_ENVIADOS} radius={[4, 4, 0, 0]} barSize={18} isAnimationActive={false} shape={minHeightShape}>
-              <LabelList dataKey="enviados" position="top" style={{ fontSize: 11, fill: '#0E7C86', fontWeight: 600 }} />
+              <LabelList dataKey="enviados" position="top" style={{ fontSize: 11, fill: COR.primaria, fontWeight: 600 }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>

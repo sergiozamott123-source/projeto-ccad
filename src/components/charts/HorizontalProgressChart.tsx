@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, Cell, LabelList, ResponsiveContainer, Rectangle } from 'recharts'
 import type { BarShapeProps } from 'recharts'
+import { COR } from '@/lib/coresCcad'
 
 interface ProgressItem {
   label: string
@@ -28,10 +29,10 @@ export function HorizontalProgressChart({
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 4 }}>
             <XAxis type="number" domain={[0, 100]} hide />
-            <YAxis type="category" dataKey="label" width={150} tick={{ fontSize: 12, fill: '#374151' }} axisLine={false} tickLine={false} />
+            <YAxis type="category" dataKey="label" width={150} tick={{ fontSize: 12, fill: COR.texto }} axisLine={false} tickLine={false} />
             <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={16} isAnimationActive={false} shape={minWidthShape}>
               {data.map((d, i) => <Cell key={i} fill={d.color} />)}
-              <LabelList dataKey="value" position="right" formatter={(v: React.ReactNode) => `${v}%`} style={{ fontSize: 12, fill: '#374151', fontWeight: 600 }} />
+              <LabelList dataKey="value" position="right" formatter={(v: React.ReactNode) => `${v}%`} style={{ fontSize: 12, fill: COR.texto, fontWeight: 600 }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
