@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import type { Usuario } from '@/lib/database.types'
 import { AlertaRitmoAvaliacao } from '@/components/AlertaRitmoAvaliacao'
 import { AlertaAvaliacaoPessoal } from '@/components/AlertaAvaliacaoPessoal'
+import { AvisosDoSistema } from '@/components/AvisosDoSistema'
 import { correspondeBusca } from '@/lib/textSearch'
 import { useDevolvidosDoAvaliador, totalDevolvidos } from '@/lib/devolvidosAvaliador'
 import clsx from 'clsx'
@@ -507,6 +508,8 @@ export function AppLayout() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {/* Avisos do sistema: nova versão disponível e convite para instalar o aplicativo */}
+          <AvisosDoSistema />
           {/* Alerta de Ritmo de Avaliação (claude/plano-alerta-ritmo-avaliacoes.md)
               — fica aqui, acima de qualquer página, para aparecer "toda vez
               que o Sérgio abrir o sistema" como ele pediu, e não só dentro
