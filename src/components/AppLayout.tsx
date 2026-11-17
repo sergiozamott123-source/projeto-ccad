@@ -53,6 +53,17 @@ function buildFlatNav(visibleNav: NavItem[]): FlatNavItem[] {
   return out
 }
 
+// Menu enxuto por perfil (redesenho das telas por pessoa, 17/11/2026).
+// Quem tem `usuarios.menu_perfil` preenchido vê SÓ as telas listadas aqui —
+// sem busca de telas, sem favoritos, sem submenus. É só o MENU: as permissões
+// (o que a pessoa pode abrir ou gravar) não mudam. Vazio = menu completo.
+// Para criar um perfil novo, acrescente uma linha aqui e grave o nome dele em
+// `menu_perfil` na ficha da pessoa.
+const MENU_POR_PERFIL: Record<string, string[]> = {
+  // Protocolo — Ana Alzira: só distribui as caixas e escreve os relatórios.
+  distribuicao: ['/distribuicao', '/central-relatorios'],
+}
+
 const NAV: NavItem[] = [
   { to: '/dashboard',   label: 'Dashboard',   icon: <LayoutDashboard size={18} />, roles: ['coordenador','coordenador_substituto','apoio_tecnico'] },
   {
@@ -214,7 +225,9 @@ export function AppLayout() {
     return true
   }
 
-  const visibleNav = NAV.filter(isVisible)
+  const telasDoPerfil = profile?.menu_perfil ? MENU_POR_PERFIL[profile.menu_perfil] : undefined
+  const menuSimples = !!telasDoPerfil
+  const visibleNav = NAV.filter(item => isVisible(item) && (!telasDoPerfil || telasDoPerfil.includes(item.to)))
   const flatNav = buildFlatNav(visibleNav)
   // Busca tolerante a acento/plural (mesma lib usada na TTD e em outras
   // buscas do sistema — ver src/lib/textSearch.ts). Também considera o
@@ -264,6 +277,7 @@ export function AppLayout() {
       {/* Busca de telas (pedido do Sérgio, 20/10/2026) — digite o nome de
           qualquer tela e ela aparece na hora, mesmo escondida dentro de um
           submenu como "Acervo". */}
+      {!menuSimples && (
       <div className="px-3 pt-3 pb-1">
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-navy-400 pointer-events-none" />
@@ -284,6 +298,7 @@ export function AppLayout() {
           )}
         </div>
       </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-0.5">
@@ -319,7 +334,7 @@ export function AppLayout() {
             {/* Favoritos — telas fixadas pela própria pessoa, mesmo as que
                 moram dentro de um submenu. Guardado no navegador, por
                 usuário (ver toggleFavorito acima). */}
-            {favoritos.length > 0 && (
+            {!menuSimples && favoritos.length > 0 && (
               <div className="mb-2 pb-2 border-b border-white/10 space-y-0.5">
                 <p className="px-3 pb-1 text-xs font-bold uppercase tracking-wide text-[var(--dv-texto-suave-escuro)]">Favoritos</p>
                 {favoritos
@@ -407,7 +422,7 @@ export function AppLayout() {
                   >
                     {item.icon}
                     <span className="flex-1 truncate">{item.label}</span>
-                    {item.novo && (
+                    {item.novo && !menuSimples && (
                       <span className="bg-white text-navy-600 text-xs font-bold tracking-wide rounded-full px-1.5 py-0.5">
                         NOVO
                       </span>
@@ -436,6 +451,7 @@ export function AppLayout() {
                       </span>
                     )}
                   </NavLink>
+                  {!menuSimples && (
                   <button
                     onClick={() => toggleFavorito(item.to)}
                     className={clsx(
@@ -446,6 +462,7 @@ export function AppLayout() {
                   >
                     <Star size={13} fill={favoritos.includes(item.to) ? 'currentColor' : 'none'} />
                   </button>
+                  )}
                 </div>
               )
             ))}

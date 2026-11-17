@@ -26,6 +26,8 @@ export interface Usuario {
   pode_criar_requisicoes: boolean
   acesso_busca_emprestimos: boolean
   pode_confirmar_eliminacoes: boolean
+  /** Menu enxuto por pessoa (ex.: 'distribuicao'). Vazio = menu completo, como sempre. Ver MENU_POR_PERFIL em AppLayout.tsx. */
+  menu_perfil?: string | null
 }
 
 export interface Pilar {

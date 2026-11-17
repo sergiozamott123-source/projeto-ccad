@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown, Boxes } from 'lucide-react'
+import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown, Boxes, FileBarChart } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PILAR_NOMES } from '@/lib/pilarColors'
@@ -170,7 +170,22 @@ export function WelcomePage() {
               </div>
             )}
 
-            {isMembro && (
+            {/* Perfil de menu enxuto (ex.: Distribuição): além da distribuição,
+                só o ambiente de relatórios — sem "Minhas Atribuições". */}
+            {profile.menu_perfil === 'distribuicao' && (
+              <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
+                <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-teal-50">
+                  <FileBarChart size={22} className="text-teal-600" />
+                </div>
+                <p className="font-semibold text-gray-900 mb-1">Meus relatórios</p>
+                <p className="text-xs text-gray-500 mb-4">Escreva e envie o seu relatório mensal.</p>
+                <button onClick={() => navigate('/central-relatorios')} className="btn-primary">
+                  Ir para os relatórios
+                </button>
+              </div>
+            )}
+
+            {isMembro && profile.menu_perfil !== 'distribuicao' && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <p className="font-semibold text-gray-900 mb-4">
                   {pilarNome && !pilarEmPausa(pilarNome) ? `Minhas Atribuições — ${pilarNome}` : 'Minhas Atribuições'}
