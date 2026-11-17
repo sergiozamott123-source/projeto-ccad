@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Pilar, Usuario } from '@/lib/database.types'
+import { soPilaresAtivos } from '@/lib/pilaresEmPausa'
 
 interface DemandaForm {
   titulo: string
@@ -77,13 +78,15 @@ export function NovaDemandaPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="label">Pilar</label>
-            <select className="input" {...register('pilar_id')}>
-              <option value="">— Nenhum (Acervo/Protocolo Geral, ou outro assunto geral) —</option>
-              {(pilares ?? []).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-            </select>
-          </div>
+          {soPilaresAtivos(pilares).length > 0 && (
+            <div>
+              <label className="label">Pilar</label>
+              <select className="input" {...register('pilar_id')}>
+                <option value="">— Nenhum (Acervo/Protocolo Geral, ou outro assunto geral) —</option>
+                {soPilaresAtivos(pilares).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="label">Responsável *</label>

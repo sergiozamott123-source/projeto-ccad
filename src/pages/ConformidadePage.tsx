@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import clsx from 'clsx'
+import { pilarEmPausa } from '@/lib/pilaresEmPausa'
 
 interface MemberStatus {
   usuario_id: string
@@ -46,7 +47,7 @@ export function ConformidadePage() {
         usuario_id: u.id,
         nome: u.nome,
         email: u.email,
-        pilar: u.pilar?.nome ?? '—',
+        pilar: u.pilar?.nome && !pilarEmPausa(u.pilar.nome) ? u.pilar.nome : '—',
         status: (relMap[u.id]?.status ?? 'nao_enviado') as MemberStatus['status'],
         enviado_em: relMap[u.id]?.enviado_em ?? null,
       })) as MemberStatus[]

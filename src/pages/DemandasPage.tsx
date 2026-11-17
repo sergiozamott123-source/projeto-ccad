@@ -8,6 +8,7 @@ import type { Demanda } from '@/lib/database.types'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import clsx from 'clsx'
+import { pilarEmPausa } from '@/lib/pilaresEmPausa'
 
 const STATUS_LABEL: Record<string, string> = {
   pendente: 'Pendente', em_andamento: 'Em andamento', concluida: 'Concluída',
@@ -120,7 +121,7 @@ function DemandaCard({ demanda: d }: { demanda: Demanda }) {
           </div>
           {d.descricao && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{d.descricao}</p>}
           <div className="flex items-center gap-4 mt-2 flex-wrap text-xs text-gray-500">
-            {d.pilar && (
+            {d.pilar && !pilarEmPausa((d.pilar as { nome: string }).nome) && (
               <span className="flex items-center gap-1">
                 <Flag size={12} /> {(d.pilar as { nome: string }).nome}
               </span>

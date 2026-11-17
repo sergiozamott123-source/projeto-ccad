@@ -14,6 +14,7 @@ import { GroupedVerticalBarChart } from '@/components/charts/GroupedVerticalBarC
 import { DonutChart } from '@/components/charts/DonutChart'
 import { buscarDesempenhoAvaliadores } from '@/lib/desempenhoAvaliadores'
 import { COR } from '@/lib/coresCcad'
+import { DIGITALIZACAO_EM_PAUSA, pilarEmPausa, soPilaresAtivos } from '@/lib/pilaresEmPausa'
 
 const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
@@ -165,7 +166,7 @@ function RiscoRow({ risco }: { risco: Risco }) {
     <div className="flex items-center justify-between py-2.5 border-b last:border-0">
       <div>
         <p className="text-sm font-medium text-gray-800">{risco.titulo}</p>
-        <p className="text-xs text-gray-500">{risco.pilar?.nome ?? '—'}</p>
+        <p className="text-xs text-gray-500">{risco.pilar?.nome && !pilarEmPausa(risco.pilar.nome) ? risco.pilar.nome : '—'}</p>
       </div>
       <span className={impactColor[risco.impacto]}>{risco.impacto}</span>
     </div>
@@ -248,7 +249,7 @@ export function DashboardPage() {
         .from('mural_eventos')
         .select('*, pilar:pilar_id(nome), usuario:usuario_id(nome)')
         .order('ocorrido_em', { ascending: false })
-        .limit(15)
+        .limit(40)
       return (data ?? []) as MuralEvento[]
     },
   })
@@ -445,7 +446,13 @@ export function DashboardPage() {
   const mesAtualPrefixo = format(startOfMonth(new Date()), 'yyyy-MM')
   const quinzenaisEsteMes = (reunioes ?? []).filter(r => r.tipo === 'quinzenal_frente' && r.data_reuniao.slice(0, 7) === mesAtualPrefixo).length
 
-  const pilaresChartData = (pilares ?? []).map(p => ({
+  // Pilares em pausa (src/lib/pilaresEmPausa.ts) não aparecem aqui — os dados
+  // continuam no banco, só deixam de ser mostrados.
+  const pilaresAtivos = soPilaresAtivos(pilares)
+  // Busca 40 e mostra os 15 mais recentes que não são de pilares em pausa.
+  const muralVisivel = (muralEventos ?? []).filter(e => !pilarEmPausa(e.pilar?.nome)).slice(0, 15)
+
+  const pilaresChartData = pilaresAtivos.map(p => ({
     label: p.nome,
     value: p.fases?.length ? Math.round(p.fases.reduce((s, f) => s + f.percentual_conclusao, 0) / p.fases.length) : 0,
     color: pilarColor(p.nome),
@@ -503,14 +510,16 @@ export function DashboardPage() {
       {isCoord && (
         <div>
           <h2 className="text-base font-semibold text-gray-900 mb-1">Indicadores Institucionais</h2>
-          <p className="text-xs text-gray-500 mb-3">Totais combinados dos três pilares (Digitalização, Boas Práticas e Memória).</p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <p className="text-xs text-gray-500 mb-3">Totais da CCAD: caixas catalogadas e relatórios mensais da equipe.</p>
+          <div className={clsx('grid grid-cols-2 gap-4', DIGITALIZACAO_EM_PAUSA ? 'lg:grid-cols-2' : 'lg:grid-cols-4')}>
             <MetricCard
               icon={<Archive size={20} className="text-teal-600" />}
               label="Caixas catalogadas"
               value={totalCaixas.toLocaleString('pt-BR')}
               color="bg-teal-50"
             />
+            {!DIGITALIZACAO_EM_PAUSA && (
+              <>
             <MetricCard
               icon={<TrendingUp size={20} className="text-accent-600" />}
               label="Páginas digitalizadas"
@@ -523,6 +532,8 @@ export function DashboardPage() {
               value={totalIndexados.toLocaleString('pt-BR')}
               color="bg-blue-50"
             />
+              </>
+            )}
             <MetricCard
               icon={<CheckCircle size={20} className="text-green-600" />}
               label="Relatórios em dia"
@@ -543,23 +554,25 @@ export function DashboardPage() {
       {/* Mural de Conquistas */}
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-1">Mural de Conquistas da CCAD</h2>
-        <p className="text-xs text-gray-500 mb-3">Ações concluídas pela equipe nos três pilares.</p>
-        {(muralEventos ?? []).length === 0 ? (
+        <p className="text-xs text-gray-500 mb-3">Ações concluídas pela equipe da CCAD.</p>
+        {muralVisivel.length === 0 ? (
           <p className="text-sm text-gray-500">Nenhuma atividade registrada ainda.</p>
         ) : (
           <div>
-            {(muralEventos ?? []).map(e => <MuralEventoRow key={e.id} evento={e} />)}
+            {muralVisivel.map(e => <MuralEventoRow key={e.id} evento={e} />)}
           </div>
         )}
       </div>
 
-      {/* Pilares progress */}
-      <div>
-        <h2 className="text-base font-semibold text-gray-900 mb-3">Progresso dos Pilares</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(pilares ?? []).map(p => <PilarCard key={p.id} pilar={p} />)}
+      {/* Pilares progress — some por inteiro quando todos os pilares estão em pausa */}
+      {pilaresAtivos.length > 0 && (
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 mb-3">Progresso dos Pilares</h2>
+          <div className={clsx('grid grid-cols-1 gap-4', pilaresAtivos.length >= 3 ? 'md:grid-cols-3' : pilaresAtivos.length === 2 ? 'md:grid-cols-2' : 'max-w-sm')}>
+            {pilaresAtivos.map(p => <PilarCard key={p.id} pilar={p} />)}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Cadência de reuniões */}
       {isCoord && (
@@ -573,7 +586,7 @@ export function DashboardPage() {
 
           {showNovaAtaMensal && (
             <div className="card p-5 mb-4 space-y-3">
-              <p className="text-sm text-gray-500">Ata da Reunião Mensal Consolidada (cobre os 3 pilares).</p>
+              <p className="text-sm text-gray-500">Ata da Reunião Mensal Consolidada.</p>
               <div>
                 <label className="label">Data da reunião</label>
                 <input type="date" className="input" value={ataMensal.data_reuniao} onChange={e => setAtaMensal(v => ({ ...v, data_reuniao: e.target.value }))} />
@@ -632,13 +645,15 @@ export function DashboardPage() {
       {/* Gráficos gerenciais */}
       {isCoord && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="card p-5 lg:col-span-2">
-            <h2 className="font-semibold text-gray-900 mb-4">% Concluído por Pilar</h2>
-            <HorizontalProgressChart
-              ariaLabel={`Percentual concluído por pilar: ${pilaresChartData.map(p => `${p.label} ${p.value}%`).join(', ')}`}
-              data={pilaresChartData}
-            />
-          </div>
+          {pilaresChartData.length > 0 && (
+            <div className="card p-5 lg:col-span-2">
+              <h2 className="font-semibold text-gray-900 mb-4">% Concluído por Pilar</h2>
+              <HorizontalProgressChart
+                ariaLabel={`Percentual concluído por pilar: ${pilaresChartData.map(p => `${p.label} ${p.value}%`).join(', ')}`}
+                data={pilaresChartData}
+              />
+            </div>
+          )}
           <div className="card p-5 lg:col-span-2">
             <h2 className="font-semibold text-gray-900 mb-4">Relatórios Enviados em Dia (últimos 4 meses)</h2>
             <GroupedVerticalBarChart

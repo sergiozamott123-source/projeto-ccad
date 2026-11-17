@@ -4,6 +4,7 @@ import { Plus, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Risco, Pilar } from '@/lib/database.types'
+import { pilarEmPausa, soPilaresAtivos } from '@/lib/pilaresEmPausa'
 import clsx from 'clsx'
 
 const IMPACTO: ('alto' | 'medio' | 'baixo')[] = ['alto', 'medio', 'baixo']
@@ -122,13 +123,15 @@ export function RiscosPage() {
               <label className="label">Descrição</label>
               <textarea className="input min-h-[80px] resize-y" value={form.descricao} onChange={e => setForm(v => ({ ...v, descricao: e.target.value }))} />
             </div>
-            <div>
-              <label className="label">Pilar</label>
-              <select className="input" value={form.pilar_id} onChange={e => setForm(v => ({ ...v, pilar_id: e.target.value }))}>
-                <option value="">— Todos os pilares —</option>
-                {(pilares ?? []).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-              </select>
-            </div>
+            {soPilaresAtivos(pilares).length > 0 && (
+              <div>
+                <label className="label">Pilar</label>
+                <select className="input" value={form.pilar_id} onChange={e => setForm(v => ({ ...v, pilar_id: e.target.value }))}>
+                  <option value="">— Todos os pilares —</option>
+                  {soPilaresAtivos(pilares).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label className="label">Impacto</label>
               <select className="input" value={form.impacto} onChange={e => setForm(v => ({ ...v, impacto: e.target.value as Risco['impacto'] }))}>
@@ -177,7 +180,7 @@ export function RiscosPage() {
                   <span className={r.probabilidade === 'alta' ? 'badge-alta' : r.probabilidade === 'media' ? 'badge-media' : 'badge-baixa'}>
                     Prob: {r.probabilidade}
                   </span>
-                  {r.pilar && (
+                  {r.pilar && !pilarEmPausa((r.pilar as { nome: string }).nome) && (
                     <span className="text-xs text-gray-500">{(r.pilar as { nome: string }).nome}</span>
                   )}
                 </div>

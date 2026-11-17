@@ -4,12 +4,21 @@ import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown } from 'lu
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PILAR_NOMES } from '@/lib/pilarColors'
+import { BOAS_PRATICAS_EM_PAUSA, DIGITALIZACAO_EM_PAUSA, MEMORIA_EM_PAUSA, TODOS_PILARES_EM_PAUSA, pilarEmPausa } from '@/lib/pilaresEmPausa'
 
 const PILAR_PAGE_ROUTE: Record<string, string> = {
   [PILAR_NOMES.BOAS_PRATICAS]: '/pilares/boas-praticas',
   [PILAR_NOMES.MEMORIA]: '/pilares/memoria',
   [PILAR_NOMES.DIGITALIZACAO]: '/pilares/digitalizacao',
 }
+
+// Quantos cartões de pilar aparecem (os que não estão em pausa) — a grade se
+// ajusta para não deixar buracos.
+const qtdPilaresVisiveis = [DIGITALIZACAO_EM_PAUSA, BOAS_PRATICAS_EM_PAUSA, MEMORIA_EM_PAUSA].filter(p => !p).length
+const colunasPilares =
+  qtdPilaresVisiveis >= 3 ? 'md:grid-cols-3'
+    : qtdPilaresVisiveis === 2 ? 'md:grid-cols-2'
+      : 'md:grid-cols-1 max-w-sm mx-auto'
 
 export function WelcomePage() {
   const { profile, profileLoading, isCoord, isMembro, isResponsavel } = useAuth()
@@ -76,13 +85,16 @@ export function WelcomePage() {
                     <div>
                       <p className="font-semibold text-gray-900">Superpainel</p>
                       <p className="text-xs text-gray-500">
-                        Visão geral dos três pilares, indicadores e Mural de Conquistas
+                        Visão geral, indicadores e Mural de Conquistas
                       </p>
                     </div>
                   </div>
                 </button>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                {!TODOS_PILARES_EM_PAUSA && (
+                <div className={`grid grid-cols-1 gap-4 mt-6 ${colunasPilares}`}>
+                  {/* Pilares em pausa ficam escondidos (src/lib/pilaresEmPausa.ts) */}
+                  {!DIGITALIZACAO_EM_PAUSA && (
                   <button
                     onClick={() => navigate('/pilares/digitalizacao')}
                     className="card p-5 transition-transform transition-shadow duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md group text-left"
@@ -94,7 +106,9 @@ export function WelcomePage() {
                       <p className="font-semibold text-gray-900">Digitalização do Acervo</p>
                     </div>
                   </button>
+                  )}
 
+                  {!BOAS_PRATICAS_EM_PAUSA && (
                   <button
                     onClick={() => navigate('/pilares/boas-praticas')}
                     className="card p-5 transition-transform transition-shadow duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md group text-left"
@@ -106,7 +120,9 @@ export function WelcomePage() {
                       <p className="font-semibold text-gray-900">Protocolo de Boas Práticas</p>
                     </div>
                   </button>
+                  )}
 
+                  {!MEMORIA_EM_PAUSA && (
                   <button
                     onClick={() => navigate('/pilares/memoria')}
                     className="card p-5 transition-transform transition-shadow duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md group text-left"
@@ -118,17 +134,22 @@ export function WelcomePage() {
                       <p className="font-semibold text-gray-900">Espaço Memória da CDTIV</p>
                     </div>
                   </button>
+                  )}
                 </div>
+                )}
               </div>
             )}
 
             {isResponsavel && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <p className="font-semibold text-gray-900 mb-4">
-                  {pilarNome ?? 'Seu pilar'}
+                  {pilarNome && !pilarEmPausa(pilarNome) ? pilarNome : 'Minhas Atribuições'}
                 </p>
                 <button
-                  onClick={() => navigate(profile.pilar_id && pilarNome ? (PILAR_PAGE_ROUTE[pilarNome] ?? '/dashboard') : '/dashboard')}
+                  onClick={() => navigate(
+                    pilarEmPausa(pilarNome) ? '/minha-parte'
+                      : profile.pilar_id && pilarNome ? (PILAR_PAGE_ROUTE[pilarNome] ?? '/dashboard') : '/dashboard',
+                  )}
                   className="btn-primary"
                 >
                   Entrar
@@ -139,7 +160,7 @@ export function WelcomePage() {
             {isMembro && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <p className="font-semibold text-gray-900 mb-4">
-                  {pilarNome ? `Minhas Atribuições — ${pilarNome}` : 'Minhas Atribuições'}
+                  {pilarNome && !pilarEmPausa(pilarNome) ? `Minhas Atribuições — ${pilarNome}` : 'Minhas Atribuições'}
                 </p>
                 <button onClick={() => navigate('/minha-parte')} className="btn-primary">
                   Ir para Minhas Atribuições

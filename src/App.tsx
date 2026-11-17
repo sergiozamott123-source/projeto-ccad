@@ -29,6 +29,7 @@ import { CentralRelatoriosPage } from '@/pages/CentralRelatoriosPage'
 import { BuscaProcessosPage } from '@/pages/BuscaProcessosPage'
 import { PainelEmprestimosPage } from '@/pages/PainelEmprestimosPage'
 import { CepasCrpasPage } from '@/pages/CepasCrpasPage'
+import { BOAS_PRATICAS_EM_PAUSA, DIGITALIZACAO_EM_PAUSA, MEMORIA_EM_PAUSA } from '@/lib/pilaresEmPausa'
 
 export default function App() {
   return (
@@ -80,9 +81,11 @@ export default function App() {
                 <Route path="/conferencia-caixas" element={<ConferenciaCaixasPage />} />
                 <Route path="/fluxo-caixas" element={<FluxoCaixasPage />} />
               </Route>
-              <Route path="/pilares/boas-praticas" element={<BoasPraticasPilarPage />} />
-              <Route path="/pilares/memoria" element={<MemoriaPilarPage />} />
-              <Route path="/pilares/digitalizacao" element={<DigitalizacaoPilarPage />} />
+              <Route path="/pilares/boas-praticas" element={BOAS_PRATICAS_EM_PAUSA ? <Navigate to="/" replace /> : <BoasPraticasPilarPage />} />
+              {/* Pilares em pausa (src/lib/pilaresEmPausa.ts): as páginas continuam
+                  existindo, mas quem digitar o endereço é levado ao início. */}
+              <Route path="/pilares/memoria" element={MEMORIA_EM_PAUSA ? <Navigate to="/" replace /> : <MemoriaPilarPage />} />
+              <Route path="/pilares/digitalizacao" element={DIGITALIZACAO_EM_PAUSA ? <Navigate to="/" replace /> : <DigitalizacaoPilarPage />} />
               {/* Sem RequireAcesso: a página decide internamente o que cada
                   papel vê (aba "Meus Relatórios Mensais" é aberta a todos). */}
               <Route path="/central-relatorios" element={<CentralRelatoriosPage />} />

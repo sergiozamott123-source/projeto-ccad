@@ -9,6 +9,7 @@ import { format, startOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import clsx from 'clsx'
 import { PILAR_NOMES } from '@/lib/pilarColors'
+import { DIGITALIZACAO_EM_PAUSA, pilarEmPausa } from '@/lib/pilaresEmPausa'
 import { AvaliacaoProcessosCard } from '@/components/AvaliacaoProcessosCard'
 
 const ROTA_EIXO: Record<string, string> = {
@@ -115,7 +116,7 @@ export function MinhaParte() {
       {podeAvaliar && <AvaliacaoProcessosCard />}
 
       {/* Pilar card */}
-      {pilar && (
+      {pilar && !pilarEmPausa(pilar.nome) && (
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold text-gray-900">{pilar.nome}</h2>
@@ -185,25 +186,29 @@ export function MinhaParte() {
         </div>
         {showIndicador && (
           <div className="mt-4 space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={DIGITALIZACAO_EM_PAUSA ? 'grid grid-cols-1 gap-3' : 'grid grid-cols-1 sm:grid-cols-3 gap-3'}>
               <div>
                 <label className="label">Caixas organizadas</label>
                 <input type="number" min={0} className="input"
                   value={indicador.caixas_organizadas}
                   onChange={e => setIndicador(v => ({ ...v, caixas_organizadas: +e.target.value }))} />
               </div>
+              {!DIGITALIZACAO_EM_PAUSA && (
               <div>
                 <label className="label">Páginas digitalizadas</label>
                 <input type="number" min={0} className="input"
                   value={indicador.paginas_digitalizadas}
                   onChange={e => setIndicador(v => ({ ...v, paginas_digitalizadas: +e.target.value }))} />
               </div>
+              )}
+              {!DIGITALIZACAO_EM_PAUSA && (
               <div>
                 <label className="label">Documentos indexados</label>
                 <input type="number" min={0} className="input"
                   value={indicador.documentos_indexados}
                   onChange={e => setIndicador(v => ({ ...v, documentos_indexados: +e.target.value }))} />
               </div>
+              )}
             </div>
             <div>
               <label className="label">URL da evidência</label>

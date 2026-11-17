@@ -4,6 +4,7 @@ import { UserPlus, Mail, Plus, Building2, Boxes, CheckCircle2, Clock, Trash2, Sh
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Usuario, Pilar, SetorCdtiv, ConfigArquivamentoFinal } from '@/lib/database.types'
+import { soPilaresAtivos } from '@/lib/pilaresEmPausa'
 import clsx from 'clsx'
 
 const PAPEL_LABELS: Record<string, string> = {
@@ -169,8 +170,8 @@ export function EquipePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Equipe & Responsáveis</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Gestão de membros, papéis e responsáveis por pilar.</p>
+          <h1 className="text-2xl font-bold text-gray-900">Equipe</h1>
+          <p className="text-gray-500 text-sm mt-0.5">Gestão de membros e papéis da equipe.</p>
         </div>
         {isCoord && (
           <button className="btn-primary" onClick={() => setShowConvite(v => !v)}>
@@ -179,11 +180,12 @@ export function EquipePage() {
         )}
       </div>
 
-      {/* Responsáveis por pilar */}
+      {/* Responsáveis por pilar — escondido enquanto todos os pilares estão em pausa */}
+      {soPilaresAtivos(pilares).length > 0 && (
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-4">Responsáveis por Pilar</h2>
         <div className="space-y-3">
-          {(pilares ?? []).map(pilar => (
+          {soPilaresAtivos(pilares).map(pilar => (
             <div key={pilar.id} className="flex items-center justify-between py-2 border-b last:border-0">
               <span className="text-sm font-medium text-gray-800">{pilar.nome}</span>
               {isCoord ? (
@@ -204,6 +206,7 @@ export function EquipePage() {
           ))}
         </div>
       </div>
+      )}
 
       {/* Setores da CDTIV */}
       <div className="card p-5">
@@ -344,13 +347,15 @@ export function EquipePage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="label">Pilar</label>
-              <select className="input" value={convite.pilar_id} onChange={e => setConvite(v => ({ ...v, pilar_id: e.target.value }))}>
-                <option value="">— Nenhum —</option>
-                {(pilares ?? []).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
-              </select>
-            </div>
+            {soPilaresAtivos(pilares).length > 0 && (
+              <div>
+                <label className="label">Pilar</label>
+                <select className="input" value={convite.pilar_id} onChange={e => setConvite(v => ({ ...v, pilar_id: e.target.value }))}>
+                  <option value="">— Nenhum —</option>
+                  {soPilaresAtivos(pilares).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                </select>
+              </div>
+            )}
           </div>
           <div className="flex gap-3 mt-4">
             <button
