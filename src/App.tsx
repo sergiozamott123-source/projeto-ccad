@@ -29,6 +29,7 @@ import { CentralRelatoriosPage } from '@/pages/CentralRelatoriosPage'
 import { BuscaProcessosPage } from '@/pages/BuscaProcessosPage'
 import { PainelEmprestimosPage } from '@/pages/PainelEmprestimosPage'
 import { CepasCrpasPage } from '@/pages/CepasCrpasPage'
+import { DistribuicaoCaixasPage } from '@/pages/DistribuicaoCaixasPage'
 import { BOAS_PRATICAS_EM_PAUSA, DIGITALIZACAO_EM_PAUSA, MEMORIA_EM_PAUSA } from '@/lib/pilaresEmPausa'
 
 export default function App() {
@@ -77,6 +78,7 @@ export default function App() {
                 <Route path="/confirmar-eliminacoes" element={<ConfirmarEliminacoesPage />} />
               </Route>
               <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_criar_requisicoes === true} />}>
+                <Route path="/distribuicao" element={<DistribuicaoCaixasPage />} />
                 <Route path="/requisicoes-avaliacao" element={<RequisicoesAvaliacaoPage />} />
                 <Route path="/conferencia-caixas" element={<ConferenciaCaixasPage />} />
                 <Route path="/fluxo-caixas" element={<FluxoCaixasPage />} />

@@ -39,7 +39,7 @@ export interface LoteDetectado {
   setores: string[]
 }
 
-function normalizarTexto(s: unknown): string {
+export function normalizarTexto(s: unknown): string {
   return (s ?? '')
     .toString()
     .normalize('NFD')
@@ -154,6 +154,156 @@ export function encontrarAvaliador(
   return { avaliadorId: null, motivo: 'ambiguo' }
 }
 
+// ---------------------------------------------------------------
+// Avisos da leitura (tela "Distribuição de caixas")
+// ---------------------------------------------------------------
+// A leitura original pulava, em silêncio, tudo o que não entendia
+// (linha sem número de caixa, cabeçalho com nome diferente, etc.).
+// Para quem está enviando as caixas isso é perigoso: a caixa parece
+// lida por inteiro quando não foi. Agora cada situação vira um aviso
+// que a tela mostra em linguagem simples. `parsePlanilhaEmLotes`
+// (usada pela tela antiga de Requisições) continua devolvendo
+// exatamente o mesmo resultado de antes.
+export type TipoAvisoPlanilha =
+  | 'sem_cabecalho'
+  | 'sem_coluna_caixa'
+  | 'sem_coluna_processo'
+  | 'linha_sem_caixa'
+  | 'linha_sem_processo'
+  | 'caixa_em_blocos_separados'
+  | 'processo_repetido_na_caixa'
+  | 'processo_em_mais_de_uma_caixa'
+
+export interface AvisoPlanilha {
+  tipo: TipoAvisoPlanilha
+  /** Número da linha como aparece no Excel (quando a tela informa onde a leitura começou). */
+  linhaExcel?: number
+  caixa?: string
+  processo?: string
+  /** Texto de apoio (ex.: o conteúdo da linha ignorada, ou a outra caixa onde o processo também aparece). */
+  detalhe?: string
+}
+
+export interface ResultadoLeituraPlanilha {
+  lotes: LoteDetectado[] | null
+  avisos: AvisoPlanilha[]
+  /** Células da primeira linha preenchida — ajuda a explicar "não achei a coluna X". */
+  colunasVistas: string[]
+}
+
+/**
+ * Igual a `parsePlanilhaEmLotes`, mas também devolve os avisos sobre o
+ * que foi ignorado ou parece estranho. `primeiraLinhaExcel` é o número
+ * (no Excel) da primeira linha de `linhasBrutas`; só é exato quando a
+ * planilha foi lida com `blankrows: true` (linhas vazias preservadas).
+ */
+export function lerPlanilhaEmLotes(
+  linhasBrutas: unknown[][],
+  avaliadores: AvaliadorBasico[],
+  primeiraLinhaExcel = 1,
+): ResultadoLeituraPlanilha {
+  let cabecalhoAtual: MapaCabecalho | null = null
+  const gruposPorCaixa = new Map<string, { avaliadorBruto: string; processos: ProcessoDetectado[]; setores: Set<string> }>()
+  const avisos: AvisoPlanilha[] = []
+  let algumCabecalhoEncontrado = false
+  let colunasVistas: string[] = []
+  let ultimaCaixa = ''
+  const caixasJaAvisadasEmBlocos = new Set<string>()
+  const processoPrimeiraCaixa = new Map<string, string>()
+  const processosJaAvisadosEmOutraCaixa = new Set<string>()
+  let avisouSemCaixa = false
+  let avisouSemProcesso = false
+
+  linhasBrutas.forEach((linha, idx) => {
+    const linhaExcel = primeiraLinhaExcel + idx
+    if (!linha || linha.every(c => c === undefined || c === null || String(c).trim() === '')) return
+
+    // Guarda a primeira linha com pelo menos 2 células preenchidas (uma
+    // linha de título solta, com 1 célula só, não ajuda a explicar nada).
+    if (colunasVistas.length === 0) {
+      const celulas = linha.map(c => String(c ?? '').trim()).filter(Boolean)
+      if (celulas.length >= 2) colunasVistas = celulas
+    }
+
+    const possivelCabecalho = detectarCabecalho(linha)
+    if (possivelCabecalho) {
+      cabecalhoAtual = possivelCabecalho
+      algumCabecalhoEncontrado = true
+      if (cabecalhoAtual.caixa === undefined && !avisouSemCaixa) {
+        avisouSemCaixa = true
+        avisos.push({ tipo: 'sem_coluna_caixa', linhaExcel })
+      }
+      if (cabecalhoAtual.processo === undefined && !avisouSemProcesso) {
+        avisouSemProcesso = true
+        avisos.push({ tipo: 'sem_coluna_processo', linhaExcel })
+      }
+      return
+    }
+    if (!cabecalhoAtual || cabecalhoAtual.caixa === undefined || cabecalhoAtual.processo === undefined) return
+
+    const numeroFisico = String(linha[cabecalhoAtual.caixa] ?? '').trim()
+    const numeroProcesso = String(linha[cabecalhoAtual.processo] ?? '').trim()
+    if (!numeroFisico || !numeroProcesso) {
+      const primeiraCelula = linha.map(c => String(c ?? '').trim()).find(Boolean) ?? ''
+      if (!numeroProcesso) {
+        avisos.push({ tipo: 'linha_sem_processo', linhaExcel, caixa: numeroFisico || undefined, detalhe: primeiraCelula })
+      } else {
+        avisos.push({ tipo: 'linha_sem_caixa', linhaExcel, processo: numeroProcesso })
+      }
+      return
+    }
+
+    const setorBruto = cabecalhoAtual.setor !== undefined ? String(linha[cabecalhoAtual.setor] ?? '').trim() : ''
+    const avaliadorBruto = cabecalhoAtual.avaliador !== undefined ? String(linha[cabecalhoAtual.avaliador] ?? '').trim() : ''
+    const ano = separarAno(cabecalhoAtual.ano !== undefined ? linha[cabecalhoAtual.ano] : '')
+    const assunto = cabecalhoAtual.assunto !== undefined ? String(linha[cabecalhoAtual.assunto] ?? '').trim() : ''
+    const dataDespacho = cabecalhoAtual.dataDespacho !== undefined ? paraDataIso(linha[cabecalhoAtual.dataDespacho]) : ''
+
+    if (!gruposPorCaixa.has(numeroFisico)) {
+      gruposPorCaixa.set(numeroFisico, { avaliadorBruto, processos: [], setores: new Set() })
+    } else if (numeroFisico !== ultimaCaixa && !caixasJaAvisadasEmBlocos.has(numeroFisico)) {
+      // A caixa já tinha aparecido antes e outra caixa veio no meio: os
+      // dois trechos são somados numa caixa só — vale conferir.
+      caixasJaAvisadasEmBlocos.add(numeroFisico)
+      avisos.push({ tipo: 'caixa_em_blocos_separados', linhaExcel, caixa: numeroFisico })
+    }
+    ultimaCaixa = numeroFisico
+    const grupo = gruposPorCaixa.get(numeroFisico)!
+
+    const chaveProcesso = `${numeroProcesso}|${ano}`
+    if (grupo.processos.some(p => `${p.numero}|${p.ano}` === chaveProcesso)) {
+      avisos.push({ tipo: 'processo_repetido_na_caixa', linhaExcel, caixa: numeroFisico, processo: numeroProcesso })
+    }
+    const primeiraCaixaDoProcesso = processoPrimeiraCaixa.get(chaveProcesso)
+    if (primeiraCaixaDoProcesso === undefined) {
+      processoPrimeiraCaixa.set(chaveProcesso, numeroFisico)
+    } else if (primeiraCaixaDoProcesso !== numeroFisico && !processosJaAvisadosEmOutraCaixa.has(chaveProcesso)) {
+      processosJaAvisadosEmOutraCaixa.add(chaveProcesso)
+      avisos.push({ tipo: 'processo_em_mais_de_uma_caixa', linhaExcel, caixa: numeroFisico, processo: numeroProcesso, detalhe: primeiraCaixaDoProcesso })
+    }
+
+    grupo.processos.push({ numero: numeroProcesso, ano, assunto, setorOrigem: setorBruto, dataDespacho })
+    if (setorBruto) grupo.setores.add(setorBruto)
+  })
+
+  if (!algumCabecalhoEncontrado) avisos.unshift({ tipo: 'sem_cabecalho' })
+
+  if (!algumCabecalhoEncontrado || gruposPorCaixa.size === 0) return { lotes: null, avisos, colunasVistas }
+
+  const lotes = [...gruposPorCaixa.entries()].map(([numeroFisico, g]) => {
+    const match = encontrarAvaliador(g.avaliadorBruto, avaliadores)
+    return {
+      numeroFisico,
+      avaliadorBruto: g.avaliadorBruto,
+      avaliadorId: match.avaliadorId,
+      statusMatch: match.motivo,
+      processos: g.processos,
+      setores: [...g.setores],
+    }
+  })
+  return { lotes, avisos, colunasVistas }
+}
+
 /**
  * Lê a planilha inteira (já convertida em array de linhas, com
  * `header: 1`) e devolve um grupo por número físico de caixa
@@ -171,50 +321,5 @@ export function parsePlanilhaEmLotes(
   linhasBrutas: unknown[][],
   avaliadores: AvaliadorBasico[],
 ): LoteDetectado[] | null {
-  let cabecalhoAtual: MapaCabecalho | null = null
-  const gruposPorCaixa = new Map<string, { avaliadorBruto: string; processos: ProcessoDetectado[]; setores: Set<string> }>()
-  let algumCabecalhoEncontrado = false
-
-  for (const linha of linhasBrutas) {
-    if (!linha || linha.every(c => c === undefined || c === null || String(c).trim() === '')) continue
-
-    const possivelCabecalho = detectarCabecalho(linha)
-    if (possivelCabecalho) {
-      cabecalhoAtual = possivelCabecalho
-      algumCabecalhoEncontrado = true
-      continue
-    }
-    if (!cabecalhoAtual || cabecalhoAtual.caixa === undefined || cabecalhoAtual.processo === undefined) continue
-
-    const numeroFisico = String(linha[cabecalhoAtual.caixa] ?? '').trim()
-    const numeroProcesso = String(linha[cabecalhoAtual.processo] ?? '').trim()
-    if (!numeroFisico || !numeroProcesso) continue
-
-    const setorBruto = cabecalhoAtual.setor !== undefined ? String(linha[cabecalhoAtual.setor] ?? '').trim() : ''
-    const avaliadorBruto = cabecalhoAtual.avaliador !== undefined ? String(linha[cabecalhoAtual.avaliador] ?? '').trim() : ''
-    const ano = separarAno(cabecalhoAtual.ano !== undefined ? linha[cabecalhoAtual.ano] : '')
-    const assunto = cabecalhoAtual.assunto !== undefined ? String(linha[cabecalhoAtual.assunto] ?? '').trim() : ''
-    const dataDespacho = cabecalhoAtual.dataDespacho !== undefined ? paraDataIso(linha[cabecalhoAtual.dataDespacho]) : ''
-
-    if (!gruposPorCaixa.has(numeroFisico)) {
-      gruposPorCaixa.set(numeroFisico, { avaliadorBruto, processos: [], setores: new Set() })
-    }
-    const grupo = gruposPorCaixa.get(numeroFisico)!
-    grupo.processos.push({ numero: numeroProcesso, ano, assunto, setorOrigem: setorBruto, dataDespacho })
-    if (setorBruto) grupo.setores.add(setorBruto)
-  }
-
-  if (!algumCabecalhoEncontrado || gruposPorCaixa.size === 0) return null
-
-  return [...gruposPorCaixa.entries()].map(([numeroFisico, g]) => {
-    const match = encontrarAvaliador(g.avaliadorBruto, avaliadores)
-    return {
-      numeroFisico,
-      avaliadorBruto: g.avaliadorBruto,
-      avaliadorId: match.avaliadorId,
-      statusMatch: match.motivo,
-      processos: g.processos,
-      setores: [...g.setores],
-    }
-  })
+  return lerPlanilhaEmLotes(linhasBrutas, avaliadores).lotes
 }

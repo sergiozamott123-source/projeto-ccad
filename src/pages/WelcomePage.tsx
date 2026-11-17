@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown } from 'lucide-react'
+import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown, Boxes } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PILAR_NOMES } from '@/lib/pilarColors'
@@ -153,6 +153,19 @@ export function WelcomePage() {
                   className="btn-primary"
                 >
                   Entrar
+                </button>
+              </div>
+            )}
+
+            {(isMembro || isResponsavel) && profile.pode_criar_requisicoes && (
+              <div className="card p-6 text-center mx-auto mb-4 border-2 border-teal-500" style={{ maxWidth: 420 }}>
+                <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-teal-50">
+                  <Boxes size={22} className="text-teal-600" />
+                </div>
+                <p className="font-semibold text-gray-900 mb-1">Distribuição de caixas</p>
+                <p className="text-xs text-gray-500 mb-4">Envie as caixas aos avaliadores, em 3 passos.</p>
+                <button onClick={() => navigate('/distribuicao')} className="btn-primary">
+                  Começar a distribuição
                 </button>
               </div>
             )}

@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, ShieldAlert,
-  Users, Archive, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature, Workflow, Star,
+  Users, Archive, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature, Workflow, Star, Boxes,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -65,6 +65,7 @@ const NAV: NavItem[] = [
   },
   { to: '/minha-parte', label: 'Minhas Atribuições',  icon: <ListTodo size={18} />, roles: ['membro','responsavel_pilar','coordenador','coordenador_substituto'] },
   { to: '/confirmar-eliminacoes', label: 'Confirmar Eliminações', icon: <CheckSquare size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_confirmar_eliminacoes' },
+  { to: '/distribuicao', label: 'Distribuição de caixas', icon: <Boxes size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
   { to: '/requisicoes-avaliacao', label: 'Requisições de Avaliação', icon: <Send size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes' },
   { to: '/conferencia-caixas', label: 'Conferência de Caixas', icon: <PackageCheck size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
   { to: '/fluxo-caixas', label: 'Fluxo das Caixas', icon: <Workflow size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
