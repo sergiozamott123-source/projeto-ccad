@@ -8,6 +8,7 @@ import type { RelatorioMensal, Usuario } from '@/lib/database.types'
 import { format, startOfMonth, subMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { RelatorioStatusBadge } from '@/components/badges/DecisaoBadges'
+import { QuadroQuemFalta } from '@/components/QuadroQuemFalta'
 
 const STATUS_LABEL: Record<string, string> = {
   rascunho: 'Rascunho',
@@ -208,6 +209,8 @@ export function RelatoriosEquipePage() {
           ))}
         </select>
       </div>
+
+      <QuadroQuemFalta />
 
       <div className="card p-4 flex items-center gap-3">
         <FileSearch size={18} className="text-teal-600 shrink-0" />

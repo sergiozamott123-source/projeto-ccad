@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FileText, Send, Save, Wand2, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -8,6 +9,7 @@ import { format, startOfMonth, subMonths, addMonths } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import clsx from 'clsx'
 import { RelatorioStatusBadge } from '@/components/badges/DecisaoBadges'
+import { AvisoRelatorioMensal } from '@/components/AvisoRelatorioMensal'
 
 interface AtividadesImportadas {
   processos_avaliados_qtd: number
@@ -105,8 +107,10 @@ export function RelatoriosPage() {
   const qc = useQueryClient()
   const mesAtual = format(startOfMonth(new Date()), 'yyyy-MM-dd')
   const mesAnterior = format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd')
-  const [selectedMes, setSelectedMes] = useState(mesAtual)
-  const [showForm, setShowForm] = useState(false)
+  // Vindo do aviso do relatório (botão "Preencher relatório"), abre direto no mês certo.
+  const mesDoAviso = (useLocation().state as { mes?: string } | null)?.mes
+  const [selectedMes, setSelectedMes] = useState(mesDoAviso ?? mesAtual)
+  const [showForm, setShowForm] = useState(!!mesDoAviso)
   const [form, setForm] = useState({
     atividades_realizadas: '',
     dificuldades: '',
@@ -225,6 +229,8 @@ export function RelatoriosPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['meus-relatorios'] })
+      qc.invalidateQueries({ queryKey: ['aviso-relatorio'] })
+      qc.invalidateQueries({ queryKey: ['quem-falta-relatorio'] })
       setShowForm(false)
     },
   })
@@ -234,12 +240,20 @@ export function RelatoriosPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Meus Relatórios Mensais</h2>
-          <p className="text-gray-500 text-sm mt-0.5">Obrigatório até o dia 20 de cada mês.</p>
+          <p className="text-gray-500 text-sm mt-0.5">Envie até o dia 15 de cada mês, com as atividades do mês anterior.</p>
         </div>
         <button className="btn-primary" onClick={() => setShowForm(v => !v)}>
           <FileText size={16} /> {relatorioDoMes ? 'Editar relatório' : 'Novo relatório'}
         </button>
       </div>
+
+      <AvisoRelatorioMensal
+        variante="cartao"
+        onPreencher={mes => {
+          setSelectedMes(mes)
+          setShowForm(true)
+        }}
+      />
 
       {/* Month selector */}
       <div className="flex gap-2">

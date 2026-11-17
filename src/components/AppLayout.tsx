@@ -11,6 +11,8 @@ import type { Usuario } from '@/lib/database.types'
 import { AlertaRitmoAvaliacao } from '@/components/AlertaRitmoAvaliacao'
 import { AlertaAvaliacaoPessoal } from '@/components/AlertaAvaliacaoPessoal'
 import { AvisosDoSistema } from '@/components/AvisosDoSistema'
+import { AvisoRelatorioMensal } from '@/components/AvisoRelatorioMensal'
+import { useAvisoRelatorio } from '@/lib/prazoRelatorio'
 import { correspondeBusca } from '@/lib/textSearch'
 import { useDevolvidosDoAvaliador, totalDevolvidos } from '@/lib/devolvidosAvaliador'
 import clsx from 'clsx'
@@ -212,6 +214,10 @@ export function AppLayout() {
   // do item "Minhas Atribuições" (onde fica a Avaliação de Processos).
   const { data: gruposDevolvidos } = useDevolvidosDoAvaliador()
   const devolvidosCount = totalDevolvidos(gruposDevolvidos ?? [])
+
+  // Lembrete do relatório mensal: bolinha no item "Central de Relatórios" enquanto
+  // o relatório do mês anterior não foi enviado (a partir do dia 10).
+  const avisoRelatorio = useAvisoRelatorio()
 
   const { data: eliminacoesPendentesCount } = useQuery({
     queryKey: ['eliminacoes-pendentes-count', profile?.id, profile?.pilar_id, podeConfirmarEliminacoes],
@@ -490,6 +496,15 @@ export function AppLayout() {
                         {devolvidosCount}
                       </span>
                     )}
+                    {item.to === '/central-relatorios' && avisoRelatorio.ativo && avisoRelatorio.fase !== 'antes' && (
+                      <span
+                        title={`Relatório de ${avisoRelatorio.mesExtenso} ainda não enviado (prazo: dia ${avisoRelatorio.prazo})`}
+                        className={clsx(
+                          'h-2.5 w-2.5 rounded-full shrink-0',
+                          avisoRelatorio.fase === 'vencido' ? 'bg-rose-400' : avisoRelatorio.fase === 'reta_final' ? 'bg-amber-400' : 'bg-teal-300',
+                        )}
+                      />
+                    )}
                     {item.to === '/confirmar-eliminacoes' && (eliminacoesPendentesCount ?? 0) > 0 && (
                       <span className="bg-red-500 text-white text-xs font-semibold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                         {eliminacoesPendentesCount}
@@ -590,6 +605,8 @@ export function AppLayout() {
               quando ele mesmo está há 15 dias ou mais sem avaliar nenhum
               processo. Ver src/components/AlertaAvaliacaoPessoal.tsx. */}
           <AlertaAvaliacaoPessoal />
+          {/* Lembrete do relatório mensal (a partir do dia 10; prazo dia 15). Ver src/lib/prazoRelatorio.ts. */}
+          <AvisoRelatorioMensal variante="faixa" />
           <Outlet />
         </main>
       </div>
