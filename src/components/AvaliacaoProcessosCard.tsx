@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2, FileSignature, Undo2 } from 'lucide-react'
+import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2, FileSignature, Undo2, BookOpen } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
@@ -8,6 +8,7 @@ import type { Processo, TtdCodigo, Avaliacao, RequisicaoAvaliacao } from '@/lib/
 import { declaracaoCrpa, gerarCrpaPdf } from '@/lib/documentosCepaCrpa'
 import { isEliminacao, DecisaoBadge, AvaliacaoStatusBadge } from '@/components/badges/DecisaoBadges'
 import { QuadroDevolvidos } from '@/components/QuadroDevolvidos'
+import { PainelTtd } from '@/components/PainelTtd'
 import { useDevolvidosDoAvaliador, type CaixaComDevolvidos } from '@/lib/devolvidosAvaliador'
 import clsx from 'clsx'
 
@@ -37,6 +38,13 @@ export function AvaliacaoProcessosCard() {
   const [caixaNumero, setCaixaNumero] = useState('')
   const [caixaBusca, setCaixaBusca] = useState('') // valor efetivamente pesquisado
   const [toast, setToast] = useState<string | null>(null)
+
+  // Perfil "avaliação" (avaliadores): tela com a Tabela TTD sempre ao lado,
+  // explicação em passos e textos em linguagem simples. Para a Coordenação e
+  // para quem não tem o perfil, a tela continua como era.
+  const modoAvaliador = profile?.menu_perfil === 'avaliacao'
+  const [ttdAberta, setTtdAberta] = useState(false)
+  const [buscaPainel, setBuscaPainel] = useState('')
 
   // Permite ao avaliador pular a ordem padrão (ordem de lançamento no
   // sistema) e escolher manualmente qual processo pendente avaliar agora —
@@ -209,6 +217,7 @@ export function AvaliacaoProcessosCard() {
     setTtdSearch(`${ttd.codigo} — ${ttd.assunto}`)
     setShowDropdown(false)
     setMostrarTabela(false)
+    setTtdAberta(false)
   }
 
   const hoje = startOfDay(new Date()).toISOString()
@@ -422,9 +431,10 @@ export function AvaliacaoProcessosCard() {
   }
 
   return (
-    <div className="card p-5 relative">
+    <div className={clsx(modoAvaliador && 'lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-5')}>
+    <div className="card p-5 relative min-w-0">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 className="font-semibold text-gray-900">Avaliação de Processos</h2>
+        <h2 className="font-semibold text-gray-900">{modoAvaliador ? 'Avaliar processos' : 'Avaliação de Processos'}</h2>
         <div className="flex items-center gap-2">
           {caixaInfo?.caixa && totalNaCaixa > 0 && (
             <span className="text-xs px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 font-semibold">
@@ -438,6 +448,26 @@ export function AvaliacaoProcessosCard() {
       </div>
 
       <QuadroDevolvidos grupos={gruposDevolvidos ?? []} onCorrigir={corrigirDevolvidos} />
+
+      {modoAvaliador && (
+        <details open={!caixaBusca} className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Como funciona, em 3 passos</summary>
+          <ol className="mt-3 grid gap-2 sm:grid-cols-3">
+            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">1. Receba a caixa</p>
+              Quando o Protocolo enviar, o botão da caixa pede para você <strong>confirmar que recebeu</strong>. Depois ela fica pronta para avaliar.
+            </li>
+            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">2. Avalie cada processo</p>
+              Leia o assunto, escolha o código na TTD ao lado e confirme. O próximo processo abre sozinho.
+            </li>
+            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">3. A Coordenação confere</p>
+              Ela confirma a sua escolha ou <strong>devolve</strong> com um motivo. Os devolvidos aparecem em vermelho, no topo.
+            </li>
+          </ol>
+        </details>
+      )}
 
       {/* Selecionar caixa: Coordenação busca livremente; os demais só
           veem as caixas que foram enviadas a eles numa requisição */}
@@ -456,10 +486,12 @@ export function AvaliacaoProcessosCard() {
         </div>
       ) : (
         <div className="mb-4">
-          <label className="label">Requisições pendentes para você</label>
+          <label className="label">{modoAvaliador ? 'Caixas que chegaram para você' : 'Requisições pendentes para você'}</label>
           {(minhasRequisicoes ?? []).length === 0 ? (
             <p className="text-sm text-gray-500">
-              Nenhuma requisição pendente no momento. Aguarde a Coordenação enviar uma caixa para você avaliar.
+              {modoAvaliador
+                ? 'Nenhuma caixa esperando você no momento. Quando o Protocolo enviar uma, ela aparece aqui.'
+                : 'Nenhuma requisição pendente no momento. Aguarde a Coordenação enviar uma caixa para você avaliar.'}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -475,7 +507,7 @@ export function AvaliacaoProcessosCard() {
                       title="O Protocolo ainda não emitiu a CEPA (Confirmação de Envio) desta caixa."
                       className="text-xs px-3 py-1.5 rounded-full border border-dashed border-gray-300 text-gray-500 font-medium"
                     >
-                      Caixa {caixaNumero} · aguardando emissão da CEPA
+                      Caixa {caixaNumero} · {modoAvaliador ? 'aguardando o Protocolo emitir a CEPA' : 'aguardando emissão da CEPA'}
                     </span>
                   )
                 }
@@ -498,7 +530,7 @@ export function AvaliacaoProcessosCard() {
                       className="text-xs px-3 py-1.5 rounded-full border border-amber-300 bg-amber-50 text-amber-800 font-medium hover:border-amber-400 flex items-center gap-1.5"
                     >
                       <FileSignature size={12} />
-                      Caixa {caixaNumero} · confirmar recebimento
+                      Caixa {caixaNumero} · {modoAvaliador ? 'confirme que recebeu' : 'confirmar recebimento'}
                     </button>
                   )
                 }
@@ -515,7 +547,7 @@ export function AvaliacaoProcessosCard() {
                         : 'bg-white border-gray-300 text-gray-700 hover:border-teal-400',
                     )}
                   >
-                    Caixa {caixaNumero} · enviada por {r.criador?.nome?.split(' ')[0] ?? '—'}
+                    Caixa {caixaNumero} · {modoAvaliador ? 'pronta para avaliar' : 'enviada por'} {modoAvaliador ? '' : (r.criador?.nome?.split(' ')[0] ?? '—')}
                   </button>
                 )
               })}
@@ -644,7 +676,7 @@ export function AvaliacaoProcessosCard() {
                 </div>
                 <div className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-gray-700">
                   <p className="font-semibold text-teal-700">2. Escolha o código correto</p>
-                  Busque pelo assunto ou pelo código na tabela TTD, logo abaixo.
+                  {modoAvaliador ? 'Busque pelo assunto ou pelo código na tabela TTD, ao lado.' : 'Busque pelo assunto ou pelo código na tabela TTD, logo abaixo.'}
                 </div>
                 <div className="rounded-lg bg-teal-50 px-3 py-2 text-xs text-gray-700">
                   <p className="font-semibold text-teal-700">3. Salve de novo</p>
@@ -686,10 +718,34 @@ export function AvaliacaoProcessosCard() {
               {selectedTtd ? <Check size={14} /> : 1}
             </span>
             <div className="flex-1 min-w-0" ref={dropdownRef}>
-              <p className="font-semibold text-gray-900 text-sm mb-0.5">Encontre o código na Tabela de Temporalidade (TTD)</p>
+              <p className="font-semibold text-gray-900 text-sm mb-0.5">
+                {modoAvaliador ? 'Escolha o código na Tabela de Temporalidade (TTD)' : 'Encontre o código na Tabela de Temporalidade (TTD)'}
+              </p>
+              {modoAvaliador ? (
+                <>
+                  <p className="text-xs text-gray-500 mb-2">
+                    <span className="hidden lg:inline">
+                      Use a tabela ao lado: digite o código ou uma palavra do assunto (ex.: convênio) e clique em <strong>Usar este código</strong>.
+                    </span>
+                    <span className="lg:hidden">
+                      Abra a tabela, procure o código ou uma palavra do assunto (ex.: convênio) e toque em <strong>Usar este código</strong>.
+                    </span>
+                  </p>
+                  <button type="button" className="btn-secondary mb-2 text-sm lg:hidden" onClick={() => setTtdAberta(true)}>
+                    <BookOpen size={14} /> Abrir a Tabela TTD
+                  </button>
+                  {!selectedTtd && (
+                    <p className="rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-500">
+                      Nenhum código escolhido ainda.
+                    </p>
+                  )}
+                </>
+              ) : (
               <p className="text-xs text-gray-500 mb-2">
                 Digite parte do código (ex.: 020.1) ou uma palavra do assunto acima (ex.: convênio).
               </p>
+              )}
+              {!modoAvaliador && (<>
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -730,6 +786,7 @@ export function AvaliacaoProcessosCard() {
               >
                 <List size={12} /> Não achou? Navegue pela tabela completa da TTD
               </button>
+              </>)}
 
               {selectedTtd && (
                 <div className="mt-3 bg-teal-50 border border-teal-100 rounded-lg px-3 py-2.5 text-xs space-y-1">
@@ -983,6 +1040,35 @@ export function AvaliacaoProcessosCard() {
           </div>
         </div>
       )}
+    </div>
+
+    {modoAvaliador && (
+      <aside className="hidden lg:block lg:sticky lg:top-0 lg:h-[calc(100vh-6rem)]">
+        <PainelTtd
+          busca={buscaPainel}
+          onBusca={setBuscaPainel}
+          onEscolher={atual ? escolherTtd : undefined}
+          codigoEscolhido={selectedTtd?.codigo ?? null}
+          subtitulo={atual ? undefined : 'Consulte a tabela. Ao avaliar um processo, é aqui que você escolhe o código.'}
+        />
+      </aside>
+    )}
+
+    {modoAvaliador && ttdAberta && (
+      <div className="fixed inset-0 z-50 flex items-stretch justify-end lg:hidden">
+        <div className="absolute inset-0 bg-black/40" onClick={() => setTtdAberta(false)} />
+        <div className="relative h-full w-full bg-gray-50 p-2 shadow-2xl sm:w-[460px]">
+          <PainelTtd
+            busca={buscaPainel}
+            onBusca={setBuscaPainel}
+            onFechar={() => setTtdAberta(false)}
+            onEscolher={atual ? escolherTtd : undefined}
+            codigoEscolhido={selectedTtd?.codigo ?? null}
+            subtitulo={atual ? undefined : 'Consulte a tabela. Ao avaliar um processo, é aqui que você escolhe o código.'}
+          />
+        </div>
+      </div>
+    )}
     </div>
   )
 }

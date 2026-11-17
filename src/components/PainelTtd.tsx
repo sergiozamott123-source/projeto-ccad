@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, X } from 'lucide-react'
+import { Search, X, Check } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { correspondeBusca } from '@/lib/textSearch'
 import type { TtdCodigo } from '@/lib/database.types'
@@ -21,6 +21,9 @@ export function PainelTtd({
   onBusca,
   codigoEmDestaque,
   onFechar,
+  onEscolher,
+  codigoEscolhido,
+  subtitulo,
 }: {
   busca: string
   onBusca: (valor: string) => void
@@ -28,6 +31,12 @@ export function PainelTtd({
   codigoEmDestaque?: string | null
   /** Se informado, mostra um botão X (uso como quadro por cima da tela). */
   onFechar?: () => void
+  /** Se informado, cada código ganha o botão "Usar este código" (tela de avaliação). */
+  onEscolher?: (ttd: TtdCodigo) => void
+  /** Código já escolhido na avaliação (mostra "Escolhido" no lugar do botão). */
+  codigoEscolhido?: string | null
+  /** Frase de apoio no alto do painel (padrão: depende de haver "Usar este código"). */
+  subtitulo?: string
 }) {
   const [classe, setClasse] = useState<'todas' | '01' | '02'>('todas')
 
@@ -62,7 +71,7 @@ export function PainelTtd({
       <div className="flex items-start justify-between gap-2 border-b border-gray-100 px-4 py-3">
         <div>
           <h2 className="text-sm font-semibold text-gray-900">Tabela de Temporalidade (TTD)</h2>
-          <p className="mt-0.5 text-xs text-gray-500">Consulte aqui para conferir o código usado.</p>
+          <p className="mt-0.5 text-xs text-gray-500">{subtitulo ?? (onEscolher ? 'Procure o código e clique em "Usar este código".' : 'Consulte aqui para conferir o código usado.')}</p>
         </div>
         {onFechar && (
           <button
@@ -157,6 +166,21 @@ export function PainelTtd({
                       <p className="mt-0.5 text-gray-500">
                         Corrente: {t.fase_corrente || '—'} · Intermediária: {t.fase_intermediaria || '—'}
                       </p>
+                    )}
+                    {onEscolher && (
+                      codigoEscolhido === t.codigo ? (
+                        <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-teal-100 px-2.5 py-1 font-semibold text-teal-800">
+                          <Check size={12} /> Escolhido
+                        </p>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn-secondary mt-2 px-3 py-1.5 text-xs"
+                          onClick={() => onEscolher(t)}
+                        >
+                          Usar este código
+                        </button>
+                      )
                     )}
                   </li>
                 )

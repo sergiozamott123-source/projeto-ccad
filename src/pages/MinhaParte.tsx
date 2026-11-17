@@ -104,6 +104,22 @@ export function MinhaParte() {
   const mesLabel = format(new Date(), "MMMM 'de' yyyy", { locale: ptBR })
   const podeAvaliar = isCoord || profile.pode_avaliar_processos
 
+  // Perfil "avaliação" (avaliadores): só a avaliação, com a TTD ao lado.
+  // Indicadores, demandas e contagens não somem do sistema — só saem desta tela.
+  if (profile.menu_perfil === 'avaliacao') {
+    return (
+      <div className="space-y-5">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Minhas avaliações</h1>
+          <p className="text-gray-500 text-sm mt-0.5">
+            Caixas que chegaram, processos para avaliar e devolvidos pela Coordenação.
+          </p>
+        </div>
+        {podeAvaliar && <AvaliacaoProcessosCard />}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>

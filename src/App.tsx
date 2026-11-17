@@ -50,6 +50,9 @@ export default function App() {
                 <Route path="/painel-emprestimos" element={<PainelEmprestimosPage />} />
               </Route>
               <Route path="/minha-parte" element={<MinhaParte />} />
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_avaliar_processos === true} />}>
+                <Route path="/consulta-ttd" element={<TtdPage />} />
+              </Route>
               <Route path="/demandas" element={<DemandasPage />} />
               <Route path="/demandas/nova" element={<NovaDemandaPage />} />
               {/* /relatorios e /relatorios-equipe viraram abas de /central-relatorios

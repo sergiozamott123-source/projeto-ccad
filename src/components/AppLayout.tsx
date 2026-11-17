@@ -71,6 +71,12 @@ interface MenuPerfil {
 const MENU_POR_PERFIL: Record<string, MenuPerfil> = {
   // Protocolo — Ana Alzira: só distribui as caixas e escreve os relatórios.
   distribuicao: { telas: ['/distribuicao', '/central-relatorios'] },
+  // Avaliadores: só avaliam os processos recebidos (com a TTD ao lado),
+  // consultam a TTD e escrevem os relatórios.
+  avaliacao: {
+    telas: ['/minha-parte', '/consulta-ttd', '/central-relatorios'],
+    rotulos: { '/minha-parte': 'Minhas avaliações' },
+  },
   // Protocolo — Ariadne e Júlia: conferem as avaliações (com a TTD à mão),
   // cuidam das caixas e dos processos e escrevem os relatórios.
   conferencia: {
@@ -120,6 +126,8 @@ const NAV: NavItem[] = [
   { to: '/cepas-crpas', label: 'CEPAs e CRPAs', icon: <FileSignature size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
   // Só no menu enxuto de perfil: a TTD sozinha, sem o submenu do Protocolo Geral.
   { to: '/protocolo-geral/ttd', label: 'Tabela TTD', icon: <BookOpen size={18} />, flag: 'acesso_protocolo_geral', soPerfil: true },
+  // Consulta da TTD para os avaliadores (que não têm o Protocolo Geral).
+  { to: '/consulta-ttd', label: 'Tabela TTD', icon: <BookOpen size={18} />, flag: 'pode_avaliar_processos', soPerfil: true },
   {
     to: '/acervo', label: 'Acervo', icon: <Archive size={18} />,
     roles: ['coordenador', 'coordenador_substituto'],

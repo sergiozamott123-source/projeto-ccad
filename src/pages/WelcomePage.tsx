@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown, Boxes, FileBarChart, ClipboardCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useDevolvidosDoAvaliador, totalDevolvidos } from '@/lib/devolvidosAvaliador'
 import { useAuth } from '@/contexts/AuthContext'
 import { PILAR_NOMES } from '@/lib/pilarColors'
 import { BOAS_PRATICAS_EM_PAUSA, DIGITALIZACAO_EM_PAUSA, MEMORIA_EM_PAUSA, TODOS_PILARES_EM_PAUSA, pilarEmPausa } from '@/lib/pilaresEmPausa'
@@ -50,6 +51,23 @@ export function WelcomePage() {
       return count ?? 0
     },
     enabled: !!profile?.id && mostrarConferencia,
+  })
+
+  // Perfil "avaliação": cartão "Minhas avaliações" com o que está esperando.
+  const mostrarAvaliacao = profile?.menu_perfil === 'avaliacao'
+  const { data: gruposDevolvidos } = useDevolvidosDoAvaliador()
+  const devolvidos = totalDevolvidos(gruposDevolvidos ?? [])
+  const { data: caixasEsperando } = useQuery({
+    queryKey: ['avaliador-caixas-esperando-count', profile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('requisicoes_avaliacao')
+        .select('*', { count: 'exact', head: true })
+        .eq('avaliador_id', profile!.id)
+        .eq('status', 'pendente')
+      return count ?? 0
+    },
+    enabled: !!profile?.id && mostrarAvaliacao,
   })
 
   if (profileLoading || !profile) return null
@@ -155,7 +173,7 @@ export function WelcomePage() {
               </div>
             )}
 
-            {isResponsavel && (
+            {isResponsavel && !mostrarAvaliacao && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <p className="font-semibold text-gray-900 mb-4">
                   {pilarNome && !pilarEmPausa(pilarNome) ? pilarNome : 'Minhas Atribuições'}
@@ -172,7 +190,7 @@ export function WelcomePage() {
               </div>
             )}
 
-            {(isMembro || isResponsavel) && profile.pode_criar_requisicoes && profile.menu_perfil !== 'conferencia' && (
+            {(isMembro || isResponsavel) && profile.pode_criar_requisicoes && profile.menu_perfil !== 'conferencia' && !mostrarAvaliacao && (
               <div className="card p-6 text-center mx-auto mb-4 border-2 border-teal-500" style={{ maxWidth: 420 }}>
                 <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-teal-50">
                   <Boxes size={22} className="text-teal-600" />
@@ -181,6 +199,29 @@ export function WelcomePage() {
                 <p className="text-xs text-gray-500 mb-4">Envie as caixas aos avaliadores, em 3 passos.</p>
                 <button onClick={() => navigate('/distribuicao')} className="btn-primary">
                   Começar a distribuição
+                </button>
+              </div>
+            )}
+
+            {/* Perfil de menu enxuto "avaliação" (avaliadores). */}
+            {mostrarAvaliacao && (
+              <div className="card p-6 text-center mx-auto mb-4 border-2 border-teal-500" style={{ maxWidth: 420 }}>
+                <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-teal-50">
+                  <ListChecks size={22} className="text-teal-600" />
+                </div>
+                <p className="font-semibold text-gray-900 mb-1">Minhas avaliações</p>
+                <p className="text-xs text-gray-500 mb-4">
+                  {caixasEsperando === undefined
+                    ? 'Veja as caixas que chegaram e avalie os processos.'
+                    : caixasEsperando === 0 && devolvidos === 0
+                      ? 'Nenhuma caixa esperando você no momento.'
+                      : [
+                          caixasEsperando > 0 ? `${caixasEsperando} ${caixasEsperando === 1 ? 'caixa espera' : 'caixas esperam'} você` : null,
+                          devolvidos > 0 ? `${devolvidos} ${devolvidos === 1 ? 'processo devolvido' : 'processos devolvidos'} para revisar` : null,
+                        ].filter(Boolean).join(' · ')}
+                </p>
+                <button onClick={() => navigate('/minha-parte')} className="btn-primary">
+                  Começar a avaliar
                 </button>
               </div>
             )}
@@ -207,7 +248,7 @@ export function WelcomePage() {
 
             {/* Perfis de menu enxuto (Distribuição, Conferência): além da tela
                 principal, o ambiente de relatórios — sem "Minhas Atribuições". */}
-            {(profile.menu_perfil === 'distribuicao' || mostrarConferencia) && (
+            {(profile.menu_perfil === 'distribuicao' || mostrarConferencia || mostrarAvaliacao) && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-teal-50">
                   <FileBarChart size={22} className="text-teal-600" />
@@ -220,7 +261,7 @@ export function WelcomePage() {
               </div>
             )}
 
-            {isMembro && profile.menu_perfil !== 'distribuicao' && !mostrarConferencia && (
+            {isMembro && profile.menu_perfil !== 'distribuicao' && !mostrarConferencia && !mostrarAvaliacao && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <p className="font-semibold text-gray-900 mb-4">
                   {pilarNome && !pilarEmPausa(pilarNome) ? `Minhas Atribuições — ${pilarNome}` : 'Minhas Atribuições'}
