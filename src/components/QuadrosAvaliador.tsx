@@ -1,5 +1,6 @@
-import { PackageCheck, PencilLine, ArrowRight } from 'lucide-react'
-import { differenceInDays, format } from 'date-fns'
+import { PackageCheck, PencilLine, ArrowRight, Undo2 } from 'lucide-react'
+import { format } from 'date-fns'
+import clsx from 'clsx'
 import type { CaixaParaDevolver, CorrecaoDaCoordenacao } from '@/lib/caixasAvaliador'
 
 /**
@@ -60,19 +61,17 @@ export function QuadroCaixasParaDevolver({
 
 /**
  * Quadro azul "Corrigidos pela Coordenação" — só informa: mostra o código que
- * o avaliador usou e o código que ficou depois da conferência. Fica aberto
- * quando há correção dos últimos 7 dias; senão fica recolhido.
+ * o avaliador usou e o código que ficou depois da conferência.
  */
 export function QuadroCorrigidos({ itens }: { itens: CorrecaoDaCoordenacao[] }) {
   if (itens.length === 0) return null
-  const recentes = itens.some(i => i.corrigidoEm && differenceInDays(new Date(), new Date(i.corrigidoEm)) <= 7)
 
   return (
-    <details open={recentes} className="mb-5 rounded-xl border border-sky-200 bg-sky-50 p-4">
-      <summary className="flex cursor-pointer items-center gap-2 font-semibold text-sky-900">
+    <div className="mb-5 rounded-xl border border-sky-200 bg-sky-50 p-4">
+      <h3 className="flex items-center gap-2 font-semibold text-sky-900">
         <PencilLine size={16} />
         Corrigidos pela Coordenação: {itens.length} {itens.length === 1 ? 'processo' : 'processos'} (últimos 30 dias)
-      </summary>
+      </h3>
       <p className="mt-1 text-xs text-gray-700">
         Na conferência, o código {itens.length === 1 ? 'deste processo foi ajustado' : 'destes processos foi ajustado'}.
         É só para você saber — não precisa fazer nada.
@@ -99,6 +98,77 @@ export function QuadroCorrigidos({ itens }: { itens: CorrecaoDaCoordenacao[] }) 
           </li>
         ))}
       </ul>
-    </details>
+    </div>
+  )
+}
+
+export type AvisoAvaliador = 'devolvidos' | 'paraDevolver' | 'corrigidos'
+
+/**
+ * Faixa compacta de avisos: três botões com a contagem de cada um. O detalhe só
+ * abre ao clicar (quem abre e o conteúdo ficam por conta de quem usa a faixa).
+ * Assim a lista de caixas continua sendo a primeira coisa que o avaliador vê.
+ */
+export function FaixaAvisos({
+  aberto,
+  onAlternar,
+  devolvidos,
+  paraDevolver,
+  corrigidos,
+}: {
+  aberto: AvisoAvaliador | null
+  onAlternar: (aviso: AvisoAvaliador) => void
+  devolvidos: number
+  paraDevolver: number
+  corrigidos: number
+}) {
+  const botoes: { id: AvisoAvaliador; total: number; rotulo: string; icone: React.ReactNode; cor: string; corAtiva: string }[] = [
+    {
+      id: 'devolvidos',
+      total: devolvidos,
+      rotulo: devolvidos === 1 ? 'processo devolvido para revisar' : 'processos devolvidos para revisar',
+      icone: <Undo2 size={13} />,
+      cor: 'border-red-300 bg-red-50 text-red-800 hover:border-red-400',
+      corAtiva: 'border-red-600 bg-red-600 text-white',
+    },
+    {
+      id: 'paraDevolver',
+      total: paraDevolver,
+      rotulo: paraDevolver === 1 ? 'caixa para devolver ao Protocolo' : 'caixas para devolver ao Protocolo',
+      icone: <PackageCheck size={13} />,
+      cor: 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:border-emerald-400',
+      corAtiva: 'border-emerald-600 bg-emerald-600 text-white',
+    },
+    {
+      id: 'corrigidos',
+      total: corrigidos,
+      rotulo: corrigidos === 1 ? 'corrigido pela Coordenação' : 'corrigidos pela Coordenação',
+      icone: <PencilLine size={13} />,
+      cor: 'border-sky-300 bg-sky-50 text-sky-900 hover:border-sky-400',
+      corAtiva: 'border-sky-600 bg-sky-600 text-white',
+    },
+  ]
+  const visiveis = botoes.filter(b => b.total > 0)
+  if (visiveis.length === 0) return null
+
+  return (
+    <div id="faixa-avisos" className="mb-3 flex flex-wrap items-center gap-2">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Avisos</span>
+      {visiveis.map(b => (
+        <button
+          key={b.id}
+          type="button"
+          aria-expanded={aberto === b.id}
+          onClick={() => onAlternar(b.id)}
+          className={clsx(
+            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+            aberto === b.id ? b.corAtiva : b.cor,
+          )}
+        >
+          {b.icone}
+          <span className="font-bold">{b.total}</span> {b.rotulo}
+        </button>
+      ))}
+    </div>
   )
 }

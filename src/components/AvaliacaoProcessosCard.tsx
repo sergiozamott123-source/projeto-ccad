@@ -8,10 +8,10 @@ import type { Processo, TtdCodigo, Avaliacao, RequisicaoAvaliacao } from '@/lib/
 import { declaracaoCrpa, gerarCrpaPdf } from '@/lib/documentosCepaCrpa'
 import { isEliminacao, DecisaoBadge, AvaliacaoStatusBadge } from '@/components/badges/DecisaoBadges'
 import { QuadroDevolvidos } from '@/components/QuadroDevolvidos'
-import { QuadroCaixasParaDevolver, QuadroCorrigidos } from '@/components/QuadrosAvaliador'
+import { QuadroCaixasParaDevolver, QuadroCorrigidos, FaixaAvisos, type AvisoAvaliador } from '@/components/QuadrosAvaliador'
 import { useCaixasParaDevolver, useCorrecoesDaCoordenacao } from '@/lib/caixasAvaliador'
 import { PainelTtd } from '@/components/PainelTtd'
-import { useDevolvidosDoAvaliador, type CaixaComDevolvidos } from '@/lib/devolvidosAvaliador'
+import { useDevolvidosDoAvaliador, totalDevolvidos, type CaixaComDevolvidos } from '@/lib/devolvidosAvaliador'
 import clsx from 'clsx'
 
 // Uma avaliação já "resolve" o processo (não precisa mais avaliar) se ela
@@ -60,6 +60,8 @@ export function AvaliacaoProcessosCard() {
   // clicada em "Corrigir agora" terminar de carregar.
   const { data: gruposDevolvidos } = useDevolvidosDoAvaliador()
   const [focoProcessoId, setFocoProcessoId] = useState<string | null>(null)
+  // Perfil avaliação: qual aviso da faixa está aberto (começam todos recolhidos).
+  const [avisoAberto, setAvisoAberto] = useState<AvisoAvaliador | null>(null)
   const idsDevolvidos = useMemo(
     () => new Set((gruposDevolvidos ?? []).flatMap(g => g.processoIds)),
     [gruposDevolvidos],
@@ -86,6 +88,7 @@ export function AvaliacaoProcessosCard() {
   }
 
   function voltarParaDevolvidos() {
+    setAvisoAberto('devolvidos')
     setCaixaNumero('')
     setCaixaBusca('')
     setSelecionadoId(null)
@@ -463,40 +466,8 @@ export function AvaliacaoProcessosCard() {
         </div>
       </div>
 
-      <QuadroDevolvidos grupos={gruposDevolvidos ?? []} onCorrigir={corrigirDevolvidos} />
-
-      {modoAvaliador && (
-        <>
-          <QuadroCaixasParaDevolver
-            caixas={caixasParaDevolver ?? []}
-            onAbrir={numero => {
-              setCaixaNumero(numero)
-              setCaixaBusca(numero)
-            }}
-          />
-          <QuadroCorrigidos itens={correcoes ?? []} />
-        </>
-      )}
-
-      {modoAvaliador && (
-        <details open={!caixaBusca} className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Como funciona, em 3 passos</summary>
-          <ol className="mt-3 grid gap-2 sm:grid-cols-3">
-            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
-              <p className="mb-1 text-sm font-semibold text-gray-900">1. Receba a caixa</p>
-              Quando o Protocolo enviar, o botão da caixa pede para você <strong>confirmar que recebeu</strong>. Depois ela fica pronta para avaliar.
-            </li>
-            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
-              <p className="mb-1 text-sm font-semibold text-gray-900">2. Avalie cada processo</p>
-              Leia o assunto, escolha o código na TTD ao lado e confirme. O próximo processo abre sozinho.
-            </li>
-            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
-              <p className="mb-1 text-sm font-semibold text-gray-900">3. Devolva ao Protocolo</p>
-              Ao avaliar o último processo, a tela avisa: <strong>entregue os processos físicos ao Protocolo</strong>. A conferência é feita lá e o que for corrigido aparece aqui em azul.
-            </li>
-          </ol>
-        </details>
-      )}
+      {/* Perfil avaliação: os avisos vão para uma faixa recolhida logo abaixo das caixas. */}
+      {!modoAvaliador && <QuadroDevolvidos grupos={gruposDevolvidos ?? []} onCorrigir={corrigirDevolvidos} />}
 
       {/* Selecionar caixa: Coordenação busca livremente; os demais só
           veem as caixas que foram enviadas a eles numa requisição */}
@@ -650,6 +621,50 @@ export function AvaliacaoProcessosCard() {
             </div>
           )}
         </div>
+      )}
+
+      {modoAvaliador && (
+        <>
+          <FaixaAvisos
+            aberto={avisoAberto}
+            onAlternar={a => setAvisoAberto(atual => (atual === a ? null : a))}
+            devolvidos={totalDevolvidos(gruposDevolvidos ?? [])}
+            paraDevolver={(caixasParaDevolver ?? []).length}
+            corrigidos={(correcoes ?? []).length}
+          />
+          {avisoAberto === 'devolvidos' && (
+            <QuadroDevolvidos grupos={gruposDevolvidos ?? []} onCorrigir={corrigirDevolvidos} />
+          )}
+          {avisoAberto === 'paraDevolver' && (
+            <QuadroCaixasParaDevolver
+              caixas={caixasParaDevolver ?? []}
+              onAbrir={numero => {
+                setCaixaNumero(numero)
+                setCaixaBusca(numero)
+              }}
+            />
+          )}
+          {avisoAberto === 'corrigidos' && <QuadroCorrigidos itens={correcoes ?? []} />}
+      {modoAvaliador && (
+        <details className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Como funciona, em 3 passos</summary>
+          <ol className="mt-3 grid gap-2 sm:grid-cols-3">
+            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">1. Receba a caixa</p>
+              Quando o Protocolo enviar, o botão da caixa pede para você <strong>confirmar que recebeu</strong>. Depois ela fica pronta para avaliar.
+            </li>
+            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">2. Avalie cada processo</p>
+              Leia o assunto, escolha o código na TTD ao lado e confirme. O próximo processo abre sozinho.
+            </li>
+            <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">3. Devolva ao Protocolo</p>
+              Ao avaliar o último processo, a tela avisa: <strong>entregue os processos físicos ao Protocolo</strong>. A conferência é feita lá e o que for corrigido aparece aqui em azul.
+            </li>
+          </ol>
+        </details>
+      )}
+        </>
       )}
 
       {caixaBusca && buscandoCaixa && (
