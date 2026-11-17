@@ -424,8 +424,8 @@ export function ConfirmarEliminacoesPage() {
             <li className="rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
               <p className="mb-1 text-sm font-semibold text-gray-900">3. Decida</p>
               <strong>Confirmar</strong>: o código está certo.<br />
-              <strong>Corrigir código</strong>: você escolhe o certo e já confirma.<br />
-              <strong>Devolver</strong>: o avaliador refaz e vê o motivo que você escrever.
+              <strong>Corrigir código</strong>: você escolhe o certo e já confirma.
+              {isCoord && (<><br /><strong>Devolver</strong>: o avaliador refaz e vê o motivo que você escrever.</>)}
             </li>
           </ol>
         </details>
@@ -555,12 +555,15 @@ export function ConfirmarEliminacoesPage() {
                     >
                       <PencilLine size={13} /> Corrigir código
                     </button>
-                    <button
-                      className="btn-secondary text-xs py-1.5 px-3 border-red-200 text-red-700"
-                      onClick={() => abrirDevolver(p.id)}
-                    >
-                      <Undo2 size={13} /> Devolver
-                    </button>
+                    {/* Devolver ao avaliador é decisão da Coordenação; o Protocolo corrige o código no ato. */}
+                    {isCoord && (
+                      <button
+                        className="btn-secondary text-xs py-1.5 px-3 border-red-200 text-red-700"
+                        onClick={() => abrirDevolver(p.id)}
+                      >
+                        <Undo2 size={13} /> Devolver
+                      </button>
+                    )}
                   </div>
                 </div>
 

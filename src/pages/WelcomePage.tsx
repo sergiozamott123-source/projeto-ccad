@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown, Boxes, FileBarChart, ClipboardCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useDevolvidosDoAvaliador, totalDevolvidos } from '@/lib/devolvidosAvaliador'
+import { useCaixasParaDevolver } from '@/lib/caixasAvaliador'
 import { useAuth } from '@/contexts/AuthContext'
 import { PILAR_NOMES } from '@/lib/pilarColors'
 import { BOAS_PRATICAS_EM_PAUSA, DIGITALIZACAO_EM_PAUSA, MEMORIA_EM_PAUSA, TODOS_PILARES_EM_PAUSA, pilarEmPausa } from '@/lib/pilaresEmPausa'
@@ -57,6 +58,8 @@ export function WelcomePage() {
   const mostrarAvaliacao = profile?.menu_perfil === 'avaliacao'
   const { data: gruposDevolvidos } = useDevolvidosDoAvaliador()
   const devolvidos = totalDevolvidos(gruposDevolvidos ?? [])
+  const { data: caixasParaDevolver } = useCaixasParaDevolver()
+  const aDevolver = (caixasParaDevolver ?? []).length
   const { data: caixasEsperando } = useQuery({
     queryKey: ['avaliador-caixas-esperando-count', profile?.id],
     queryFn: async () => {
@@ -216,7 +219,8 @@ export function WelcomePage() {
                     : caixasEsperando === 0 && devolvidos === 0
                       ? 'Nenhuma caixa esperando você no momento.'
                       : [
-                          caixasEsperando > 0 ? `${caixasEsperando} ${caixasEsperando === 1 ? 'caixa espera' : 'caixas esperam'} você` : null,
+                          caixasEsperando - aDevolver > 0 ? `${caixasEsperando - aDevolver} ${caixasEsperando - aDevolver === 1 ? 'caixa espera' : 'caixas esperam'} você` : null,
+                          aDevolver > 0 ? `${aDevolver} ${aDevolver === 1 ? 'caixa para devolver' : 'caixas para devolver'} ao Protocolo` : null,
                           devolvidos > 0 ? `${devolvidos} ${devolvidos === 1 ? 'processo devolvido' : 'processos devolvidos'} para revisar` : null,
                         ].filter(Boolean).join(' · ')}
                 </p>

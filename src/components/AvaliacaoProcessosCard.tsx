@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2, FileSignature, Undo2, BookOpen } from 'lucide-react'
+import { Search, ArrowRight, Clock, List, X, Check, CheckCircle2, FileSignature, Undo2, BookOpen, PackageCheck, PencilLine } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
@@ -8,6 +8,8 @@ import type { Processo, TtdCodigo, Avaliacao, RequisicaoAvaliacao } from '@/lib/
 import { declaracaoCrpa, gerarCrpaPdf } from '@/lib/documentosCepaCrpa'
 import { isEliminacao, DecisaoBadge, AvaliacaoStatusBadge } from '@/components/badges/DecisaoBadges'
 import { QuadroDevolvidos } from '@/components/QuadroDevolvidos'
+import { QuadroCaixasParaDevolver, QuadroCorrigidos } from '@/components/QuadrosAvaliador'
+import { useCaixasParaDevolver, useCorrecoesDaCoordenacao } from '@/lib/caixasAvaliador'
 import { PainelTtd } from '@/components/PainelTtd'
 import { useDevolvidosDoAvaliador, type CaixaComDevolvidos } from '@/lib/devolvidosAvaliador'
 import clsx from 'clsx'
@@ -61,6 +63,20 @@ export function AvaliacaoProcessosCard() {
   const idsDevolvidos = useMemo(
     () => new Set((gruposDevolvidos ?? []).flatMap(g => g.processoIds)),
     [gruposDevolvidos],
+  )
+
+  // Caixas que o avaliador já terminou de avaliar (devolver ao Protocolo) e
+  // processos cujo código foi corrigido na conferência — só para o perfil
+  // "avaliação"; não mudam nada no banco.
+  const { data: caixasParaDevolver } = useCaixasParaDevolver()
+  const { data: correcoes } = useCorrecoesDaCoordenacao()
+  const idsCaixasConcluidas = useMemo(
+    () => new Set((caixasParaDevolver ?? []).map(c => c.caixaId)),
+    [caixasParaDevolver],
+  )
+  const correcaoPorProcesso = useMemo(
+    () => new Map((correcoes ?? []).map(c => [c.processoId, c])),
+    [correcoes],
   )
 
   function corrigirDevolvidos(grupo: CaixaComDevolvidos) {
@@ -450,6 +466,19 @@ export function AvaliacaoProcessosCard() {
       <QuadroDevolvidos grupos={gruposDevolvidos ?? []} onCorrigir={corrigirDevolvidos} />
 
       {modoAvaliador && (
+        <>
+          <QuadroCaixasParaDevolver
+            caixas={caixasParaDevolver ?? []}
+            onAbrir={numero => {
+              setCaixaNumero(numero)
+              setCaixaBusca(numero)
+            }}
+          />
+          <QuadroCorrigidos itens={correcoes ?? []} />
+        </>
+      )}
+
+      {modoAvaliador && (
         <details open={!caixaBusca} className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
           <summary className="cursor-pointer text-sm font-semibold text-gray-900">Como funciona, em 3 passos</summary>
           <ol className="mt-3 grid gap-2 sm:grid-cols-3">
@@ -462,8 +491,8 @@ export function AvaliacaoProcessosCard() {
               Leia o assunto, escolha o código na TTD ao lado e confirme. O próximo processo abre sozinho.
             </li>
             <li className="rounded-lg bg-white p-3 text-xs text-gray-700">
-              <p className="mb-1 text-sm font-semibold text-gray-900">3. A Coordenação confere</p>
-              Ela confirma a sua escolha ou <strong>devolve</strong> com um motivo. Os devolvidos aparecem em vermelho, no topo.
+              <p className="mb-1 text-sm font-semibold text-gray-900">3. Devolva ao Protocolo</p>
+              Ao avaliar o último processo, a tela avisa: <strong>entregue os processos físicos ao Protocolo</strong>. A conferência é feita lá e o que for corrigido aparece aqui em azul.
             </li>
           </ol>
         </details>
@@ -495,10 +524,38 @@ export function AvaliacaoProcessosCard() {
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {(minhasRequisicoes ?? []).map(r => {
+              {[...(minhasRequisicoes ?? [])].sort((a, b) => {
+                // Primeiro o que pede ação: confirmar recebimento, depois devolver ao Protocolo.
+                const rank = (r: typeof a) => {
+                  const st = statusPorRequisicao.get(r.id)
+                  if (modoAvaliador && idsCaixasConcluidas.has(r.caixa_id)) return 1
+                  if (!st) return 3
+                  return st.crpaId ? 2 : 0
+                }
+                return rank(a) - rank(b)
+              }).map(r => {
                 const caixaNumero = r.caixa?.numero ?? '—'
                 const qtdProcessos = r.caixa?.quantidade_declarada ?? 0
                 const status = statusPorRequisicao.get(r.id)
+
+                if (modoAvaliador && idsCaixasConcluidas.has(r.caixa_id)) {
+                  return (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => setCaixaBusca(caixaNumero)}
+                      className={clsx(
+                        'text-xs px-3 py-1.5 rounded-full border font-medium flex items-center gap-1.5 transition-colors',
+                        caixaBusca === caixaNumero
+                          ? 'bg-emerald-600 text-white border-emerald-600'
+                          : 'border-emerald-300 bg-emerald-50 text-emerald-900 hover:border-emerald-400',
+                      )}
+                    >
+                      <PackageCheck size={12} />
+                      Caixa {caixaNumero} · avaliação concluída — devolva ao Protocolo
+                    </button>
+                  )
+                }
 
                 if (!status) {
                   return (
@@ -631,6 +688,15 @@ export function AvaliacaoProcessosCard() {
           </div>
           <p className="font-semibold text-gray-900 mb-1">Caixa {caixaInfo.caixa.numero} concluída!</p>
           <p className="text-sm text-gray-500 mb-4">Você avaliou todos os {totalNaCaixa} processos desta caixa.</p>
+          {modoAvaliador && (
+            <div className="mx-auto mb-4 flex max-w-md items-start gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-900">
+              <PackageCheck size={18} className="mt-0.5 shrink-0" />
+              <p>
+                <strong>Próximo passo:</strong> entregue os processos físicos desta caixa ao Protocolo. A conferência
+                é feita lá, e você não precisa esperar por ela.
+              </p>
+            </div>
+          )}
           <div className="flex justify-center gap-3 flex-wrap">
             <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 min-w-[6.5rem]">
               <p className="text-lg font-bold text-gray-900">{totalNaCaixa}</p>
@@ -936,6 +1002,14 @@ export function AvaliacaoProcessosCard() {
                   {!isDone && idsDevolvidos.has(p.id) && (
                     <span className="shrink-0 inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-800">
                       <Undo2 size={10} /> Devolvido
+                    </span>
+                  )}
+                  {isDone && correcaoPorProcesso.has(p.id) && (
+                    <span
+                      className="shrink-0 inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-800"
+                      title={`Você usou ${correcaoPorProcesso.get(p.id)!.codigoAvaliador}; a Coordenação corrigiu para ${correcaoPorProcesso.get(p.id)!.codigoAtual}.`}
+                    >
+                      <PencilLine size={10} /> Corrigido: {correcaoPorProcesso.get(p.id)!.codigoAvaliador} → {correcaoPorProcesso.get(p.id)!.codigoAtual}
                     </span>
                   )}
                   {isDone && <DecisaoBadge destino={decisao} className="shrink-0" />}
