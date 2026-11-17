@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown, Boxes, FileBarChart } from 'lucide-react'
+import { ScanLine, ListChecks, Landmark, LayoutDashboard, ChevronDown, Boxes, FileBarChart, ClipboardCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { PILAR_NOMES } from '@/lib/pilarColors'
@@ -35,6 +35,21 @@ export function WelcomePage() {
       return data?.nome ?? null
     },
     enabled: (isResponsavel || isMembro) && !!profile?.pilar_id,
+  })
+
+  // Perfil "conferência" (Ariadne e Júlia): cartão com quantas avaliações
+  // esperam conferência. Mesma consulta e mesma chave do contador do menu.
+  const mostrarConferencia = profile?.menu_perfil === 'conferencia'
+  const { data: pendentesConferencia } = useQuery({
+    queryKey: ['eliminacoes-pendentes-count', profile?.id, profile?.pilar_id, true],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('avaliacoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'aguardando_confirmacao')
+      return count ?? 0
+    },
+    enabled: !!profile?.id && mostrarConferencia,
   })
 
   if (profileLoading || !profile) return null
@@ -157,7 +172,7 @@ export function WelcomePage() {
               </div>
             )}
 
-            {(isMembro || isResponsavel) && profile.pode_criar_requisicoes && (
+            {(isMembro || isResponsavel) && profile.pode_criar_requisicoes && profile.menu_perfil !== 'conferencia' && (
               <div className="card p-6 text-center mx-auto mb-4 border-2 border-teal-500" style={{ maxWidth: 420 }}>
                 <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-teal-50">
                   <Boxes size={22} className="text-teal-600" />
@@ -170,9 +185,29 @@ export function WelcomePage() {
               </div>
             )}
 
-            {/* Perfil de menu enxuto (ex.: Distribuição): além da distribuição,
-                só o ambiente de relatórios — sem "Minhas Atribuições". */}
-            {profile.menu_perfil === 'distribuicao' && (
+            {/* Perfil de menu enxuto "conferência" (Ariadne e Júlia). */}
+            {mostrarConferencia && (
+              <div className="card p-6 text-center mx-auto mb-4 border-2 border-teal-500" style={{ maxWidth: 420 }}>
+                <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-teal-50">
+                  <ClipboardCheck size={22} className="text-teal-600" />
+                </div>
+                <p className="font-semibold text-gray-900 mb-1">Conferir avaliações</p>
+                <p className="text-xs text-gray-500 mb-4">
+                  {pendentesConferencia === undefined
+                    ? 'Confira o código da TTD de cada processo avaliado.'
+                    : pendentesConferencia === 0
+                      ? 'Tudo conferido: nenhuma avaliação esperando.'
+                      : `${pendentesConferencia} ${pendentesConferencia === 1 ? 'avaliação espera' : 'avaliações esperam'} a sua conferência.`}
+                </p>
+                <button onClick={() => navigate('/confirmar-eliminacoes')} className="btn-primary">
+                  Começar a conferir
+                </button>
+              </div>
+            )}
+
+            {/* Perfis de menu enxuto (Distribuição, Conferência): além da tela
+                principal, o ambiente de relatórios — sem "Minhas Atribuições". */}
+            {(profile.menu_perfil === 'distribuicao' || mostrarConferencia) && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl bg-teal-50">
                   <FileBarChart size={22} className="text-teal-600" />
@@ -185,7 +220,7 @@ export function WelcomePage() {
               </div>
             )}
 
-            {isMembro && profile.menu_perfil !== 'distribuicao' && (
+            {isMembro && profile.menu_perfil !== 'distribuicao' && !mostrarConferencia && (
               <div className="card p-6 text-center mx-auto" style={{ maxWidth: 420 }}>
                 <p className="font-semibold text-gray-900 mb-4">
                   {pilarNome && !pilarEmPausa(pilarNome) ? `Minhas Atribuições — ${pilarNome}` : 'Minhas Atribuições'}

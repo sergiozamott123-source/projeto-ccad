@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   LayoutDashboard, ListTodo, ClipboardList, ShieldAlert,
-  Users, Archive, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature, Workflow, Star, Boxes,
+  Users, Archive, AlertCircle, LogOut, Menu, X, ChevronDown, FolderLock, FileBarChart, CheckSquare, Send, Search, Clock, PackageCheck, FileSignature, Workflow, Star, Boxes, BookOpen,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -22,6 +22,8 @@ interface NavItem {
   roles?: string[]
   flag?: keyof Usuario
   novo?: boolean
+  /** true = só aparece em menu enxuto de perfil (não no menu completo). */
+  soPerfil?: boolean
   children?: { to: string; label: string }[]
 }
 
@@ -59,9 +61,36 @@ function buildFlatNav(visibleNav: NavItem[]): FlatNavItem[] {
 // (o que a pessoa pode abrir ou gravar) não mudam. Vazio = menu completo.
 // Para criar um perfil novo, acrescente uma linha aqui e grave o nome dele em
 // `menu_perfil` na ficha da pessoa.
-const MENU_POR_PERFIL: Record<string, string[]> = {
+// `telas` define quais telas aparecem E em que ordem; `rotulos` troca o nome de
+// uma tela só nesse perfil; `titulos` põe um subtítulo de seção antes da tela.
+interface MenuPerfil {
+  telas: string[]
+  rotulos?: Record<string, string>
+  titulos?: Record<string, string>
+}
+const MENU_POR_PERFIL: Record<string, MenuPerfil> = {
   // Protocolo — Ana Alzira: só distribui as caixas e escreve os relatórios.
-  distribuicao: ['/distribuicao', '/central-relatorios'],
+  distribuicao: { telas: ['/distribuicao', '/central-relatorios'] },
+  // Protocolo — Ariadne e Júlia: conferem as avaliações (com a TTD à mão),
+  // cuidam das caixas e dos processos e escrevem os relatórios.
+  conferencia: {
+    telas: [
+      '/confirmar-eliminacoes',
+      '/protocolo-geral/ttd',
+      '/conferencia-caixas',
+      '/fluxo-caixas',
+      '/busca-processos',
+      '/painel-emprestimos',
+      '/cepas-crpas',
+      '/central-relatorios',
+    ],
+    rotulos: { '/confirmar-eliminacoes': 'Conferir avaliações' },
+    titulos: {
+      '/confirmar-eliminacoes': 'Conferência',
+      '/conferencia-caixas': 'Caixas e processos',
+      '/central-relatorios': 'Relatórios',
+    },
+  },
 }
 
 const NAV: NavItem[] = [
@@ -88,7 +117,9 @@ const NAV: NavItem[] = [
   { to: '/conformidade',label: 'Conformidade', icon: <ShieldAlert size={18} />, roles: ['coordenador','coordenador_substituto'] },
   { to: '/riscos',      label: 'Riscos',       icon: <AlertCircle size={18} /> },
   { to: '/equipe',      label: 'Equipe',       icon: <Users size={18} />, roles: ['coordenador','coordenador_substituto'] },
-  { to: '/cepas-crpas', label: 'CEPAs e CRPAs', icon: <FileSignature size={18} />, roles: ['coordenador','coordenador_substituto'], novo: true },
+  { to: '/cepas-crpas', label: 'CEPAs e CRPAs', icon: <FileSignature size={18} />, roles: ['coordenador','coordenador_substituto'], flag: 'pode_criar_requisicoes', novo: true },
+  // Só no menu enxuto de perfil: a TTD sozinha, sem o submenu do Protocolo Geral.
+  { to: '/protocolo-geral/ttd', label: 'Tabela TTD', icon: <BookOpen size={18} />, flag: 'acesso_protocolo_geral', soPerfil: true },
   {
     to: '/acervo', label: 'Acervo', icon: <Archive size={18} />,
     roles: ['coordenador', 'coordenador_substituto'],
@@ -225,9 +256,14 @@ export function AppLayout() {
     return true
   }
 
-  const telasDoPerfil = profile?.menu_perfil ? MENU_POR_PERFIL[profile.menu_perfil] : undefined
-  const menuSimples = !!telasDoPerfil
-  const visibleNav = NAV.filter(item => isVisible(item) && (!telasDoPerfil || telasDoPerfil.includes(item.to)))
+  const perfilMenu = profile?.menu_perfil ? MENU_POR_PERFIL[profile.menu_perfil] : undefined
+  const menuSimples = !!perfilMenu
+  const visibleNav: NavItem[] = perfilMenu
+    ? perfilMenu.telas
+        .map(to => NAV.find(item => item.to === to))
+        .filter((item): item is NavItem => !!item && isVisible(item))
+        .map(item => ({ ...item, label: perfilMenu.rotulos?.[item.to] ?? item.label }))
+    : NAV.filter(item => !item.soPerfil && isVisible(item))
   const flatNav = buildFlatNav(visibleNav)
   // Busca tolerante a acento/plural (mesma lib usada na TTD e em outras
   // buscas do sistema — ver src/lib/textSearch.ts). Também considera o
@@ -411,7 +447,13 @@ export function AppLayout() {
                   )}
                 </div>
               ) : (
-                <div key={item.to} className="flex items-center gap-1">
+                <div key={item.to}>
+                {perfilMenu?.titulos?.[item.to] && (
+                  <p className="px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-white/50">
+                    {perfilMenu.titulos[item.to]}
+                  </p>
+                )}
+                <div className="flex items-center gap-1">
                   <NavLink
                     to={item.to}
                     onClick={() => setOpen(false)}
@@ -463,6 +505,7 @@ export function AppLayout() {
                     <Star size={13} fill={favoritos.includes(item.to) ? 'currentColor' : 'none'} />
                   </button>
                   )}
+                </div>
                 </div>
               )
             ))}

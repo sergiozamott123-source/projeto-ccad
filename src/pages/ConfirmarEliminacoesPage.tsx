@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, CheckCircle2, Clock, Undo2, ChevronDown, ChevronUp, PencilLine, History, CheckSquare } from 'lucide-react'
+import { CheckCircle, CheckCircle2, Clock, Undo2, ChevronDown, ChevronUp, PencilLine, History, CheckSquare, BookOpen, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import { format, startOfDay } from 'date-fns'
 import type { Avaliacao, TtdCodigo } from '@/lib/database.types'
 import { TtdCodigoPicker } from '@/components/TtdCodigoPicker'
+import { PainelTtd } from '@/components/PainelTtd'
 import { DecisaoBadge } from '@/components/badges/DecisaoBadges'
 import clsx from 'clsx'
 
@@ -35,6 +36,18 @@ type AvaliacaoFila = Avaliacao & {
   avaliador: { nome: string } | null
 }
 
+// Erro "mudo": o banco aceita o comando mas não altera nenhuma linha (regra de
+// segurança, ou o item já mudou de estado). Antes, a tela tratava isso como
+// sucesso. Agora toda gravação confere quantas linhas mudaram de verdade.
+const NAO_GRAVADO = 'NAO_GRAVADO'
+
+function mensagemDeErro(e: unknown): string {
+  if (e instanceof Error && e.message === NAO_GRAVADO) {
+    return 'O Portal não gravou essa ação — talvez o item já tenha sido tratado por outra pessoa, ou falte permissão. Nada foi alterado: o processo continua na fila. Atualize a página e tente de novo; se repetir, avise o Coordenador.'
+  }
+  return 'Não foi possível gravar agora (falha de conexão ou do Portal). Nada foi alterado: o processo continua na fila. Tente de novo em instantes; se repetir, avise o Coordenador.'
+}
+
 export function ConfirmarEliminacoesPage() {
   const { profile, isCoord } = useAuth()
   const qc = useQueryClient()
@@ -44,6 +57,24 @@ export function ConfirmarEliminacoesPage() {
   const [corrigindoId, setCorrigindoId] = useState<string | null>(null)
   const [novoTtd, setNovoTtd] = useState<TtdCodigo | null>(null)
   const [mostrarHistorico, setMostrarHistorico] = useState(false)
+
+  // Consulta à TTD (painel ao lado / quadro por cima) e avisos de resultado
+  const [ttdAberta, setTtdAberta] = useState(false)
+  const [buscaTtd, setBuscaTtd] = useState('')
+  const [codigoDestaque, setCodigoDestaque] = useState<string | null>(null)
+  const [erroAcao, setErroAcao] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
+
+  function mostrarAviso(texto: string) {
+    setAviso(texto)
+    window.setTimeout(() => setAviso(atual => (atual === texto ? null : atual)), 5000)
+  }
+
+  function verNaTtd(codigo: string | null | undefined) {
+    setBuscaTtd(codigo ?? '')
+    setCodigoDestaque(codigo ?? null)
+    setTtdAberta(true)
+  }
 
   // Código escolhido para a correção em lote (quando várias eliminações
   // selecionadas devem receber o mesmo código novo de uma vez).
@@ -85,6 +116,10 @@ export function ConfirmarEliminacoesPage() {
   // vê e confirma a fila inteira, de todos os pilares — igual ao Coordenador —
   // porque faz essa conferência em nome dele, não só pela própria área.
   const podeVerTudo = isCoord || profile?.pode_confirmar_eliminacoes === true
+
+  // Perfil "conferência" (Ariadne e Júlia): tela com a TTD sempre ao lado e
+  // explicações em passos. Para os demais, a TTD abre só por botão.
+  const modoConferencia = profile?.menu_perfil === 'conferencia'
 
   const hoje = startOfDay(new Date()).toISOString()
 
@@ -175,16 +210,21 @@ export function ConfirmarEliminacoesPage() {
   })
 
   const confirmar = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
+    mutationFn: async (p: AvaliacaoFila) => {
+      const { data, error } = await supabase
         .from('avaliacoes')
         .update({ status: 'confirmada', confirmado_por: profile!.id, confirmado_em: new Date().toISOString() })
-        .eq('id', id)
+        .eq('id', p.id)
+        .select('id')
       if (error) throw error
+      if (!data || data.length === 0) throw new Error(NAO_GRAVADO)
     },
-    onSuccess: (_data, id) => {
+    onMutate: () => setErroAcao(null),
+    onError: e => setErroAcao(mensagemDeErro(e)),
+    onSuccess: (_data, p) => {
       invalidar()
-      alternarSelecionado(id, false)
+      alternarSelecionado(p.id, false)
+      mostrarAviso(`Confirmado: processo ${p.processo?.numero_documento ?? ''}.`)
     },
   })
 
@@ -193,31 +233,46 @@ export function ConfirmarEliminacoesPage() {
   // é só a confirmação "como está", igual à individual).
   const confirmarLote = useMutation({
     mutationFn: async (ids: string[]) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('avaliacoes')
         .update({ status: 'confirmada', confirmado_por: profile!.id, confirmado_em: new Date().toISOString() })
         .in('id', ids)
+        .select('id')
       if (error) throw error
+      if (!data || data.length < ids.length) {
+        // Alguns foram gravados e outros não: atualiza a fila para mostrar o que sobrou.
+        invalidar()
+        throw new Error(NAO_GRAVADO)
+      }
+      return ids.length
     },
-    onSuccess: () => {
+    onMutate: () => setErroAcao(null),
+    onError: e => setErroAcao(mensagemDeErro(e)),
+    onSuccess: total => {
       invalidar()
       setSelecionados(new Set())
+      mostrarAviso(`${total} avaliação(ões) confirmada(s).`)
     },
   })
 
   const devolver = useMutation({
-    mutationFn: async ({ id, motivo }: { id: string; motivo: string }) => {
-      const { error } = await supabase
+    mutationFn: async ({ id, motivo }: { id: string; motivo: string; numero?: string }) => {
+      const { data, error } = await supabase
         .from('avaliacoes')
         .update({ status: 'devolvida', motivo_devolucao: motivo, confirmado_por: profile!.id, confirmado_em: new Date().toISOString() })
         .eq('id', id)
+        .select('id')
       if (error) throw error
+      if (!data || data.length === 0) throw new Error(NAO_GRAVADO)
     },
-    onSuccess: (_data, { id }) => {
+    onMutate: () => setErroAcao(null),
+    onError: e => setErroAcao(mensagemDeErro(e)),
+    onSuccess: (_data, { id, numero }) => {
       invalidar()
       setDevolvendoId(null)
       setMotivo('')
       alternarSelecionado(id, false)
+      mostrarAviso(`Devolvido ao avaliador: processo ${numero ?? ''}.`)
     },
   })
 
@@ -229,13 +284,15 @@ export function ConfirmarEliminacoesPage() {
   const corrigirEConfirmar = useMutation({
     mutationFn: async ({ avaliacao, ttd }: { avaliacao: AvaliacaoFila; ttd: TtdCodigo }) => {
       if (avaliacao.processo?.ttd?.id !== ttd.id) {
-        const { error: e1 } = await supabase
+        const { data: d1, error: e1 } = await supabase
           .from('processos')
           .update({ ttd_codigo_id: ttd.id })
           .eq('id', avaliacao.processo_id)
+          .select('id')
         if (e1) throw e1
+        if (!d1 || d1.length === 0) throw new Error(NAO_GRAVADO)
       }
-      const { error: e2 } = await supabase
+      const { data: d2, error: e2 } = await supabase
         .from('avaliacoes')
         .update({
           status: 'confirmada',
@@ -245,13 +302,18 @@ export function ConfirmarEliminacoesPage() {
           codigo_original_id: avaliacao.processo?.ttd?.id ?? null,
         })
         .eq('id', avaliacao.id)
+        .select('id')
       if (e2) throw e2
+      if (!d2 || d2.length === 0) throw new Error(NAO_GRAVADO)
     },
-    onSuccess: (_data, { avaliacao }) => {
+    onMutate: () => setErroAcao(null),
+    onError: e => setErroAcao(mensagemDeErro(e)),
+    onSuccess: (_data, { avaliacao, ttd }) => {
       invalidar()
       setCorrigindoId(null)
       setNovoTtd(null)
       alternarSelecionado(avaliacao.id, false)
+      mostrarAviso(`Código corrigido para ${ttd.codigo} e confirmado: processo ${avaliacao.processo?.numero_documento ?? ''}.`)
     },
   })
 
@@ -269,11 +331,13 @@ export function ConfirmarEliminacoesPage() {
         avaliacoes.filter(a => a.processo?.ttd?.id !== ttd.id).map(a => a.processo_id)
       ))
       if (processoIds.length > 0) {
-        const { error: e1 } = await supabase
+        const { data: d1, error: e1 } = await supabase
           .from('processos')
           .update({ ttd_codigo_id: ttd.id })
           .in('id', processoIds)
+          .select('id')
         if (e1) throw e1
+        if (!d1 || d1.length < processoIds.length) throw new Error(NAO_GRAVADO)
       }
       const resultados = await Promise.all(avaliacoes.map(avaliacao =>
         supabase
@@ -286,27 +350,86 @@ export function ConfirmarEliminacoesPage() {
             codigo_original_id: avaliacao.processo?.ttd?.id ?? null,
           })
           .eq('id', avaliacao.id)
+          .select('id')
       ))
       const comErro = resultados.find(r => r.error)
       if (comErro?.error) throw comErro.error
+      if (resultados.some(r => !r.data || r.data.length === 0)) {
+        invalidar()
+        throw new Error(NAO_GRAVADO)
+      }
+      return avaliacoes.length
     },
-    onSuccess: () => {
+    onMutate: () => setErroAcao(null),
+    onError: e => setErroAcao(mensagemDeErro(e)),
+    onSuccess: (total, { ttd }) => {
       invalidar()
       setSelecionados(new Set())
       setTtdLote(null)
+      mostrarAviso(`${total} avaliação(ões) corrigida(s) para ${ttd.codigo} e confirmada(s).`)
     },
   })
 
   if (!profile) return null
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Confirmar Eliminações</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
-          {podeVerTudo ? 'Todas as eliminações pendentes de conferência.' : 'Eliminações pendentes da sua equipe.'}
-        </p>
+    <div className={clsx(modoConferencia && 'lg:grid lg:grid-cols-[minmax(0,1fr)_400px] lg:items-start lg:gap-5')}>
+    <div className="space-y-5 min-w-0">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {modoConferencia ? 'Conferir avaliações' : 'Confirmar Eliminações'}
+          </h1>
+          <p className="text-gray-500 text-sm mt-0.5">
+            {modoConferencia
+              ? 'Os avaliadores já classificaram estes processos. Confira se o código da TTD está certo.'
+              : podeVerTudo ? 'Todas as eliminações pendentes de conferência.' : 'Eliminações pendentes da sua equipe.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          className={clsx('btn-secondary text-sm', modoConferencia && 'lg:hidden')}
+          onClick={() => setTtdAberta(true)}
+        >
+          <BookOpen size={14} /> Consultar TTD
+        </button>
       </div>
+
+      {erroAcao && (
+        <div role="alert" className="sticky top-0 z-20 flex items-start gap-2.5 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm">
+          <AlertTriangle size={18} className="mt-0.5 shrink-0 text-red-600" />
+          <p className="flex-1">{erroAcao}</p>
+          <button type="button" className="shrink-0 text-xs font-medium underline" onClick={() => setErroAcao(null)}>Fechar</button>
+        </div>
+      )}
+      {aviso && (
+        <div role="status" className="flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm text-teal-800">
+          <CheckCircle2 size={16} className="shrink-0 text-teal-600" />
+          <p>{aviso}</p>
+        </div>
+      )}
+
+      {modoConferencia && (
+        <details open className="card p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Como conferir, em 3 passos</summary>
+          <ol className="mt-3 grid gap-3 sm:grid-cols-3">
+            <li className="rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">1. Veja o código usado</p>
+              Em cada processo, o código que o avaliador escolheu aparece na faixa cinza.
+            </li>
+            <li className="rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">2. Confira na TTD</p>
+              Clique em <strong>Ver na TTD</strong>: a tabela ao lado abre nesse código, com a destinação final.
+            </li>
+            <li className="rounded-lg bg-gray-50 p-3 text-xs text-gray-700">
+              <p className="mb-1 text-sm font-semibold text-gray-900">3. Decida</p>
+              <strong>Confirmar</strong>: o código está certo.<br />
+              <strong>Corrigir código</strong>: você escolhe o certo e já confirma.<br />
+              <strong>Devolver</strong>: o avaliador refaz e vê o motivo que você escrever.
+            </li>
+          </ol>
+        </details>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="card p-4">
@@ -371,9 +494,6 @@ export function ConfirmarEliminacoesPage() {
                 ? 'Corrigindo…'
                 : `Corrigir ${selecionados.size} eliminação(ões) para este código`}
             </button>
-            {corrigirLote.isError && (
-              <p className="mt-2 text-xs text-red-600">Não foi possível salvar a correção em lote. Tente novamente.</p>
-            )}
           </div>
         </div>
       )}
@@ -384,7 +504,7 @@ export function ConfirmarEliminacoesPage() {
         ) : (pendentes ?? []).length === 0 ? (
           <div className="text-center py-10">
             <CheckCircle size={36} className="text-teal-400 mx-auto mb-2" />
-            <p className="text-gray-500 text-sm">Nenhuma eliminação aguardando confirmação no momento.</p>
+            <p className="text-gray-500 text-sm">{modoConferencia ? 'Tudo conferido! Nenhuma avaliação aguardando conferência.' : 'Nenhuma eliminação aguardando confirmação no momento.'}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
@@ -425,7 +545,7 @@ export function ConfirmarEliminacoesPage() {
                     <button
                       className="btn-primary text-xs py-1.5 px-3"
                       disabled={confirmar.isPending}
-                      onClick={() => confirmar.mutate(p.id)}
+                      onClick={() => confirmar.mutate(p)}
                     >
                       <CheckCircle size={13} /> Confirmar
                     </button>
@@ -454,6 +574,15 @@ export function ConfirmarEliminacoesPage() {
                       <span className="font-mono font-semibold text-gray-800">{p.processo?.ttd?.codigo ?? '—'}</span>
                       {p.processo?.ttd?.assunto && (
                         <span className="text-gray-600 truncate">{p.processo.ttd.assunto}</span>
+                      )}
+                      {p.processo?.ttd?.codigo && (
+                        <button
+                          type="button"
+                          className="text-teal-600 hover:text-teal-700 font-medium inline-flex items-center gap-1 shrink-0"
+                          onClick={() => verNaTtd(p.processo.ttd?.codigo)}
+                        >
+                          <BookOpen size={12} /> Ver na TTD
+                        </button>
                       )}
                     </div>
                     <button
@@ -510,7 +639,7 @@ export function ConfirmarEliminacoesPage() {
                       <button
                         className="btn-danger text-xs py-1.5 px-3"
                         disabled={!motivo.trim() || devolver.isPending}
-                        onClick={() => devolver.mutate({ id: p.id, motivo: motivo.trim() })}
+                        onClick={() => devolver.mutate({ id: p.id, motivo: motivo.trim(), numero: p.processo?.numero_documento })}
                       >
                         Enviar devolução
                       </button>
@@ -545,9 +674,6 @@ export function ConfirmarEliminacoesPage() {
                         Cancelar
                       </button>
                     </div>
-                    {corrigirEConfirmar.isError && (
-                      <p className="mt-2 text-xs text-red-600">Não foi possível salvar a correção. Tente novamente.</p>
-                    )}
                   </div>
                 )}
               </div>
@@ -623,6 +749,27 @@ export function ConfirmarEliminacoesPage() {
           </div>
         )}
       </div>
+    </div>
+
+    {modoConferencia && (
+      <aside className="hidden lg:block lg:sticky lg:top-0 lg:h-[calc(100vh-6rem)]">
+        <PainelTtd busca={buscaTtd} onBusca={setBuscaTtd} codigoEmDestaque={codigoDestaque} />
+      </aside>
+    )}
+
+    {ttdAberta && (
+      <div className={clsx('fixed inset-0 z-50 flex items-stretch justify-end', modoConferencia && 'lg:hidden')}>
+        <div className="absolute inset-0 bg-black/40" onClick={() => setTtdAberta(false)} />
+        <div className="relative h-full w-full sm:w-[460px] bg-gray-50 p-2 shadow-2xl">
+          <PainelTtd
+            busca={buscaTtd}
+            onBusca={setBuscaTtd}
+            codigoEmDestaque={codigoDestaque}
+            onFechar={() => setTtdAberta(false)}
+          />
+        </div>
+      </div>
+    )}
     </div>
   )
 }

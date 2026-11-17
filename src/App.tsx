@@ -91,7 +91,7 @@ export default function App() {
               {/* Sem RequireAcesso: a página decide internamente o que cada
                   papel vê (aba "Meus Relatórios Mensais" é aberta a todos). */}
               <Route path="/central-relatorios" element={<CentralRelatoriosPage />} />
-              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto'} />}>
+              <Route element={<RequireAcesso allow={p => p?.papel === 'coordenador' || p?.papel === 'coordenador_substituto' || p?.pode_criar_requisicoes === true} />}>
                 <Route path="/cepas-crpas" element={<CepasCrpasPage />} />
               </Route>
             </Route>
