@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { AlertTriangle, X } from 'lucide-react'
+import { AlertTriangle, ChevronDown, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { buscarAvaliadoresAtrasados } from '@/lib/desempenhoAvaliadores'
 
@@ -72,67 +72,118 @@ export function AlertaRitmoAvaliacao() {
   const demaisAtrasados = atrasados.filter(a => !a.zerado)
 
   return (
-    <div className="mb-4 space-y-3">
+    <div className="mb-3 space-y-2">
       {zerados.length > 0 && (
-        <div className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 flex items-start gap-3">
-          <AlertTriangle size={18} className="text-red-600 mt-0.5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-red-900">
-              Atenção redobrada: {zerados.length === 1
-                ? '1 membro está sem nenhuma avaliação feita há mais de 15 dias'
-                : `${zerados.length} membros estão sem nenhuma avaliação feita há mais de 15 dias`}
-            </p>
-            <ul className="mt-1.5 space-y-0.5">
-              {zerados.map(a => (
-                <li key={a.id} className="text-xs text-red-800">
-                  <span className="font-medium">{a.nome}</span> — recebeu processos há {a.diasDesdeEntrega} dias e ainda não avaliou nenhum
-                </li>
-              ))}
-            </ul>
-            <Link to="/dashboard" state={{ aba: 'avaliacoes' }} className="inline-block mt-2 text-xs font-medium text-red-900 underline underline-offset-2">
-              Ver detalhes no Dashboard
-            </Link>
-          </div>
-          <button
-            type="button"
-            onClick={dispensar}
-            className="text-red-600 hover:text-red-800 shrink-0"
-            title="Dispensar por hoje"
-          >
-            <X size={16} />
-          </button>
-        </div>
+        <FaixaDeAlerta
+          tom="vermelho"
+          titulo={
+            zerados.length === 1
+              ? 'Atenção redobrada: 1 membro está sem nenhuma avaliação feita há mais de 15 dias'
+              : `Atenção redobrada: ${zerados.length} membros estão sem nenhuma avaliação feita há mais de 15 dias`
+          }
+          linhas={zerados.map(a => ({
+            id: a.id,
+            nome: a.nome,
+            texto: `recebeu processos há ${a.diasDesdeEntrega} dias e ainda não avaliou nenhum`,
+          }))}
+          onDispensar={dispensar}
+        />
       )}
 
       {demaisAtrasados.length > 0 && (
-        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 flex items-start gap-3">
-          <AlertTriangle size={18} className="text-amber-600 mt-0.5 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900">
-              {demaisAtrasados.length === 1
-                ? '1 avaliador está abaixo do ritmo esperado de avaliação'
-                : `${demaisAtrasados.length} avaliadores estão abaixo do ritmo esperado de avaliação`}
-            </p>
-            <ul className="mt-1.5 space-y-0.5">
-              {demaisAtrasados.map(a => (
-                <li key={a.id} className="text-xs text-amber-800">
-                  <span className="font-medium">{a.nome}</span> — {a.percentual}% avaliado (esperado pelo menos {a.metaEsperada}%, há {a.diasDesdeEntrega} dias)
-                </li>
-              ))}
-            </ul>
-            <Link to="/dashboard" state={{ aba: 'avaliacoes' }} className="inline-block mt-2 text-xs font-medium text-amber-900 underline underline-offset-2">
-              Ver detalhes no Dashboard
-            </Link>
-          </div>
+        <FaixaDeAlerta
+          tom="ambar"
+          titulo={
+            demaisAtrasados.length === 1
+              ? '1 avaliador está abaixo do ritmo esperado de avaliação'
+              : `${demaisAtrasados.length} avaliadores estão abaixo do ritmo esperado de avaliação`
+          }
+          linhas={demaisAtrasados.map(a => ({
+            id: a.id,
+            nome: a.nome,
+            texto: `${a.percentual}% avaliado (esperado pelo menos ${a.metaEsperada}%, há ${a.diasDesdeEntrega} dias)`,
+          }))}
+          onDispensar={dispensar}
+        />
+      )}
+    </div>
+  )
+}
+
+const TONS = {
+  vermelho: {
+    caixa: 'border-red-300 bg-red-50',
+    icone: 'text-red-600',
+    titulo: 'text-red-900',
+    texto: 'text-red-800',
+    botao: 'text-red-900 hover:bg-red-100',
+    fechar: 'text-red-600 hover:text-red-800',
+  },
+  ambar: {
+    caixa: 'border-amber-300 bg-amber-50',
+    icone: 'text-amber-600',
+    titulo: 'text-amber-900',
+    texto: 'text-amber-800',
+    botao: 'text-amber-900 hover:bg-amber-100',
+    fechar: 'text-amber-600 hover:text-amber-800',
+  },
+} as const
+
+/**
+ * Faixa compacta (pedido do Sérgio, 17/11/2026): antes a lista de nomes ocupava
+ * quase um quarto da tela. Agora aparece só o título numa linha; a lista de
+ * nomes abre ao clicar em "Ver lista".
+ */
+function FaixaDeAlerta({
+  tom,
+  titulo,
+  linhas,
+  onDispensar,
+}: {
+  tom: keyof typeof TONS
+  titulo: string
+  linhas: { id: string; nome: string; texto: string }[]
+  onDispensar: () => void
+}) {
+  const [aberta, setAberta] = useState(false)
+  const c = TONS[tom]
+  return (
+    <div className={`rounded-xl border px-3 py-2 ${c.caixa}`}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex min-w-[14rem] flex-1 items-center gap-2">
+          <AlertTriangle size={16} className={`shrink-0 ${c.icone}`} />
+          <p className={`min-w-0 text-sm font-semibold ${c.titulo}`}>{titulo}</p>
+        </div>
+        <div className="ml-auto flex items-center gap-3">
           <button
             type="button"
-            onClick={dispensar}
-            className="text-amber-600 hover:text-amber-800 shrink-0"
-            title="Dispensar por hoje"
+            aria-expanded={aberta}
+            onClick={() => setAberta(v => !v)}
+            className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium ${c.botao}`}
           >
+            {aberta ? 'Esconder lista' : 'Ver lista'}
+            <ChevronDown size={13} className={aberta ? 'rotate-180 transition-transform' : 'transition-transform'} />
+          </button>
+          <Link
+            to="/dashboard"
+            state={{ aba: 'avaliacoes' }}
+            className={`text-xs font-medium underline underline-offset-2 ${c.titulo}`}
+          >
+            Ver no Dashboard
+          </Link>
+          <button type="button" onClick={onDispensar} className={`shrink-0 ${c.fechar}`} title="Dispensar por hoje">
             <X size={16} />
           </button>
         </div>
+      </div>
+      {aberta && (
+        <ul className="mt-2 space-y-0.5 pl-7">
+          {linhas.map(l => (
+            <li key={l.id} className={`text-xs ${c.texto}`}>
+              <span className="font-medium">{l.nome}</span> — {l.texto}
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )

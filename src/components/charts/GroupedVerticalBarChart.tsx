@@ -42,11 +42,11 @@ export function GroupedVerticalBarChart({
         </ResponsiveContainer>
       </div>
       <div className="flex items-center gap-4 justify-center mt-1 text-xs text-gray-500">
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLOR_ENVIADOS }} /> Enviados em dia</span>
-        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLOR_TOTAL }} /> Total de membros</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLOR_ENVIADOS }} /> Enviados</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLOR_TOTAL }} /> Membros que deveriam enviar</span>
       </div>
       <ul className="sr-only">
-        {data.map(d => <li key={d.label}>{d.label}: {d.enviados} de {d.total} membros enviaram em dia</li>)}
+        {data.map(d => <li key={d.label}>{d.label}: {d.enviados} de {d.total} membros enviaram</li>)}
       </ul>
     </div>
   )

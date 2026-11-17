@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useLocation } from 'react-router-dom'
-import { Archive, MapPin, CheckCircle, CheckCircle2, Clock, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy, PackageCheck, ClipboardList, LayoutGrid, Construction } from 'lucide-react'
+import { Archive, MapPin, CheckCircle, CalendarClock, CheckCircle2, Clock, AlertTriangle, TrendingUp, CalendarPlus, ArrowRight, Calendar, Flag, Trophy, PackageCheck, ClipboardList, LayoutGrid, Construction } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { format, formatDistanceToNow, startOfMonth, subMonths } from 'date-fns'
+import { format, formatDistanceToNow, startOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import type { Pilar, Risco, ReuniaoAta, MuralEvento, TipoMuralEvento, StatusCaixa } from '@/lib/database.types'
 import clsx from 'clsx'
@@ -14,6 +14,9 @@ import { GroupedVerticalBarChart } from '@/components/charts/GroupedVerticalBarC
 import { DonutChart } from '@/components/charts/DonutChart'
 import { buscarDesempenhoAvaliadores } from '@/lib/desempenhoAvaliadores'
 import { COR } from '@/lib/coresCcad'
+import { QuadroQuemFalta } from '@/components/QuadroQuemFalta'
+import { useRelatoriosDaEquipe } from '@/lib/relatoriosEquipe'
+import { DIA_PRAZO, faseDoPrazo, mesPorExtenso } from '@/lib/prazoRelatorio'
 import { DIGITALIZACAO_EM_PAUSA, pilarEmPausa, soPilaresAtivos } from '@/lib/pilaresEmPausa'
 
 const PILAR_PAGE_ROUTE: Record<string, string> = {
@@ -218,19 +221,9 @@ export function DashboardPage() {
     },
   })
 
-  const { data: relatorioStats } = useQuery({
-    queryKey: ['relatorio-stats', mesAtual],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('relatorios_mensais')
-        .select('status')
-        .eq('mes_referencia', mesAtual)
-      const enviados = data?.filter(r => r.status === 'enviado').length ?? 0
-      const atrasados = data?.filter(r => r.status === 'atrasado').length ?? 0
-      const total = data?.length ?? 0
-      return { enviados, atrasados, total }
-    },
-  })
+  // Relatórios mensais: mesma regra do lembrete (mês anterior, prazo dia 15, membros ativos).
+  const { data: relatorios } = useRelatoriosDaEquipe()
+  const faseRelatorio = faseDoPrazo(new Date())
 
   const { data: pilares } = useQuery({
     queryKey: ['pilares-dashboard'],
@@ -377,31 +370,6 @@ export function DashboardPage() {
     enabled: isCoord && aba === 'avaliacoes',
   })
 
-  const { data: totalMembros } = useQuery({
-    queryKey: ['total-membros'],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from('usuarios')
-        .select('*', { count: 'exact', head: true })
-        .in('papel', ['membro', 'responsavel_pilar'])
-        .eq('status', 'ativo')
-      return count ?? 0
-    },
-  })
-
-  const ultimosMeses = Array.from({ length: 4 }, (_, i) => startOfMonth(subMonths(new Date(), 3 - i)))
-
-  const { data: relatoriosPorMes } = useQuery({
-    queryKey: ['relatorios-ultimos-4-meses'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('relatorios_mensais')
-        .select('mes_referencia, status')
-        .gte('mes_referencia', format(ultimosMeses[0], 'yyyy-MM-dd'))
-      return data ?? []
-    },
-  })
-
   const { data: reunioes } = useQuery({
     queryKey: ['reunioes-cadencia'],
     queryFn: async () => {
@@ -458,12 +426,7 @@ export function DashboardPage() {
     color: pilarColor(p.nome),
   }))
 
-  const relatoriosChartData = ultimosMeses.map(mes => {
-    const mesStr = format(mes, 'yyyy-MM-dd')
-    const enviados = (relatoriosPorMes ?? []).filter(r => r.mes_referencia === mesStr && r.status === 'enviado').length
-    const label = format(mes, 'MMM', { locale: ptBR })
-    return { label: label.charAt(0).toUpperCase() + label.slice(1), enviados, total: totalMembros ?? 0 }
-  })
+  const relatoriosChartData = (relatorios?.meses ?? []).map(m => ({ label: m.label, enviados: m.enviados, total: m.total }))
 
   return (
     <div className="space-y-6">
@@ -503,6 +466,46 @@ export function DashboardPage() {
 
       {aba === 'geral' && (
       <div className="space-y-8">
+      {/* Precisa de atenção: quem ainda não enviou o relatório do mês cobrado, demandas e riscos.
+          Vem primeiro porque é o que a Coordenação precisa agir (pedido do Sérgio, 17/11/2026). */}
+      {isCoord && <QuadroQuemFalta />}
+
+      {isCoord && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Demandas resumo */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900">Demandas Ativas</h2>
+              <span className="text-2xl font-bold text-accent-600">{demandasPendentes}</span>
+            </div>
+            <p className="text-sm text-gray-500">
+              Demandas pendentes ou em andamento aguardando execução.
+            </p>
+            <a href="/demandas" className="inline-block mt-3 text-sm text-teal-600 font-medium hover:underline">
+              Ver todas →
+            </a>
+          </div>
+
+          {/* Riscos */}
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle size={16} className="text-accent-500" />
+              <h2 className="font-semibold text-gray-900">Riscos em Destaque</h2>
+            </div>
+            {(riscosAtivos ?? []).length === 0 ? (
+              <p className="text-sm text-gray-500">Nenhum risco ativo de alto/médio impacto.</p>
+            ) : (
+              <div>
+                {(riscosAtivos ?? []).map(r => <RiscoRow key={r.id} risco={r} />)}
+              </div>
+            )}
+            <a href="/riscos" className="inline-block mt-2 text-sm text-teal-600 font-medium hover:underline">
+              Ver matriz de riscos →
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Metric cards — Etapa 6 do plano: antes esse bloco não tinha
           nenhum título, ficando "solto" no topo da página (era um dos
           motivos da sensação de "poluído" que o Sérgio apontou). Agora
@@ -510,7 +513,7 @@ export function DashboardPage() {
       {isCoord && (
         <div>
           <h2 className="text-base font-semibold text-gray-900 mb-1">Indicadores Institucionais</h2>
-          <p className="text-xs text-gray-500 mb-3">Totais da CCAD: caixas catalogadas e relatórios mensais da equipe.</p>
+          <p className="text-xs text-gray-500 mb-3">Totais da CCAD: caixas catalogadas e o relatório mensal que está sendo cobrado.</p>
           <div className={clsx('grid grid-cols-2 gap-4', DIGITALIZACAO_EM_PAUSA ? 'lg:grid-cols-2' : 'lg:grid-cols-4')}>
             <MetricCard
               icon={<Archive size={20} className="text-teal-600" />}
@@ -534,35 +537,33 @@ export function DashboardPage() {
             />
               </>
             )}
+            {/* Relatório do mês cobrado (o do mês anterior, prazo dia 15), contra todos os
+                membros que deveriam enviar. Antes o cartão olhava o mês corrente e dividia
+                só pelos relatórios já existentes, o que escondia quem não tinha começado. */}
             <MetricCard
-              icon={<CheckCircle size={20} className="text-green-600" />}
-              label="Relatórios em dia"
-              value={relatorioStats ? `${relatorioStats.enviados}/${relatorioStats.total}` : '—'}
+              icon={
+                relatorios && relatorios.cobrado.enviados >= relatorios.total
+                  ? <CheckCircle size={20} className="text-green-600" />
+                  : <CalendarClock size={20} className={faseRelatorio === 'vencido' ? 'text-rose-600' : 'text-amber-600'} />
+              }
+              label={`Relatórios de ${relatorios ? mesPorExtenso(relatorios.cobrado.mesRef) : 'mês anterior'}`}
+              value={relatorios ? `${relatorios.cobrado.enviados}/${relatorios.total}` : '—'}
               sub={
-                relatorioStats
-                  ? relatorioStats.atrasados
-                    ? `${relatorioStats.enviados} de ${relatorioStats.total} enviados · ${relatorioStats.atrasados} atrasado(s)`
-                    : `${relatorioStats.enviados} de ${relatorioStats.total} membros entregaram este mês`
+                relatorios
+                  ? relatorios.cobrado.enviados >= relatorios.total
+                    ? `Todos os ${relatorios.total} membros enviaram`
+                    : `${relatorios.cobrado.enviados} de ${relatorios.total} enviados · prazo dia ${DIA_PRAZO}${faseRelatorio === 'vencido' ? ' (vencido)' : ''}`
                   : undefined
               }
-              color="bg-green-50"
+              color={
+                relatorios && relatorios.cobrado.enviados >= relatorios.total
+                  ? 'bg-green-50'
+                  : faseRelatorio === 'vencido' ? 'bg-rose-50' : 'bg-amber-50'
+              }
             />
           </div>
         </div>
       )}
-
-      {/* Mural de Conquistas */}
-      <div className="card p-5">
-        <h2 className="font-semibold text-gray-900 mb-1">Mural de Conquistas da CCAD</h2>
-        <p className="text-xs text-gray-500 mb-3">Ações concluídas pela equipe da CCAD.</p>
-        {muralVisivel.length === 0 ? (
-          <p className="text-sm text-gray-500">Nenhuma atividade registrada ainda.</p>
-        ) : (
-          <div>
-            {muralVisivel.map(e => <MuralEventoRow key={e.id} evento={e} />)}
-          </div>
-        )}
-      </div>
 
       {/* Pilares progress — some por inteiro quando todos os pilares estão em pausa */}
       {pilaresAtivos.length > 0 && (
@@ -570,6 +571,29 @@ export function DashboardPage() {
           <h2 className="text-base font-semibold text-gray-900 mb-3">Progresso dos Pilares</h2>
           <div className={clsx('grid grid-cols-1 gap-4', pilaresAtivos.length >= 3 ? 'md:grid-cols-3' : pilaresAtivos.length === 2 ? 'md:grid-cols-2' : 'max-w-sm')}>
             {pilaresAtivos.map(p => <PilarCard key={p.id} pilar={p} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Gráficos gerenciais */}
+      {isCoord && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {pilaresChartData.length > 0 && (
+            <div className="card p-5 lg:col-span-2">
+              <h2 className="font-semibold text-gray-900 mb-4">% Concluído por Pilar</h2>
+              <HorizontalProgressChart
+                ariaLabel={`Percentual concluído por pilar: ${pilaresChartData.map(p => `${p.label} ${p.value}%`).join(', ')}`}
+                data={pilaresChartData}
+              />
+            </div>
+          )}
+          <div className="card p-5 lg:col-span-2">
+            <h2 className="font-semibold text-gray-900 mb-1">Relatórios Enviados (últimos 4 meses de referência)</h2>
+            <p className="text-xs text-gray-500 mb-3">Cada barra é o mês a que o relatório se refere, comparado aos membros que deveriam enviar.</p>
+            <GroupedVerticalBarChart
+              ariaLabel={`Relatórios enviados nos últimos 4 meses de referência frente aos membros que deveriam enviar: ${relatoriosChartData.map(r => `${r.label} ${r.enviados} de ${r.total}`).join(', ')}`}
+              data={relatoriosChartData}
+            />
           </div>
         </div>
       )}
@@ -642,76 +666,18 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Gráficos gerenciais */}
-      {isCoord && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {pilaresChartData.length > 0 && (
-            <div className="card p-5 lg:col-span-2">
-              <h2 className="font-semibold text-gray-900 mb-4">% Concluído por Pilar</h2>
-              <HorizontalProgressChart
-                ariaLabel={`Percentual concluído por pilar: ${pilaresChartData.map(p => `${p.label} ${p.value}%`).join(', ')}`}
-                data={pilaresChartData}
-              />
-            </div>
-          )}
-          <div className="card p-5 lg:col-span-2">
-            <h2 className="font-semibold text-gray-900 mb-4">Relatórios Enviados em Dia (últimos 4 meses)</h2>
-            <GroupedVerticalBarChart
-              ariaLabel={`Relatórios enviados em dia nos últimos 4 meses frente ao total de membros: ${relatoriosChartData.map(r => `${r.label} ${r.enviados} de ${r.total}`).join(', ')}`}
-              data={relatoriosChartData}
-            />
-          </div>
-        </div>
-      )}
-
-      {isCoord && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Demandas resumo */}
-          <div className="card p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">Demandas Ativas</h2>
-              <span className="text-2xl font-bold text-accent-600">{demandasPendentes}</span>
-            </div>
-            <p className="text-sm text-gray-500">
-              Demandas pendentes ou em andamento aguardando execução.
-            </p>
-            <a href="/demandas" className="inline-block mt-3 text-sm text-teal-600 font-medium hover:underline">
-              Ver todas →
-            </a>
-          </div>
-
-          {/* Riscos */}
-          <div className="card p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={16} className="text-accent-500" />
-              <h2 className="font-semibold text-gray-900">Riscos em Destaque</h2>
-            </div>
-            {(riscosAtivos ?? []).length === 0 ? (
-              <p className="text-sm text-gray-500">Nenhum risco ativo de alto/médio impacto.</p>
-            ) : (
-              <div>
-                {(riscosAtivos ?? []).map(r => <RiscoRow key={r.id} risco={r} />)}
-              </div>
-            )}
-            <a href="/riscos" className="inline-block mt-2 text-sm text-teal-600 font-medium hover:underline">
-              Ver matriz de riscos →
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Relatórios conformidade strip */}
-      {isCoord && (relatorioStats?.atrasados ?? 0) > 0 && (
-        <div className="rounded-xl bg-red-50 border border-red-200 p-4 flex items-center gap-3">
-          <AlertTriangle size={18} className="text-red-500 shrink-0" />
+      {/* Mural de Conquistas */}
+      <div className="card p-5">
+        <h2 className="font-semibold text-gray-900 mb-1">Mural de Conquistas da CCAD</h2>
+        <p className="text-xs text-gray-500 mb-3">Ações concluídas pela equipe da CCAD.</p>
+        {muralVisivel.length === 0 ? (
+          <p className="text-sm text-gray-500">Nenhuma atividade registrada ainda.</p>
+        ) : (
           <div>
-            <p className="font-medium text-red-800">
-              {relatorioStats!.atrasados} membro(s) com relatório atrasado este mês.
-            </p>
-            <a href="/conformidade" className="text-sm text-red-600 hover:underline">Ver painel de conformidade →</a>
+            {muralVisivel.map(e => <MuralEventoRow key={e.id} evento={e} />)}
           </div>
-        </div>
-      )}
+        )}
+      </div>
       </div>
       )}
 

@@ -78,6 +78,7 @@ export function QuadroQuemFalta() {
                 ? `Todos os ${data.total} membros já enviaram o relatório de ${mesExtenso}.`
                 : `Faltam ${data.faltam.length} de ${data.total} relatórios de ${mesExtenso} (prazo: dia ${prazo}).`}
             </p>
+            {!todosEnviaram && (
             <p className="mt-0.5 text-xs text-gray-600">
               {fase === 'antes'
                 ? 'Os avisos aos membros começam no dia 10.'
@@ -85,6 +86,7 @@ export function QuadroQuemFalta() {
                   ? 'O prazo passou: os membros que faltam já veem um aviso mais firme no Portal.'
                   : 'Os membros que faltam já recebem o lembrete no Portal.'}
             </p>
+            )}
           </div>
         </div>
         {!todosEnviaram && (
